@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+collect.sh
+uvicorn.log
+rapiv.code-workspace
+
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# pytest
+.pytest_cache/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Shell scripts and generated files
+collect.sh
+verify.sh
+
+# Docker
+*.pid
+
+# Misc
+*.swp
+*.swo
+
+# Ignore compiled Python files in subfolders
+**/__pycache__/
+
+# Ignore test output
+tests/__pycache__/
+
+# Ignore traffic generator output
+traffic_generator.log
+
+# Ignore health monitor output
+health_monitor.log
+
+# Ignore build artifacts
+dist/
+build/
+
+# Ignore Python egg files
+*.egg-info/
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore backup files
+*~
+*.bak
+
+# Ignore Jupyter Notebooks checkpoints
+.ipynb_checkpoints/

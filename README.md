@@ -1,0 +1,325 @@
+# Vulnerable E-commerce API
+
+## 1. Introduction
+
+**Purpose:** This project is a deliberately vulnerable API-based e-commerce application built using Python and FastAPI. Its primary goal is to demonstrate common API security vulnerabilities, with a strong focus on Broken Object Level Authorization (BOLA), Broken Function Level Authorization (BFLA), and Mass Assignment/Parameter Pollution. The API is designed to primarily use path and query parameters for interactions, minimizing the use of request bodies for vulnerable endpoints to simulate specific attack vectors.
+
+**Design:**
+*   **Pure API-based:** No frontend is provided; interaction is expected via API clients (e.g., Postman, curl, custom scripts).
+*   **Framework:** FastAPI (Python) for its modern features, speed, and automatic OpenAPI documentation.
+*   **Database:** A simple in-memory Python dictionary acts as the database to keep the setup lightweight and focus on API logic rather than database intricacies. Data is ephemeral and resets on application restart.
+*   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`).
+*   **Vulnerability Focus:** Endpoints are intentionally designed with security flaws to serve as learning examples.
+
+## 2. Features
+
+The application simulates basic e-commerce functionalities:
+
+*   **User Management:**
+    *   User registration (`POST /auth/register`)
+    *   User login (`POST /auth/login`)
+    *   Get user details (`GET /users/{user_id}`)
+    *   Update user details (`PUT /users/{user_id}`)
+    *   Delete user (`DELETE /users/{user_id}`)
+*   **Product Catalog:**
+    *   Create product (`POST /products/`)
+    *   Get all products (`GET /products/`)
+    *   Get product by ID (`GET /products/{product_id}`)
+    *   Search products by name (`GET /products/search`)
+    *   Update product (`PUT /products/{product_id}`)
+    *   Delete product (`DELETE /products/{product_id}`)
+*   **Stock Management:**
+    *   Update product stock (`PUT /stock/{product_id}`)
+*   **User Profiles (Addresses & Credit Cards):**
+    *   Manage user addresses (CRUD operations under `/users/{user_id}/addresses`)
+    *   Manage user credit cards (CRUD operations under `/users/{user_id}/credit-cards`) - *Note: Card numbers are "hashed" for storage simulation.*
+*   **Order Management:**
+    *   Create an order for a user (`POST /users/{user_id}/orders`)
+    *   Get orders for a user (`GET /users/{user_id}/orders`)
+    *   Get specific order details (`GET /users/{user_id}/orders/{order_id}`)
+
+## 3. Technical Details
+
+*   **Language:** Python 3.9+
+*   **Framework:** FastAPI
+*   **Dependencies:**
+    *   `fastapi`: Web framework
+    *   `uvicorn[standard]`: ASGI server
+    *   `pydantic`: Data validation and settings management
+    *   `python-jose[cryptography]`: JWT handling
+    *   `passlib[bcrypt]`: Password hashing
+*   **API Specification:** OpenAPI 3.x. The schema is defined in `openapi.yaml` and also accessible interactively via:
+    *   Swagger UI: `http://localhost:8000/docs`
+    *   ReDoc: `http://localhost:8000/redoc`
+
+## 4. Implemented Vulnerabilities & OWASP API Top 10 Mapping
+
+This application intentionally includes the following vulnerabilities:
+
+### API1:2023 - Broken Object Level Authorization (BOLA)
+
+*   **Description:** Users can access or modify data objects belonging to other users by manipulating object IDs in the request (typically in path parameters or query parameters). The application fails to verify if the authenticated user has the right to perform the requested action on the specific object.
+*   **Affected Endpoints & Exploitation:**
+    *   **User Details:**
+        *   `GET /users/{user_id}`: Any authenticated user can view another user's details by providing their `user_id`.
+        *   `PUT /users/{user_id}`: Any authenticated user can attempt to update another user's details.
+    *   **User Addresses:** (Operate on `user_id` from path without matching authenticated user)
+        *   `GET /users/{user_id}/addresses`
+        *   `POST /users/{user_id}/addresses`
+        *   `GET /users/{user_id}/addresses/{address_id}`
+        *   `PUT /users/{user_id}/addresses/{address_id}`
+        *   `DELETE /users/{user_id}/addresses/{address_id}`
+    *   **User Credit Cards:** (Operate on `user_id` from path without matching authenticated user)
+        *   `GET /users/{user_id}/credit-cards`
+        *   `POST /users/{user_id}/credit-cards`
+        *   `GET /users/{user_id}/credit-cards/{card_id}`
+        *   `DELETE /users/{user_id}/credit-cards/{card_id}`
+    *   **User Orders:** (Operate on `user_id` from path without matching authenticated user)
+        *   `GET /users/{user_id}/orders`
+        *   `POST /users/{user_id}/orders`:
+            *   BOLA on `user_id` in path: An attacker can place an order for another user.
+            *   BOLA on `address_id` & `credit_card_id` in query parameters: An attacker can use their own token but specify another user's address or credit card ID (if known) to place an order, potentially charging it to another user or shipping to an unauthorized address.
+        *   `GET /users/{user_id}/orders/{order_id}`
+*   **How to Test:**
+    1.  Register two users, User A and User B.
+    2.  Authenticate as User A.
+    3.  Attempt to access/modify User B's resources using User B's `user_id` in the path or User B's `address_id`/`card_id` in query parameters where applicable.
+
+### API3:2023 - Broken Object Property Level Authorization
+
+This often manifests as Mass Assignment or Parameter Pollution, where users can illegitimately modify object properties.
+
+*   **Description:** The application allows users to modify sensitive object properties (e.g., `is_admin`, `internal_status`) that they should not have control over, typically by including them as unexpected query parameters.
+*   **Affected Endpoints & Exploitation:**
+    *   `PUT /users/{user_id}?is_admin=true`: A regular user can attempt to escalate their privileges to admin by updating their own profile and adding `is_admin=true` as a query parameter. The endpoint improperly processes this parameter.
+    *   `PUT /products/{product_id}?internal_status=discontinued`: A user (even non-admin due to BFLA) can modify a product's `internal_status` field, which should ideally be restricted.
+*   **How to Test:**
+    1.  Authenticate as a regular user.
+    2.  Call `PUT /users/{your_user_id}` with a valid payload for updatable fields (e.g., email) and append `&is_admin=true` (or `?is_admin=true` if no other query params) to the URL. Check if the user's `is_admin` status changes.
+    3.  Call `PUT /products/{product_id}` and append `&internal_status=some_value` to the URL.
+
+### API5:2023 - Broken Function Level Authorization (BFLA)
+
+*   **Description:** Regular users can access administrative functions or functionalities reserved for privileged users because the application does not adequately check the user's role or permissions before granting access to these functions.
+*   **Affected Endpoints & Exploitation:**
+    *   `POST /products/`: Any authenticated user can create new products (typically an admin function).
+    *   `DELETE /products/{product_id}`: Any authenticated user can delete products.
+    *   `PUT /stock/{product_id}`: Any authenticated user can update product stock levels.
+    *   `DELETE /users/{user_id}`: Any authenticated user can delete *any* other user if they know their `user_id`. This is a combination of BFLA (no admin check for delete function) and BOLA (can target any user).
+*   **How to Test:**
+    1.  Authenticate as a regular (non-admin) user.
+    2.  Attempt to call the administrative endpoints listed above.
+
+### API8:2023 - Security Misconfiguration
+
+*   **Description:** This category covers security flaws resulting from improper configuration or setup.
+*   **Manifestations in this project:**
+    *   **Hardcoded Secrets:** The `SECRET_KEY` for JWT signing is hardcoded in `app/security.py`. In a real application, this should be sourced from environment variables or a secure configuration management system.
+    *   **Verbose Errors (Potentially):** While FastAPI handles many errors gracefully, detailed stack traces might be exposed if `debug=True` were used in a production-like setting (uvicorn default is often non-debug).
+    *   **Intentional Vulnerabilities by Design:** The entire application is "misconfigured" to be vulnerable for educational purposes.
+*   **How to Test:** Review `app/security.py` for the hardcoded secret.
+
+### Potential for Injection (General Category - could relate to API8 or others based on impact)
+
+*   **Description:** The application might be vulnerable to injection attacks if user input is not properly sanitized before being used in queries or commands.
+*   **Affected Endpoints & Exploitation:**
+    *   `GET /products/search?name=<query>`: The `name` query parameter is used for searching products. While the current in-memory search is a simple string `in` check, if this were backed by a SQL database and the query constructed unsafely, it could be vulnerable to SQL Injection. The current implementation might allow for unexpected behavior depending on how the substring search is performed with special characters.
+*   **How to Test:**
+    1.  Try injecting various characters and sequences into the `name` parameter of the product search endpoint (e.g., `'`, `"` `*`, `;`, basic XSS payloads if it were reflected, etc.) to observe behavior. For the current in-memory setup, the impact is limited, but it demonstrates an input vector.
+
+## 5. Setup and Running the Application
+
+### Prerequisites
+
+*   Docker (Recommended)
+*   Python 3.9+ (if running locally without Docker)
+*   Git (for cloning, though not strictly necessary if files are manually downloaded)
+
+### Instructions
+
+#### Using Docker (Recommended)
+
+1.  **Build the Docker image:**
+    Open a terminal in the project's root directory (where `Dockerfile` is located) and run:
+    ```sh
+    docker build -t vulnerable-ecommerce-api .
+    ```
+
+2.  **Run the Docker container:**
+    ```sh
+    docker run -d -p 8000:8000 --name radware-vuln-api vulnerable-ecommerce-api
+    ```
+    The API will be accessible at `http://localhost:8000`.
+
+#### Running Locally (Alternative)
+
+1.  **Clone the Repository (if applicable):**
+    If you have the project as a git repository:
+    ```sh
+    git clone <repository_url>
+    cd <repository_directory>
+    ```
+    Otherwise, ensure you are in the project's root directory.
+
+2.  **Create and Activate a Virtual Environment:**
+    ```sh
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+
+3.  **Install Dependencies:**
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+4.  **Run the Application:**
+    ```sh
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ```
+    The `--reload` flag enables auto-reloading on code changes, useful for development.
+
+### Accessing the API
+
+*   **Base URL:** `http://localhost:8000`
+*   **Interactive API Documentation (Swagger UI):** `http://localhost:8000/docs`
+*   **Alternative API Documentation (ReDoc):** `http://localhost:8000/redoc`
+
+## 6. Disclaimer
+
+**⚠️ This application is intentionally vulnerable and designed for educational purposes ONLY. ⚠️**
+
+*   **DO NOT deploy this application in a production environment or any publicly accessible network.**
+*   **It contains severe security flaws by design.**
+*   **Use responsibly and ethically for learning and demonstration.**
+
+---
+
+## 7. Implemented Vulnerabilities: Table Overview
+
+This table summarizes the intentionally implemented vulnerabilities and their exploitation methods:
+
+| Vulnerability Type (OWASP API 2023) | Brief Description | Example Exploitable Endpoint(s) | Exploitation Method Summary |
+|-------------------------------------|-------------------|-------------------------------|----------------------------|
+| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). No check if the authenticated user owns the object. | `GET /users/{user_id}`<br>`PUT /users/{user_id}`<br>`GET /users/{user_id}/addresses`<br>`POST /users/{user_id}/addresses`<br>`GET /users/{user_id}/credit-cards`<br>`POST /users/{user_id}/credit-cards`<br>`GET /users/{user_id}/orders`<br>`POST /users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
+| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. | `PUT /users/{user_id}?is_admin=true`<br>`PUT /products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
+| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /products`<br>`DELETE /products/{product_id}`<br>`PUT /stock/{product_id}`<br>`DELETE /users/{user_id}` | Call admin endpoints as a regular user (no admin check) |
+| **API8:2023 - Security Misconfiguration** | Hardcoded secrets, verbose errors, and intentional misconfiguration for demonstration. | `app/security.py`<br>Application config | Hardcoded JWT secret, potential for verbose error output |
+| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /products/search?name=<query>` | Pass special characters or payloads in `name` parameter |
+
+---
+
+## 8. Example API Flows
+
+### 8.1 Valid User Flows
+
+#### Flow 1: Regular User Registration, Login, and Order Placement
+
+| Step | HTTP Method | Endpoint | Purpose/Parameters |
+|------|-------------|----------|--------------------|
+| 1 | POST | `/auth/register?username=alice&email=alice@example.com&password=Password123!` | Register a new user |
+| 2 | POST | `/auth/login?username=alice&password=Password123!` | Login, obtain JWT token |
+| 3 | GET | `/products` | Browse product catalog |
+| 4 | GET | `/users/{user_id}/addresses` | List addresses (empty initially) |
+| 5 | POST | `/users/{user_id}/addresses?street=Main%20St&city=Townsville&country=USA&zip_code=12345&is_default=true` | Add a shipping address |
+| 6 | GET | `/users/{user_id}/credit-cards` | List credit cards (empty initially) |
+| 7 | POST | `/users/{user_id}/credit-cards?cardholder_name=Alice&card_number=4111111111111111&expiry_month=12&expiry_year=2029&cvv=123&is_default=true` | Add a credit card |
+| 8 | POST | `/users/{user_id}/orders?address_id={address_id}&credit_card_id={card_id}&product_id_1={product_id}&quantity_1=1` | Place an order |
+| 9 | GET | `/users/{user_id}/orders` | List user's orders |
+
+#### Flow 2: Admin Product Management (Intended, but vulnerable to BFLA)
+
+| Step | HTTP Method | Endpoint | Purpose/Parameters |
+|------|-------------|----------|--------------------|
+| 1 | POST | `/auth/register?username=admin&email=admin@example.com&password=AdminPass123!` | Register admin user (set is_admin via parameter pollution, see below) |
+| 2 | POST | `/auth/login?username=admin&password=AdminPass123!` | Login as admin |
+| 3 | POST | `/products?name=New%20Product&price=99.99&description=Demo&category=Test` | Create a new product |
+| 4 | PUT | `/products/{product_id}?price=89.99` | Update product price |
+| 5 | DELETE | `/products/{product_id}` | Delete product |
+
+#### Flow 3: User Updates Profile Information
+
+| Step | HTTP Method | Endpoint | Purpose/Parameters |
+|------|-------------|----------|--------------------|
+| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | PUT | `/users/{user_id}?email=newalice@example.com` | Update email address |
+| 3 | GET | `/users/{user_id}` | Retrieve updated profile |
+
+#### Flow 4: User Manages Multiple Addresses
+
+| Step | HTTP Method | Endpoint | Purpose/Parameters |
+|------|-------------|----------|--------------------|
+| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | POST | `/users/{user_id}/addresses?street=Second%20St&city=Townsville&country=USA&zip_code=54321&is_default=false` | Add a second address |
+| 3 | GET | `/users/{user_id}/addresses` | List all addresses |
+| 4 | DELETE | `/users/{user_id}/addresses/{address_id}` | Remove an address |
+
+#### Flow 5: User Adds and Removes Credit Card
+
+| Step | HTTP Method | Endpoint | Purpose/Parameters |
+|------|-------------|----------|--------------------|
+| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | POST | `/users/{user_id}/credit-cards?cardholder_name=Alice%20B&card_number=4222222222222222&expiry_month=11&expiry_year=2030&cvv=456&is_default=false` | Add a second credit card |
+| 3 | GET | `/users/{user_id}/credit-cards` | List all credit cards |
+| 4 | DELETE | `/users/{user_id}/credit-cards/{card_id}` | Remove a credit card |
+
+### 8.2 Malicious User Flows (Vulnerability Exploitation)
+
+#### BOLA Exploit: Accessing Another User's Data
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in, obtains token |
+| 2 | GET | `/users/{victim_user_id}` | Attacker accesses victim's profile |
+| 3 | GET | `/users/{victim_user_id}/orders` | Attacker lists victim's orders |
+| 4 | POST | `/users/{victim_user_id}/addresses?...` | Attacker creates address for victim |
+| 5 | POST | `/users/{victim_user_id}/orders?address_id={victim_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order for victim (using victim's address/card) |
+
+#### BFLA Exploit: Regular User Performing Admin Actions
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
+| 2 | POST | `/products?name=Malicious%20Product&price=1.00` | Regular user creates a product (should be admin-only) |
+| 3 | DELETE | `/products/{product_id}` | Regular user deletes a product |
+| 4 | PUT | `/stock/{product_id}?quantity=100` | Regular user updates product stock |
+| 5 | DELETE | `/users/{victim_user_id}` | Regular user deletes another user |
+
+#### Parameter Pollution Exploit: Privilege Escalation
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/register?username=evil&email=evil@example.com&password=EvilPass!` | Register as a regular user |
+| 2 | POST | `/auth/login?username=evil&password=EvilPass!` | Login as evil user |
+| 3 | PUT | `/users/{evil_user_id}?is_admin=true` | Escalate privileges to admin via query parameter |
+| 4 | POST | `/products?name=Backdoor&price=0.01` | Now create a product as an admin |
+
+#### Flow 3: BOLA Exploit - Creating Address for Another User
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
+| 2 | POST | `/users/{victim_user_id}/addresses?street=Hacked%20St&city=Exploit&country=Nowhere&zip_code=99999&is_default=false` | Attacker creates address for victim |
+| 3 | GET | `/users/{victim_user_id}/addresses` | Attacker verifies address was created |
+
+#### Flow 4: BOLA Exploit - Using Another User's Credit Card for Order
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
+| 2 | GET | `/users/{victim_user_id}/credit-cards` | Attacker lists victim's credit cards |
+| 3 | POST | `/users/{attacker_user_id}/orders?address_id={attacker_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order using victim's card |
+
+#### Flow 5: Parameter Pollution - Setting Product Internal Status
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | POST | `/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
+| 2 | PUT | `/products/{product_id}?internal_status=hidden` | User sets internal status field |
+
+#### Injection Vector Example
+
+| Step | HTTP Method | Endpoint | Purpose/Attack |
+|------|-------------|----------|----------------|
+| 1 | GET | `/products/search?name=' OR 1=1 --` | Attempt SQL/NoSQL injection (limited impact in demo, but demonstrates input vector) |
+
+---
