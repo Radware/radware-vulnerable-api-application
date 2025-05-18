@@ -58,6 +58,7 @@ class CreditCardBase(BaseModel):
     expiry_month: str = Field(..., pattern=r"^0[1-9]|1[0-2]$") # MM
     expiry_year: str = Field(..., pattern=r"^20[2-9][0-9]$") # YYYY (e.g., 2024-2099)
     is_default: bool = False
+    card_last_four: Optional[str] = Field(None, description="Last four digits of the card number for display purposes")
 
 class CreditCardCreate(CreditCardBase):
     # card_number and cvv will be passed in, hashed, and not stored directly in this model
@@ -68,6 +69,7 @@ class CreditCardInDBBase(CreditCardBase):
     card_id: UUID = Field(default_factory=uuid4)
     user_id: UUID
     card_number_hash: str
+    card_last_four: str
     cvv_hash: Optional[str] = None # CVV not typically stored, but hash for realism
 
     model_config = {"from_attributes": True}

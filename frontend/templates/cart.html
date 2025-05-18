@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Your Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="cart-page">
+    <div class="page-header">
+        <h1>Your Shopping Cart</h1>
+    </div>
+    
+    <div id="error-message-container" style="display: none;"></div>
+    <div id="success-message-container" style="display: none;"></div>
+    
+    <div class="cart-content-wrapper">
+        <div id="cart-loading" class="cart-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading your cart...</p>
+        </div>
+        
+        <div class="cart-content">
+            <div id="cart-items-container" class="cart-items-container">
+                <!-- Cart items will be populated by JavaScript -->
+            </div>
+            
+            <div class="cart-sidebar">
+                <div class="cart-summary" data-testid="cart-summary">
+                    <h3>Order Summary</h3>
+                    <div class="summary-line subtotal">
+                        <span>Subtotal:</span>
+                        <span id="cart-subtotal">$0.00</span>
+                    </div>
+                    <div class="summary-line shipping">
+                        <span>Shipping:</span>
+                        <span id="cart-shipping">$0.00</span>
+                    </div>
+                    <div class="summary-line total">
+                        <span><strong>Total:</strong></span>
+                        <span id="cart-total" data-testid="cart-total">$0.00</span>
+                    </div>
+                    
+                    <div class="cart-actions">
+                        <a href="/checkout" class="btn-primary" id="checkout-btn" data-testid="checkout-btn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
+                                <path d="M4 20h16V8H4v12zm10-2h2v-2h-2v2zm0-4h2v-2h-2v2zm-4 4h2v-2h-2v2zm0-4h2v-2h-2v2zm-4 4h2v-2H6v2zm0-4h2v-2H6v2zm14-8H4V4c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v2z"/>
+                            </svg>
+                            Proceed to Checkout
+                        </a>
+                        <a href="/" class="btn-secondary" id="continue-shopping" data-testid="continue-shopping">
+                            <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
+                                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                            </svg>
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="cart-promo">
+                    <h4>Have a Promo Code?</h4>
+                    <form class="promo-form" id="promo-form" data-testid="promo-form">
+                        <input type="text" placeholder="Enter code" class="promo-input" id="promo-code" data-testid="promo-code">
+                        <button type="submit" class="btn-secondary">Apply</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Display cart items
+        displayCart();
+        
+        // Setup promo code form
+        document.getElementById('promo-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const promoCode = document.getElementById('promo-code').value.trim();
+            if (!promoCode) return;
+            
+            // Simulate promo code application
+            displaySuccess(`Promo code "${promoCode}" applied!`);
+            
+            // In a real app, you'd make an API call here
+            // For demo purposes, just update the display
+            const discount = (Math.random() * 10).toFixed(2);
+            document.getElementById('promo-code').value = '';
+            
+            // Add discount to summary
+            const summaryEl = document.querySelector('.cart-summary');
+            
+            // Remove any existing discount line
+            const existingDiscount = document.querySelector('.summary-line.discount');
+            if (existingDiscount) existingDiscount.remove();
+            
+            // Add new discount line before the total
+            const discountEl = document.createElement('div');
+            discountEl.className = 'summary-line discount';
+            discountEl.innerHTML = `
+                <span>Discount:</span>
+                <span id="cart-discount">-$${discount}</span>
+            `;
+            
+            document.querySelector('.summary-line.total').before(discountEl);
+            
+            // Update total
+            const subtotalStr = document.getElementById('cart-subtotal').textContent;
+            const subtotal = parseFloat(subtotalStr.replace('$', ''));
+            const shippingStr = document.getElementById('cart-shipping').textContent;
+            const shipping = parseFloat(shippingStr.replace('$', ''));
+            const total = subtotal + shipping - parseFloat(discount);
+            
+            document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
+        });
+    });
+</script>
+{% endblock %}

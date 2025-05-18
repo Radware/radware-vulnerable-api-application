@@ -82,6 +82,9 @@ def initialize_database_from_json():
             ))
 
         for card_data in user_data.get("credit_cards", []):
+            # Extract last four digits of the card number
+            card_last_four = card_data["card_number_plain"][-4:]
+            
             db["credit_cards"].append(CreditCardInDBBase(
                 card_id=UUID(card_data["card_id"]),
                 user_id=user_id, # Link to the current user
@@ -89,6 +92,7 @@ def initialize_database_from_json():
                 expiry_month=card_data["expiry_month"],
                 expiry_year=card_data["expiry_year"],
                 card_number_hash=get_password_hash(card_data["card_number_plain"]),
+                card_last_four=card_last_four,
                 cvv_hash=get_password_hash(card_data["cvv_plain"]),
                 is_default=card_data["is_default"]
             ))

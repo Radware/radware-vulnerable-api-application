@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth_router, user_router, product_router, user_profile_router, order_router # Added order_router
 
 app = FastAPI(
@@ -7,11 +8,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.include_router(auth_router.router, prefix="/auth", tags=["Auth"])
-app.include_router(user_router.router, tags=["Users"]) 
-app.include_router(product_router.router, tags=["Products", "Stock"])
-app.include_router(user_profile_router.router) # No prefix here as it's defined in the router itself
-app.include_router(order_router.router, tags=["Orders"]) # Added order_router
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for demonstration purposes
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(user_router.router, prefix="/api", tags=["Users"]) 
+app.include_router(product_router.router, prefix="/api", tags=["Products", "Stock"])
+app.include_router(user_profile_router.router, prefix="/api") # No prefix here as it's defined in the router itself
+app.include_router(order_router.router, prefix="/api", tags=["Orders"]) # Added order_router
 
 @app.get("/")
 async def root():

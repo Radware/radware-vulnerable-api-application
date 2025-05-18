@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name if product else 'Product Details' }} - Radware Demo E-Commerce{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="product-detail-page-body"> <!-- Ensuring the ID is present for CSS targeting -->
+    <div class="product-details-page">
+        <nav class="breadcrumb" aria-label="breadcrumb">
+            <a href="/">Home</a> / <span class="current-page">Product</span>
+        </nav>
+
+        <div id="product-loading" class="product-loading-skeleton" style="display: none;">
+            <div class="product-skeleton-layout">
+                <div class="product-image-skeleton"></div>
+                <div class="product-info-skeleton">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-price"></div>
+                    <div class="skeleton-description"></div>
+                    <div class="skeleton-description"></div>
+                    <div class="skeleton-description short"></div>
+                    <div class="skeleton-actions"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="product-detail-container">
+            <!-- Product details will be loaded here by JavaScript (from main.js) -->
+        </div>
+        
+        <div id="error-message-container" style="display:none;"></div>
+
+        <!-- Parameter Pollution Demo Section -->
+        <div class="vulnerability-demo-section card-style">
+            <h2>Parameter Pollution Demo</h2>
+            <p>This demonstrates how parameter pollution can be used to modify the internal status of a product. For example, try adding <code>&internal_status=discontinued</code> to the URL when this page loads a product.</p>
+            <form id="parameter-pollution-form">
+                <div class="form-group">
+                    <label for="param-name">Parameter Name:</label>
+                    <input type="text" id="param-name" name="param_name" value="internal_status" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="param-value">Parameter Value:</label>
+                    <input type="text" id="param-value" name="param_value" value="clearance_sale" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-warning">Apply Parameter & Reload</button>
+            </form>
+            <p class="parameter-pollution-info">
+                Current URL: <code id="current-product-url"></code><br>
+                Demo URL with pollution: <code id="demo-url-display"></code>
+            </p>
+        </div>
+
+        <a href="/" class="back-button">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Products
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <!-- main.js is included in base.html and contains product detail logic -->
+{% endblock %}

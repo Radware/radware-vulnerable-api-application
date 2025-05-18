@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Products{% endblock %}
+
+{% block content %}
+<div class="container admin-section">
+    <div class="page-header">
+        <h1>Admin Dashboard</h1>
+    </div>
+
+    <div id="global-error-container"></div>
+    <div id="global-success-container"></div>
+
+    <!-- BFLA Vulnerability Demo Banner -->
+    <div id="vulnerability-banner-admin" class="vulnerability-warning" style="display: none;">
+        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+        <h3><i class="fas fa-exclamation-triangle"></i> BFLA Vulnerability Demo Active</h3>
+        <p>You are currently accessing admin functions with escalated privileges or viewing internal data due to a simulated BFLA condition. This is for demonstration purposes.</p>
+    </div>
+    
+    <h2>Products Management</h2>
+
+    <!-- Parameter Pollution Demo Section -->
+    <div class="parameter-pollution-controls">
+        <h3>Parameter Pollution Demo Options</h3>
+        <p>These options demonstrate API parameter pollution vulnerabilities by adding extra query parameters to the product list request. Observe the "Demo URL" to see the effect.</p>
+        <div class="checkbox-group">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="admin-escalation" name="admin_escalation">
+                <label class="form-check-label" for="admin-escalation">
+                    <strong>Escalate to Admin Privileges</strong> - Adds a second <code>role=admin</code> parameter to bypass authorization checks (simulating BFLA).
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="reveal-internal" name="reveal_internal">
+                <label class="form-check-label" for="reveal-internal">
+                    <strong>Show Internal Products</strong> - Adds a <code>status=internal</code> parameter to view products not normally visible to regular users.
+                </label>
+            </div>
+        </div>
+        <div class="demo-url-display">
+            <strong>Demo URL:</strong> <span id="constructed-url-display">/products?role=user</span>
+            <button id="copy-constructed-url" class="btn btn-sm btn-secondary">Copy URL</button>
+        </div>
+    </div>
+
+    <h3>Products List</h3>
+    <div id="products-loading" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div> Loading products...
+    </div>
+    <div id="admin-products-container">
+        <!-- Products table will be loaded here by admin.js -->
+    </div>
+
+    <div class="add-product-section">
+        <h3>Add New Product (BFLA Demo)</h3>
+        <p class="helper-text">This form demonstrates adding a product. As a regular user, this action should typically be restricted. If successful, it indicates a BFLA vulnerability.</p>
+        <form id="add-product-form">
+            <div class="form-group">
+                <label for="new-product-name">Product Name:</label>
+                <input type="text" id="new-product-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="new-product-description">Description:</label>
+                <textarea id="new-product-description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="new-product-price">Price:</label>
+                    <input type="number" id="new-product-price" class="form-control" step="0.01" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="new-product-category">Category:</label>
+                    <input type="text" id="new-product-category" class="form-control">
+                </div>
+            </div>
+             <div class="form-group">
+                <label for="new-product-internal-status">Internal Status (Optional):</label>
+                <input type="text" id="new-product-internal-status" class="form-control" placeholder="e.g., 'pending_review', 'backordered'">
+                <small class="helper-text">This field is typically for internal use and might not be exposed to regular users.</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-exploit">Add Product (Demo Exploit)</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

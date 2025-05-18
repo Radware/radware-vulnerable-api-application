@@ -9,13 +9,13 @@ def test_register_and_login(http_client):
     
     # Register a new user
     register_response = http_client.post(
-        f"/auth/register?username={unique_username}&email={unique_username}@example.com&password=TestPass123!"
+        f"/api/auth/register?username={unique_username}&email={unique_username}@example.com&password=TestPass123!"
     )
     assert register_response.status_code == 201
     
     # Login with the newly created user
     login_response = http_client.post(
-        f"/auth/login?username={unique_username}&password=TestPass123!"
+        f"/api/auth/login?username={unique_username}&password=TestPass123!"
     )
     assert login_response.status_code == 200
     assert "access_token" in login_response.json()
@@ -24,7 +24,7 @@ def test_register_and_login(http_client):
 # Test product listing functionality
 def test_list_products(http_client):
     """Test retrieving the list of products."""
-    response = http_client.get("/products")
+    response = http_client.get("/api/products")
     assert response.status_code == 200
     products = response.json()
     assert isinstance(products, list)
@@ -40,7 +40,7 @@ def test_get_user_profile(http_client, regular_auth_headers, regular_user_info):
     """Test retrieving a user's profile."""
     user_id = regular_user_info["user_id"]
     response = http_client.get(
-        f"/users/{user_id}",
+        f"/api/users/{user_id}",
         headers=regular_auth_headers
     )
     assert response.status_code == 200
@@ -56,7 +56,7 @@ def test_address_management(http_client, regular_auth_headers, regular_user_info
     
     # List addresses
     list_response = http_client.get(
-        f"/users/{user_id}/addresses",
+        f"/api/users/{user_id}/addresses",
         headers=regular_auth_headers
     )
     assert list_response.status_code == 200
@@ -64,7 +64,7 @@ def test_address_management(http_client, regular_auth_headers, regular_user_info
     
     # Create a new address
     create_response = http_client.post(
-        f"/users/{user_id}/addresses?street=Test%20Street&city=Test%20City&country=Test%20Country&zip_code=12345&is_default=false",
+        f"/api/users/{user_id}/addresses?street=Test%20Street&city=Test%20City&country=Test%20Country&zip_code=12345&is_default=false",
         headers=regular_auth_headers
     )
     assert create_response.status_code == 201
@@ -72,7 +72,7 @@ def test_address_management(http_client, regular_auth_headers, regular_user_info
     
     # Verify address was created
     list_after_create = http_client.get(
-        f"/users/{user_id}/addresses",
+        f"/api/users/{user_id}/addresses",
         headers=regular_auth_headers
     )
     assert list_after_create.status_code == 200
@@ -81,14 +81,14 @@ def test_address_management(http_client, regular_auth_headers, regular_user_info
     
     # Delete the new address
     delete_response = http_client.delete(
-        f"/users/{user_id}/addresses/{new_address['address_id']}",
+        f"/api/users/{user_id}/addresses/{new_address['address_id']}",
         headers=regular_auth_headers
     )
     assert delete_response.status_code == 204
     
     # Verify address was deleted
     list_after_delete = http_client.get(
-        f"/users/{user_id}/addresses",
+        f"/api/users/{user_id}/addresses",
         headers=regular_auth_headers
     )
     assert list_after_delete.status_code == 200
@@ -102,7 +102,7 @@ def test_credit_card_management(http_client, regular_auth_headers, regular_user_
     
     # List credit cards
     list_response = http_client.get(
-        f"/users/{user_id}/credit-cards",
+        f"/api/users/{user_id}/credit-cards",
         headers=regular_auth_headers
     )
     assert list_response.status_code == 200
@@ -110,7 +110,15 @@ def test_credit_card_management(http_client, regular_auth_headers, regular_user_
     
     # Create a new credit card
     create_response = http_client.post(
-        f"/users/{user_id}/credit-cards?cardholder_name=Test%20User&card_number=4111111111111111&expiry_month=12&expiry_year=2029&cvv=123&is_default=false",
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "Test User",
+            "card_number": "4111111111111111",
+            "expiry_month": "12",
+            "expiry_year": "2029",
+            "cvv": "123",
+            "is_default": "false"
+        },
         headers=regular_auth_headers
     )
     assert create_response.status_code == 201
@@ -118,7 +126,7 @@ def test_credit_card_management(http_client, regular_auth_headers, regular_user_
     
     # Verify card was created
     list_after_create = http_client.get(
-        f"/users/{user_id}/credit-cards",
+        f"/api/users/{user_id}/credit-cards",
         headers=regular_auth_headers
     )
     assert list_after_create.status_code == 200
@@ -127,7 +135,7 @@ def test_credit_card_management(http_client, regular_auth_headers, regular_user_
     
     # Clean up - delete the new card
     delete_response = http_client.delete(
-        f"/users/{user_id}/credit-cards/{new_card['card_id']}",
+        f"/api/users/{user_id}/credit-cards/{new_card['card_id']}",
         headers=regular_auth_headers
     )
     assert delete_response.status_code == 204
@@ -146,7 +154,7 @@ def test_order_creation_and_retrieval(http_client, regular_auth_headers, regular
     
     # Create an order
     create_response = http_client.post(
-        f"/users/{user_id}/orders?address_id={user_address['address_id']}&credit_card_id={user_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
+        f"/api/users/{user_id}/orders?address_id={user_address['address_id']}&credit_card_id={user_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
         headers=regular_auth_headers
     )
     assert create_response.status_code == 201
@@ -162,7 +170,7 @@ def test_order_creation_and_retrieval(http_client, regular_auth_headers, regular
     
     # Retrieve the order
     get_response = http_client.get(
-        f"/users/{user_id}/orders/{new_order['order_id']}",
+        f"/api/users/{user_id}/orders/{new_order['order_id']}",
         headers=regular_auth_headers
     )
     assert get_response.status_code == 200
@@ -171,7 +179,7 @@ def test_order_creation_and_retrieval(http_client, regular_auth_headers, regular
     
     # List all orders
     list_response = http_client.get(
-        f"/users/{user_id}/orders",
+        f"/api/users/{user_id}/orders",
         headers=regular_auth_headers
     )
     assert list_response.status_code == 200
@@ -182,7 +190,7 @@ def test_order_creation_and_retrieval(http_client, regular_auth_headers, regular
 def test_product_search(http_client):
     """Test searching for products by name."""
     # Search for a product with a common term
-    response = http_client.get("/products/search/?name=pro")
+    response = http_client.get("/api/products/search/?name=pro")
     assert response.status_code == 200
     results = response.json()
     
@@ -193,7 +201,7 @@ def test_product_search(http_client):
             assert "pro" in product["name"].lower()
     
     # Test with a more specific search term
-    specific_response = http_client.get("/products/search/?name=laptop")
+    specific_response = http_client.get("/api/products/search/?name=laptop")
     assert specific_response.status_code == 200
     specific_results = specific_response.json()
     

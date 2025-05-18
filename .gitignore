@@ -17,6 +17,12 @@ ENV/
 # VS Code
 .vscode/
 *.code-workspace
+.github/
+prd.md
+INSTRUCTIONS.TXT    
+pics
+node_modules/
+
 
 # pytest
 .pytest_cache/
@@ -68,3 +74,21 @@ build/
 
 # Ignore Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
+
+# Certificate files
+*.pem
+ZscalerRootCA.pem
+
+# Playwright test results and reports
+/test-results/
+/playwright-report/
+
+# Debug scripts
+debug_*.py
+
+# Local development files
+.last-run.json
+
+# Local certificates
+*.cert
+*.key

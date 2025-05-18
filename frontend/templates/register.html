@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Register</h1>
+    
+    <div class="auth-form-container">
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+            </div>
+            
+            <button type="submit">Register</button>
+        </form>
+        
+        <p>Already have an account? <a href="/login">Login</a></p>
+    </div>
+    
+    <div id="error-message-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Additional scripts specific to register page can go here -->
+{% endblock %}

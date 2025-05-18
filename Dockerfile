@@ -1,6 +1,9 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
+# Install Nginx and Supervisor
+RUN apt-get update && apt-get install -y nginx supervisor
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -9,18 +12,27 @@ COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install Flask Jinja2 requests
 
-# Copy the content of the local src directory to the working directory
+# Copy the backend and frontend code
 COPY ./app /app/app
+COPY ./frontend /app/frontend
+COPY openapi.yaml /app/
+COPY prepopulated_data.json /app/
 
-# Copy the openapi.yaml if it's needed at runtime (e.g., for documentation)
-COPY openapi.yaml .
+# Configure Nginx as a reverse proxy
+RUN rm /etc/nginx/sites-enabled/default
+COPY nginx.conf /etc/nginx/sites-available/rapiv
+RUN ln -s /etc/nginx/sites-available/rapiv /etc/nginx/sites-enabled/
 
-# Make port 8000 available to the world outside this container
-EXPOSE 8000
+# Setup supervisor to manage processes
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
 # Define environment variable
 ENV PYTHONPATH=/app
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run supervisor, which will manage both services
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

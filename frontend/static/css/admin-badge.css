@@ -1,0 +1,26 @@
+.admin-badge {
+    display: inline-block;
+    background-color: var(--danger-color);
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: pulse-badge 2s infinite;
+    vertical-align: middle;
+}
+
+@keyframes pulse-badge {
+    0% {
+        box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(217, 83, 79, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(217, 83, 79, 0);
+    }
+}

@@ -12,7 +12,7 @@ from ..models.order_models import TokenData # For current_user dependency
 router = APIRouter()
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") # Corrected tokenUrl
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login") # Updated tokenUrl for /api/ prefix
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
     credentials_exception = HTTPException(
@@ -149,3 +149,15 @@ async def delete_user(
     # Orders might be kept for historical reasons or marked inactive.
 
     return
+
+@router.get("/users", response_model=List[User], tags=["Users"])
+async def list_users(
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Get a list of all users - intentionally vulnerable for demonstration purposes.
+    In a real application, this would be restricted to admins or have proper filtering."""
+    # BOLA/BFLA Vulnerability: Any authenticated user can list all users
+    print(f"User {current_user.username} (ID: {current_user.user_id}) is listing all users. Intentional vulnerability for demo.")
+    
+    # Return all users - this is the vulnerability
+    return [User.model_validate(u) for u in db.db["users"]]

@@ -1,0 +1,1794 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Radware Vulnerable E-commerce API",
+    "version": "1.0.0",
+    "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters."
+  },
+  "tags": [
+    {
+      "name": "Users",
+      "description": "Operations related to users"
+    },
+    {
+      "name": "Products",
+      "description": "Operations related to products"
+    },
+    {
+      "name": "Stock",
+      "description": "Operations related to product stock"
+    },
+    {
+      "name": "Addresses",
+      "description": "Operations related to user addresses"
+    },
+    {
+      "name": "CreditCards",
+      "description": "Operations related to user credit cards"
+    },
+    {
+      "name": "Orders",
+      "description": "Operations related to orders"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication related operations"
+    }
+  ],
+  "paths": {
+    "/api/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create a new user",
+        "operationId": "createUser",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username for the new user"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Email for the new user"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "password"
+            },
+            "description": "Password for the new user"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user by user ID",
+        "operationId": "getUserByUserId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user by user ID",
+        "operationId": "updateUserByUserId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user to update"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "New email for the user"
+          },
+          {
+            "name": "is_admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set user as admin (vulnerability)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "List all products",
+        "operationId": "listProducts",
+        "responses": {
+          "200": {
+            "description": "A list of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Create a new product (Admin Only - BFLA Target)",
+        "operationId": "createProduct",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the new product"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Description of the new product"
+          },
+          {
+            "name": "price",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Price of the new product"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Category of the new product"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/api/products/{productId}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Get product by product ID",
+        "operationId": "getProductById",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the product to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Update product by product ID (Parameter Pollution Target)",
+        "operationId": "updateProductById",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the product to update"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "New name for the product"
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "New description for the product"
+          },
+          {
+            "name": "price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "New price for the product"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "New category for the product"
+          },
+          {
+            "name": "internal_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Internal status (vulnerability)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Delete product by product ID (Admin Only - BFLA Target)",
+        "operationId": "deleteProductById",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the product to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Product deleted successfully"
+          },
+          "403": {
+            "description": "Forbidden (if BFLA is fixed)"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/products/search": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Search for products by name (Injection Target)",
+        "operationId": "searchProducts",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search term for product name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of matching products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/api/products/{productId}/stock": {
+      "get": {
+        "tags": [
+          "Stock"
+        ],
+        "summary": "Get stock information for a product",
+        "operationId": "getProductStock",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the product"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stock information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Stock"
+        ],
+        "summary": "Update stock quantity for a product (Admin or Owner - BFLA Target)",
+        "operationId": "updateProductStock",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the product"
+          },
+          {
+            "name": "quantity",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "New stock quantity"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stock updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stock"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden (if BFLA is fixed)"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/addresses": {
+      "get": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "List all addresses for a user",
+        "operationId": "listUserAddresses",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user whose addresses to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of addresses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Address"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized (Not authenticated)"
+          },
+          "403": {
+            "description": "Forbidden (Authenticated but not authorized - BOLA if not checked)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Create a new address for a user",
+        "operationId": "createUserAddress",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user for whom to create the address"
+          },
+          {
+            "name": "street",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zip_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_default",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Address created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/addresses/{addressId}": {
+      "put": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Update an address for a user",
+        "operationId": "updateUserAddress",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user"
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the address to update"
+          },
+          {
+            "name": "street",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zip_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_default",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User or Address not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Delete an address for a user",
+        "operationId": "deleteUserAddress",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user"
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the address to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Address deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User or Address not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/credit-cards": {
+      "get": {
+        "tags": [
+          "CreditCards"
+        ],
+        "summary": "List all credit cards for a user",
+        "operationId": "listUserCreditCards",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user whose credit cards to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of credit cards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditCard"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CreditCards"
+        ],
+        "summary": "Create a new credit card for a user",
+        "operationId": "createUserCreditCard",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user for whom to create the credit card"
+          },
+          {
+            "name": "cardholder_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expiry_month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0[1-9]|1[0-2]$"
+            }
+          },
+          {
+            "name": "expiry_year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^20[2-9][0-9]$"
+            }
+          },
+          {
+            "name": "is_default",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Credit card created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/credit-cards/{cardId}": {
+      "put": {
+        "tags": [
+          "CreditCards"
+        ],
+        "summary": "Update a credit card for a user",
+        "operationId": "updateUserCreditCard",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user"
+          },
+          {
+            "name": "cardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the credit card to update"
+          },
+          {
+            "name": "cardholder_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expiry_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^0[1-9]|1[0-2]$"
+            }
+          },
+          {
+            "name": "expiry_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^20[2-9][0-9]$"
+            }
+          },
+          {
+            "name": "is_default",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credit card updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User or CreditCard not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CreditCards"
+        ],
+        "summary": "Delete a credit card for a user",
+        "operationId": "deleteUserCreditCard",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user"
+          },
+          {
+            "name": "cardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the credit card to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Credit card deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User or CreditCard not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List all orders for a specific user",
+        "operationId": "listUserOrders",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user whose orders to retrieve (BOLA: can be changed to another user's ID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of orders with their items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "order_details": {
+                        "$ref": "#/components/schemas/Order"
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/OrderItem"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized (Not authenticated)"
+          },
+          "403": {
+            "description": "Forbidden (Authenticated but not authorized for this user's orders - BOLA if not checked)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Create a new order for a user",
+        "description": "Creates an order. Products and quantities are specified as dynamic query parameters: `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc. Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id` in query can also belong to another user.",
+        "operationId": "createUserOrder",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user placing the order (BOLA: can be changed)"
+          },
+          {
+            "name": "address_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Address ID for shipping (Vulnerability: can be another user's address)"
+          },
+          {
+            "name": "credit_card_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Credit Card ID for payment (Vulnerability: can be another user's card)"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order_details": {
+                      "$ref": "#/components/schemas/Order"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OrderItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (e.g., product not found, insufficient stock, invalid parameters)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked properly)"
+          },
+          "404": {
+            "description": "User, Address, or CreditCard not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get a specific order for a user",
+        "operationId": "getUserOrderById",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user (BOLA: can be changed)"
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the order to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detailed information about the order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order_details": {
+                      "$ref": "#/components/schemas/Order"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OrderItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden (BOLA if not checked)"
+          },
+          "404": {
+            "description": "User or Order not found"
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register a new user",
+        "description": "User registration using query parameters.",
+        "operationId": "registerUser",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Desired username"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "User's email address"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "password"
+            },
+            "description": "User's password"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (e.g., username/email already exists, weak password)"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log in a user",
+        "description": "User login using query parameters to obtain a JWT.",
+        "operationId": "loginUser",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "password"
+            },
+            "description": "Password"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful, JWT returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credentials (username or password)"
+          },
+          "401": {
+            "description": "Authentication failed"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List all users",
+        "description": "Retrieve a list of all users in the system. This endpoint demonstrates a BOLA vulnerability by allowing any authenticated user to list all users.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Bearer token is missing or invalid"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "username",
+          "email"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the user",
+            "readOnly": true
+          },
+          "username": {
+            "type": "string",
+            "description": "Username of the user (unique)"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address of the user (unique)"
+          },
+          "password_hash": {
+            "type": "string",
+            "description": "Hashed password of the user",
+            "readOnly": true
+          },
+          "is_admin": {
+            "type": "boolean",
+            "default": false,
+            "description": "Flag indicating if the user is an administrator"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of user creation",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last user update",
+            "readOnly": true
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "required": [
+          "product_id",
+          "name",
+          "price"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the product",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the product"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the product"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Price of the product"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category of the product"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of product creation",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last product update",
+            "readOnly": true
+          }
+        }
+      },
+      "Stock": {
+        "type": "object",
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to Product"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity of the product in stock"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last stock update",
+            "readOnly": true
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": [
+          "address_id",
+          "user_id",
+          "street",
+          "city",
+          "country",
+          "zip_code"
+        ],
+        "properties": {
+          "address_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the address",
+            "readOnly": true
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to User",
+            "readOnly": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Street address"
+          },
+          "city": {
+            "type": "string",
+            "description": "City"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country"
+          },
+          "zip_code": {
+            "type": "string",
+            "description": "Zip code"
+          },
+          "is_default": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this is the default address for the user"
+          }
+        }
+      },
+      "CreditCard": {
+        "type": "object",
+        "required": [
+          "card_id",
+          "user_id",
+          "cardholder_name",
+          "expiry_month",
+          "expiry_year"
+        ],
+        "properties": {
+          "card_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the credit card",
+            "readOnly": true
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to User",
+            "readOnly": true
+          },
+          "cardholder_name": {
+            "type": "string",
+            "description": "Name of the cardholder"
+          },
+          "card_number_hash": {
+            "type": "string",
+            "description": "Hash of the credit card number",
+            "readOnly": true
+          },
+          "expiry_month": {
+            "type": "string",
+            "description": "Expiry month (MM)"
+          },
+          "expiry_year": {
+            "type": "string",
+            "description": "Expiry year (YYYY)"
+          },
+          "cvv_hash": {
+            "type": "string",
+            "description": "Hash of the CVV",
+            "readOnly": true
+          },
+          "card_last_four": {
+            "type": "string",
+            "description": "Last four digits of the card number for display purposes",
+            "readOnly": true
+          },
+          "is_default": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this is the default credit card for the user"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": [
+          "order_id",
+          "user_id",
+          "address_id",
+          "credit_card_id",
+          "total_amount",
+          "status"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the order",
+            "readOnly": true
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to User (owner of the order)",
+            "readOnly": true
+          },
+          "address_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to Address used for shipping"
+          },
+          "credit_card_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to CreditCard used for payment"
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "float",
+            "description": "Total amount of the order",
+            "readOnly": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the order (e.g., pending, paid, shipped, delivered)",
+            "default": "pending"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of order creation",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last order update",
+            "readOnly": true
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": [
+          "order_item_id",
+          "order_id",
+          "product_id",
+          "quantity",
+          "price_at_purchase"
+        ],
+        "properties": {
+          "order_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the order item",
+            "readOnly": true
+          },
+          "order_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to Order",
+            "readOnly": true
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Foreign key to Product"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity of the product ordered"
+          },
+          "price_at_purchase": {
+            "type": "number",
+            "format": "float",
+            "description": "Price of the product at the time of purchase",
+            "readOnly": true
+          }
+        }
+      },
+      "OrderCreationRequest": {
+        "type": "object",
+        "description": "Parameters for creating an order, passed via query. Illustrates BOLA potential if address_id/credit_card_id are for another user.",
+        "properties": {
+          "address_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the address to use for the order. (Vulnerability: Could be another user's address ID)"
+          },
+          "credit_card_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the credit card to use for the order. (Vulnerability: Could be another user's card ID)"
+          }
+        }
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "default": "bearer"
+          }
+        }
+      },
+      "UserRegistrationRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "UserLoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

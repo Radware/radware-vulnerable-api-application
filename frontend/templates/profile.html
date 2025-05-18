@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>User Profile</h1>
+    </div>
+    <div id="success-message-container"></div>
+    <div id="error-message-container"></div> <!-- Added for specific errors -->
+    
+    <!-- Security vulnerability demonstration banner -->
+    <div id="bola-demo-banner" class="vulnerability-warning" style="display: none;"> <!-- Changed class for consistency -->
+        <strong>⚠️ Security Alert: BOLA Demo!</strong> 
+        <p>You are viewing another user's profile data, demonstrating a Broken Object Level Authorization vulnerability.</p>
+    </div>
+
+    <!-- User profile information -->
+    <div id="profile-container" class="profile-section card-style">
+        <!-- Profile data will be loaded here via JavaScript -->
+    </div>
+
+    <!-- BOLA Vulnerability Demo Section -->
+    <div class="vulnerability-demo-section"> <!-- Changed class for consistency -->
+        <h2>BOLA Vulnerability Demo</h2>
+        <p>This demonstrates how a Broken Object Level Authorization vulnerability allows accessing other users' data.</p>
+        
+        <input type="hidden" id="viewing-user-id" value=""> <!-- Added hidden input -->
+
+        <div class="form-group">
+            <label for="target-user-id">Target User ID:</label>
+            <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter another user's ID">
+            <small class="form-text text-muted">Try user IDs like `00000002-0000-0000-0000-000000000002` (AliceSmith) or `00000003-0000-0000-0000-000000000003` (BobJohnson) from `prepopulated_data.json`.</small>
+        </div>
+        
+        <button id="view-profile-btn" class="btn btn-exploit">View Profile</button> <!-- Changed class for demo -->
+        <button id="return-to-profile-btn" class="btn btn-secondary" style="display: none;">Return to My Profile</button>
+    </div>
+
+    <div class="profile-management-sections">
+    <!-- Addresses Section -->
+    <div class="section-container address-section card-style">
+        <div class="items-section-header">
+            <h2><i class="fas fa-map-marker-alt address-icon"></i> My Addresses</h2>
+            <button id="toggle-address-form-btn" class="toggle-form-btn">
+                <i class="fas fa-plus"></i> <span>Add New Address</span>
+            </button>
+        </div>
+
+        <div class="edit-mode-indicator" id="address-edit-mode">
+            <i class="fas fa-pen"></i> Editing Address
+        </div>
+
+        <div class="collapsible-form" id="address-form-container">
+            <form id="add-address-form">
+                <div class="form-group">
+                    <label for="address-line1">Street:</label> <!-- Changed label -->
+                    <input type="text" id="address-line1" name="street" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="address-city">City:</label>
+                    <input type="text" id="address-city" name="city" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="address-country">Country:</label>
+                    <input type="text" id="address-country" name="country" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="address-postal-code">Zip Code:</label> <!-- Changed label -->
+                    <input type="text" id="address-postal-code" name="zip_code" class="form-control" required>
+                </div>
+                <!-- Removed state, line2 as they are not in AddressCreate model for backend -->
+                <div class="form-actions">
+                    <button type="submit" id="add-address-form-submit-btn" class="btn btn-primary">Add Address</button>
+                    <button type="button" id="cancel-address-edit-btn" class="btn btn-form-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="addresses-container" class="profile-section items-list-container">
+            <!-- Addresses will be loaded here via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Credit Cards Section -->
+    <div class="section-container credit-card-section card-style">
+        <div class="items-section-header">
+            <h2><i class="fas fa-credit-card card-icon"></i> My Credit Cards</h2>
+            <button id="toggle-creditcard-form-btn" class="toggle-form-btn">
+                <i class="fas fa-plus"></i> <span>Add New Card</span>
+            </button>
+        </div>
+
+        <div class="edit-mode-indicator" id="card-edit-mode">
+            <i class="fas fa-pen"></i> Editing Credit Card
+        </div>
+
+        <div class="collapsible-form" id="creditcard-form-container">
+            <form id="add-creditcard-form">
+                <div class="form-group">
+                    <label for="card-number">Card Number:</label>
+                    <input type="text" id="card-number" name="card_number" class="form-control" required placeholder="e.g., 4111111111111111">
+                    <small class="form-text text-muted">For demo purposes only. Use test numbers.</small>
+                </div>
+                <div class="form-group">
+                    <label for="card-name">Cardholder Name:</label> <!-- Changed label -->
+                    <input type="text" id="card-name" name="cardholder_name" class="form-control" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="card-expiry">Expiry (MM/YY):</label>
+                        <input type="text" id="card-expiry" name="card_expiry" class="form-control" placeholder="MM/YY" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="card-cvv">CVV:</label>
+                        <input type="text" id="card-cvv" name="cvv" class="form-control" placeholder="e.g., 123" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="add-creditcard-form-submit-btn" class="btn btn-primary">Add Credit Card</button>
+                    <button type="button" id="cancel-card-edit-btn" class="btn btn-form-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="creditcards-container" class="profile-section items-list-container">
+            <!-- Credit cards will be loaded here via JavaScript -->
+        </div>
+    </div>
+    </div>
+{% endblock %}

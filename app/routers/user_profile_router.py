@@ -142,16 +142,20 @@ async def create_user_credit_card(
     if not path_user_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found. Cannot create credit card.")
 
+    # Extract last four digits before hashing
+    card_last_four_digits = card_number[-4:]
+    
     # Hash sensitive information
     card_number_hash = get_password_hash(card_number) # Using password hasher for simplicity
     cvv_hash = get_password_hash(cvv) if cvv else None
 
-    card_data = CreditCardCreate(cardholder_name=cardholder_name, expiry_month=expiry_month, expiry_year=expiry_year, is_default=is_default)
+    card_data = CreditCardCreate(cardholder_name=cardholder_name, expiry_month=expiry_month, expiry_year=expiry_year, is_default=is_default, card_last_four=card_last_four_digits)
     new_card = CreditCardInDBBase(
         **card_data.model_dump(), 
         user_id=user_id, # Assign to user_id from path
         card_number_hash=card_number_hash, 
-        cvv_hash=cvv_hash
+        cvv_hash=cvv_hash,
+        card_last_four=card_last_four_digits
     )
     db.db["credit_cards"].append(new_card)
     return CreditCard.model_validate(new_card)

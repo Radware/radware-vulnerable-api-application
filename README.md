@@ -16,27 +16,27 @@
 The application simulates basic e-commerce functionalities:
 
 *   **User Management:**
-    *   User registration (`POST /auth/register`)
-    *   User login (`POST /auth/login`)
-    *   Get user details (`GET /users/{user_id}`)
-    *   Update user details (`PUT /users/{user_id}`)
-    *   Delete user (`DELETE /users/{user_id}`)
+    *   User registration (`POST /api/auth/register`)
+    *   User login (`POST /api/auth/login`)
+    *   Get user details (`GET /api/users/{user_id}`)
+    *   Update user details (`PUT /api/users/{user_id}`)
+    *   Delete user (`DELETE /api/users/{user_id}`)
 *   **Product Catalog:**
-    *   Create product (`POST /products/`)
-    *   Get all products (`GET /products/`)
-    *   Get product by ID (`GET /products/{product_id}`)
-    *   Search products by name (`GET /products/search`)
-    *   Update product (`PUT /products/{product_id}`)
-    *   Delete product (`DELETE /products/{product_id}`)
+    *   Create product (`POST /api/products/`)
+    *   Get all products (`GET /api/products/`)
+    *   Get product by ID (`GET /api/products/{product_id}`)
+    *   Search products by name (`GET /api/products/search`)
+    *   Update product (`PUT /api/products/{product_id}`)
+    *   Delete product (`DELETE /api/products/{product_id}`)
 *   **Stock Management:**
-    *   Update product stock (`PUT /stock/{product_id}`)
+    *   Update product stock (`PUT /api/stock/{product_id}`)
 *   **User Profiles (Addresses & Credit Cards):**
-    *   Manage user addresses (CRUD operations under `/users/{user_id}/addresses`)
-    *   Manage user credit cards (CRUD operations under `/users/{user_id}/credit-cards`) - *Note: Card numbers are "hashed" for storage simulation.*
+    *   Manage user addresses (CRUD operations under `/api/users/{user_id}/addresses`)
+    *   Manage user credit cards (CRUD operations under `/api/users/{user_id}/credit-cards`) - *Note: Card numbers are "hashed" for storage simulation.*
 *   **Order Management:**
-    *   Create an order for a user (`POST /users/{user_id}/orders`)
-    *   Get orders for a user (`GET /users/{user_id}/orders`)
-    *   Get specific order details (`GET /users/{user_id}/orders/{order_id}`)
+    *   Create an order for a user (`POST /api/users/{user_id}/orders`)
+    *   Get orders for a user (`GET /api/users/{user_id}/orders`)
+    *   Get specific order details (`GET /api/users/{user_id}/orders/{order_id}`)
 
 ## 3. Technical Details
 
@@ -61,25 +61,25 @@ This application intentionally includes the following vulnerabilities:
 *   **Description:** Users can access or modify data objects belonging to other users by manipulating object IDs in the request (typically in path parameters or query parameters). The application fails to verify if the authenticated user has the right to perform the requested action on the specific object.
 *   **Affected Endpoints & Exploitation:**
     *   **User Details:**
-        *   `GET /users/{user_id}`: Any authenticated user can view another user's details by providing their `user_id`.
-        *   `PUT /users/{user_id}`: Any authenticated user can attempt to update another user's details.
+        *   `GET /api/users/{user_id}`: Any authenticated user can view another user's details by providing their `user_id`.
+        *   `PUT /api/users/{user_id}`: Any authenticated user can attempt to update another user's details.
     *   **User Addresses:** (Operate on `user_id` from path without matching authenticated user)
-        *   `GET /users/{user_id}/addresses`
-        *   `POST /users/{user_id}/addresses`
-        *   `GET /users/{user_id}/addresses/{address_id}`
-        *   `PUT /users/{user_id}/addresses/{address_id}`
-        *   `DELETE /users/{user_id}/addresses/{address_id}`
+        *   `GET /api/users/{user_id}/addresses`
+        *   `POST /api/users/{user_id}/addresses`
+        *   `GET /api/users/{user_id}/addresses/{address_id}`
+        *   `PUT /api/users/{user_id}/addresses/{address_id}`
+        *   `DELETE /api/users/{user_id}/addresses/{address_id}`
     *   **User Credit Cards:** (Operate on `user_id` from path without matching authenticated user)
-        *   `GET /users/{user_id}/credit-cards`
-        *   `POST /users/{user_id}/credit-cards`
-        *   `GET /users/{user_id}/credit-cards/{card_id}`
-        *   `DELETE /users/{user_id}/credit-cards/{card_id}`
+        *   `GET /api/users/{user_id}/credit-cards`
+        *   `POST /api/users/{user_id}/credit-cards`
+        *   `GET /api/users/{user_id}/credit-cards/{card_id}`
+        *   `DELETE /api/users/{user_id}/credit-cards/{card_id}`
     *   **User Orders:** (Operate on `user_id` from path without matching authenticated user)
-        *   `GET /users/{user_id}/orders`
-        *   `POST /users/{user_id}/orders`:
+        *   `GET /api/users/{user_id}/orders`
+        *   `POST /api/users/{user_id}/orders`:
             *   BOLA on `user_id` in path: An attacker can place an order for another user.
             *   BOLA on `address_id` & `credit_card_id` in query parameters: An attacker can use their own token but specify another user's address or credit card ID (if known) to place an order, potentially charging it to another user or shipping to an unauthorized address.
-        *   `GET /users/{user_id}/orders/{order_id}`
+        *   `GET /api/users/{user_id}/orders/{order_id}`
 *   **How to Test:**
     1.  Register two users, User A and User B.
     2.  Authenticate as User A.
@@ -91,8 +91,8 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 *   **Description:** The application allows users to modify sensitive object properties (e.g., `is_admin`, `internal_status`) that they should not have control over, typically by including them as unexpected query parameters.
 *   **Affected Endpoints & Exploitation:**
-    *   `PUT /users/{user_id}?is_admin=true`: A regular user can attempt to escalate their privileges to admin by updating their own profile and adding `is_admin=true` as a query parameter. The endpoint improperly processes this parameter.
-    *   `PUT /products/{product_id}?internal_status=discontinued`: A user (even non-admin due to BFLA) can modify a product's `internal_status` field, which should ideally be restricted.
+    *   `PUT /api/users/{user_id}?is_admin=true`: A regular user can attempt to escalate their privileges to admin by updating their own profile and adding `is_admin=true` as a query parameter. The endpoint improperly processes this parameter.
+    *   `PUT /api/products/{product_id}?internal_status=discontinued`: A user (even non-admin due to BFLA) can modify a product's `internal_status` field, which should ideally be restricted.
 *   **How to Test:**
     1.  Authenticate as a regular user.
     2.  Call `PUT /users/{your_user_id}` with a valid payload for updatable fields (e.g., email) and append `&is_admin=true` (or `?is_admin=true` if no other query params) to the URL. Check if the user's `is_admin` status changes.
@@ -102,10 +102,10 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 *   **Description:** Regular users can access administrative functions or functionalities reserved for privileged users because the application does not adequately check the user's role or permissions before granting access to these functions.
 *   **Affected Endpoints & Exploitation:**
-    *   `POST /products/`: Any authenticated user can create new products (typically an admin function).
-    *   `DELETE /products/{product_id}`: Any authenticated user can delete products.
-    *   `PUT /stock/{product_id}`: Any authenticated user can update product stock levels.
-    *   `DELETE /users/{user_id}`: Any authenticated user can delete *any* other user if they know their `user_id`. This is a combination of BFLA (no admin check for delete function) and BOLA (can target any user).
+    *   `POST /api/products/`: Any authenticated user can create new products (typically an admin function).
+    *   `DELETE /api/products/{product_id}`: Any authenticated user can delete products.
+    *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels.
+    *   `DELETE /api/users/{user_id}`: Any authenticated user can delete *any* other user if they know their `user_id`. This is a combination of BFLA (no admin check for delete function) and BOLA (can target any user).
 *   **How to Test:**
     1.  Authenticate as a regular (non-admin) user.
     2.  Attempt to call the administrative endpoints listed above.
@@ -123,7 +123,7 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 *   **Description:** The application might be vulnerable to injection attacks if user input is not properly sanitized before being used in queries or commands.
 *   **Affected Endpoints & Exploitation:**
-    *   `GET /products/search?name=<query>`: The `name` query parameter is used for searching products. While the current in-memory search is a simple string `in` check, if this were backed by a SQL database and the query constructed unsafely, it could be vulnerable to SQL Injection. The current implementation might allow for unexpected behavior depending on how the substring search is performed with special characters.
+    *   `GET /api/products/search?name=<query>`: The `name` query parameter is used for searching products. While the current in-memory search is a simple string `in` check, if this were backed by a SQL database and the query constructed unsafely, it could be vulnerable to SQL Injection. The current implementation might allow for unexpected behavior depending on how the substring search is performed with special characters.
 *   **How to Test:**
     1.  Try injecting various characters and sequences into the `name` parameter of the product search endpoint (e.g., `'`, `"` `*`, `;`, basic XSS payloads if it were reflected, etc.) to observe behavior. For the current in-memory setup, the impact is limited, but it demonstrates an input vector.
 
@@ -200,11 +200,11 @@ This table summarizes the intentionally implemented vulnerabilities and their ex
 
 | Vulnerability Type (OWASP API 2023) | Brief Description | Example Exploitable Endpoint(s) | Exploitation Method Summary |
 |-------------------------------------|-------------------|-------------------------------|----------------------------|
-| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). No check if the authenticated user owns the object. | `GET /users/{user_id}`<br>`PUT /users/{user_id}`<br>`GET /users/{user_id}/addresses`<br>`POST /users/{user_id}/addresses`<br>`GET /users/{user_id}/credit-cards`<br>`POST /users/{user_id}/credit-cards`<br>`GET /users/{user_id}/orders`<br>`POST /users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
-| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. | `PUT /users/{user_id}?is_admin=true`<br>`PUT /products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
-| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /products`<br>`DELETE /products/{product_id}`<br>`PUT /stock/{product_id}`<br>`DELETE /users/{user_id}` | Call admin endpoints as a regular user (no admin check) |
+| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). No check if the authenticated user owns the object. | `GET /api/users/{user_id}`<br>`PUT /api/users/{user_id}`<br>`GET /api/users/{user_id}/addresses`<br>`POST /api/users/{user_id}/addresses`<br>`GET /api/users/{user_id}/credit-cards`<br>`POST /api/users/{user_id}/credit-cards`<br>`GET /api/users/{user_id}/orders`<br>`POST /api/users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
+| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. | `PUT /api/users/{user_id}?is_admin=true`<br>`PUT /api/products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
+| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /api/products`<br>`DELETE /api/products/{product_id}`<br>`PUT /api/stock/{product_id}`<br>`DELETE /api/users/{user_id}` | Call admin endpoints as a regular user (no admin check) |
 | **API8:2023 - Security Misconfiguration** | Hardcoded secrets, verbose errors, and intentional misconfiguration for demonstration. | `app/security.py`<br>Application config | Hardcoded JWT secret, potential for verbose error output |
-| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /products/search?name=<query>` | Pass special characters or payloads in `name` parameter |
+| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /api/products/search?name=<query>` | Pass special characters or payloads in `name` parameter |
 
 ---
 
@@ -216,51 +216,51 @@ This table summarizes the intentionally implemented vulnerabilities and their ex
 
 | Step | HTTP Method | Endpoint | Purpose/Parameters |
 |------|-------------|----------|--------------------|
-| 1 | POST | `/auth/register?username=alice&email=alice@example.com&password=Password123!` | Register a new user |
-| 2 | POST | `/auth/login?username=alice&password=Password123!` | Login, obtain JWT token |
-| 3 | GET | `/products` | Browse product catalog |
-| 4 | GET | `/users/{user_id}/addresses` | List addresses (empty initially) |
-| 5 | POST | `/users/{user_id}/addresses?street=Main%20St&city=Townsville&country=USA&zip_code=12345&is_default=true` | Add a shipping address |
-| 6 | GET | `/users/{user_id}/credit-cards` | List credit cards (empty initially) |
-| 7 | POST | `/users/{user_id}/credit-cards?cardholder_name=Alice&card_number=4111111111111111&expiry_month=12&expiry_year=2029&cvv=123&is_default=true` | Add a credit card |
-| 8 | POST | `/users/{user_id}/orders?address_id={address_id}&credit_card_id={card_id}&product_id_1={product_id}&quantity_1=1` | Place an order |
-| 9 | GET | `/users/{user_id}/orders` | List user's orders |
+| 1 | POST | `/api/auth/register?username=alice&email=alice@example.com&password=Password123!` | Register a new user |
+| 2 | POST | `/api/auth/login?username=alice&password=Password123!` | Login, obtain JWT token |
+| 3 | GET | `/api/products` | Browse product catalog |
+| 4 | GET | `/api/users/{user_id}/addresses` | List addresses (empty initially) |
+| 5 | POST | `/api/users/{user_id}/addresses?street=Main%20St&city=Townsville&country=USA&zip_code=12345&is_default=true` | Add a shipping address |
+| 6 | GET | `/api/users/{user_id}/credit-cards` | List credit cards (empty initially) |
+| 7 | POST | `/api/users/{user_id}/credit-cards?cardholder_name=Alice&card_number=4111111111111111&expiry_month=12&expiry_year=2029&cvv=123&is_default=true` | Add a credit card |
+| 8 | POST | `/api/users/{user_id}/orders?address_id={address_id}&credit_card_id={card_id}&product_id_1={product_id}&quantity_1=1` | Place an order |
+| 9 | GET | `/api/users/{user_id}/orders` | List user's orders |
 
 #### Flow 2: Admin Product Management (Intended, but vulnerable to BFLA)
 
 | Step | HTTP Method | Endpoint | Purpose/Parameters |
 |------|-------------|----------|--------------------|
-| 1 | POST | `/auth/register?username=admin&email=admin@example.com&password=AdminPass123!` | Register admin user (set is_admin via parameter pollution, see below) |
-| 2 | POST | `/auth/login?username=admin&password=AdminPass123!` | Login as admin |
-| 3 | POST | `/products?name=New%20Product&price=99.99&description=Demo&category=Test` | Create a new product |
-| 4 | PUT | `/products/{product_id}?price=89.99` | Update product price |
-| 5 | DELETE | `/products/{product_id}` | Delete product |
+| 1 | POST | `/api/auth/register?username=admin&email=admin@example.com&password=AdminPass123!` | Register admin user (set is_admin via parameter pollution, see below) |
+| 2 | POST | `/api/auth/login?username=admin&password=AdminPass123!` | Login as admin |
+| 3 | POST | `/api/products?name=New%20Product&price=99.99&description=Demo&category=Test` | Create a new product |
+| 4 | PUT | `/api/products/{product_id}?price=89.99` | Update product price |
+| 5 | DELETE | `/api/products/{product_id}` | Delete product |
 
 #### Flow 3: User Updates Profile Information
 
 | Step | HTTP Method | Endpoint | Purpose/Parameters |
 |------|-------------|----------|--------------------|
-| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
-| 2 | PUT | `/users/{user_id}?email=newalice@example.com` | Update email address |
-| 3 | GET | `/users/{user_id}` | Retrieve updated profile |
+| 1 | POST | `/api/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | PUT | `/api/users/{user_id}?email=newalice@example.com` | Update email address |
+| 3 | GET | `/api/users/{user_id}` | Retrieve updated profile |
 
 #### Flow 4: User Manages Multiple Addresses
 
 | Step | HTTP Method | Endpoint | Purpose/Parameters |
 |------|-------------|----------|--------------------|
-| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
-| 2 | POST | `/users/{user_id}/addresses?street=Second%20St&city=Townsville&country=USA&zip_code=54321&is_default=false` | Add a second address |
-| 3 | GET | `/users/{user_id}/addresses` | List all addresses |
-| 4 | DELETE | `/users/{user_id}/addresses/{address_id}` | Remove an address |
+| 1 | POST | `/api/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | POST | `/api/users/{user_id}/addresses?street=Second%20St&city=Townsville&country=USA&zip_code=54321&is_default=false` | Add a second address |
+| 3 | GET | `/api/users/{user_id}/addresses` | List all addresses |
+| 4 | DELETE | `/api/users/{user_id}/addresses/{address_id}` | Remove an address |
 
 #### Flow 5: User Adds and Removes Credit Card
 
 | Step | HTTP Method | Endpoint | Purpose/Parameters |
 |------|-------------|----------|--------------------|
-| 1 | POST | `/auth/login?username=alice&password=Password123!` | Login as user |
-| 2 | POST | `/users/{user_id}/credit-cards?cardholder_name=Alice%20B&card_number=4222222222222222&expiry_month=11&expiry_year=2030&cvv=456&is_default=false` | Add a second credit card |
-| 3 | GET | `/users/{user_id}/credit-cards` | List all credit cards |
-| 4 | DELETE | `/users/{user_id}/credit-cards/{card_id}` | Remove a credit card |
+| 1 | POST | `/api/auth/login?username=alice&password=Password123!` | Login as user |
+| 2 | POST | `/api/users/{user_id}/credit-cards?cardholder_name=Alice%20B&card_number=4222222222222222&expiry_month=11&expiry_year=2030&cvv=456&is_default=false` | Add a second credit card |
+| 3 | GET | `/api/users/{user_id}/credit-cards` | List all credit cards |
+| 4 | DELETE | `/api/users/{user_id}/credit-cards/{card_id}` | Remove a credit card |
 
 ### 8.2 Malicious User Flows (Vulnerability Exploitation)
 
@@ -268,58 +268,58 @@ This table summarizes the intentionally implemented vulnerabilities and their ex
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in, obtains token |
-| 2 | GET | `/users/{victim_user_id}` | Attacker accesses victim's profile |
-| 3 | GET | `/users/{victim_user_id}/orders` | Attacker lists victim's orders |
-| 4 | POST | `/users/{victim_user_id}/addresses?...` | Attacker creates address for victim |
-| 5 | POST | `/users/{victim_user_id}/orders?address_id={victim_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order for victim (using victim's address/card) |
+| 1 | POST | `/api/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in, obtains token |
+| 2 | GET | `/api/users/{victim_user_id}` | Attacker accesses victim's profile |
+| 3 | GET | `/api/users/{victim_user_id}/orders` | Attacker lists victim's orders |
+| 4 | POST | `/api/users/{victim_user_id}/addresses?...` | Attacker creates address for victim |
+| 5 | POST | `/api/users/{victim_user_id}/orders?address_id={victim_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order for victim (using victim's address/card) |
 
 #### BFLA Exploit: Regular User Performing Admin Actions
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
-| 2 | POST | `/products?name=Malicious%20Product&price=1.00` | Regular user creates a product (should be admin-only) |
-| 3 | DELETE | `/products/{product_id}` | Regular user deletes a product |
-| 4 | PUT | `/stock/{product_id}?quantity=100` | Regular user updates product stock |
-| 5 | DELETE | `/users/{victim_user_id}` | Regular user deletes another user |
+| 1 | POST | `/api/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
+| 2 | POST | `/api/products?name=Malicious%20Product&price=1.00` | Regular user creates a product (should be admin-only) |
+| 3 | DELETE | `/api/products/{product_id}` | Regular user deletes a product |
+| 4 | PUT | `/api/stock/{product_id}?quantity=100` | Regular user updates product stock |
+| 5 | DELETE | `/api/users/{victim_user_id}` | Regular user deletes another user |
 
 #### Parameter Pollution Exploit: Privilege Escalation
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/register?username=evil&email=evil@example.com&password=EvilPass!` | Register as a regular user |
-| 2 | POST | `/auth/login?username=evil&password=EvilPass!` | Login as evil user |
-| 3 | PUT | `/users/{evil_user_id}?is_admin=true` | Escalate privileges to admin via query parameter |
-| 4 | POST | `/products?name=Backdoor&price=0.01` | Now create a product as an admin |
+| 1 | POST | `/api/auth/register?username=evil&email=evil@example.com&password=EvilPass!` | Register as a regular user |
+| 2 | POST | `/api/auth/login?username=evil&password=EvilPass!` | Login as evil user |
+| 3 | PUT | `/api/users/{evil_user_id}?is_admin=true` | Escalate privileges to admin via query parameter |
+| 4 | POST | `/api/products?name=Backdoor&price=0.01` | Now create a product as an admin |
 
 #### Flow 3: BOLA Exploit - Creating Address for Another User
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
-| 2 | POST | `/users/{victim_user_id}/addresses?street=Hacked%20St&city=Exploit&country=Nowhere&zip_code=99999&is_default=false` | Attacker creates address for victim |
-| 3 | GET | `/users/{victim_user_id}/addresses` | Attacker verifies address was created |
+| 1 | POST | `/api/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
+| 2 | POST | `/api/users/{victim_user_id}/addresses?street=Hacked%20St&city=Exploit&country=Nowhere&zip_code=99999&is_default=false` | Attacker creates address for victim |
+| 3 | GET | `/api/users/{victim_user_id}/addresses` | Attacker verifies address was created |
 
 #### Flow 4: BOLA Exploit - Using Another User's Credit Card for Order
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
-| 2 | GET | `/users/{victim_user_id}/credit-cards` | Attacker lists victim's credit cards |
-| 3 | POST | `/users/{attacker_user_id}/orders?address_id={attacker_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order using victim's card |
+| 1 | POST | `/api/auth/login?username=attacker&password=AttackerPass!` | Attacker logs in |
+| 2 | GET | `/api/users/{victim_user_id}/credit-cards` | Attacker lists victim's credit cards |
+| 3 | POST | `/api/users/{attacker_user_id}/orders?address_id={attacker_address_id}&credit_card_id={victim_card_id}&product_id_1={product_id}&quantity_1=1` | Attacker places order using victim's card |
 
 #### Flow 5: Parameter Pollution - Setting Product Internal Status
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | POST | `/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
-| 2 | PUT | `/products/{product_id}?internal_status=hidden` | User sets internal status field |
+| 1 | POST | `/api/auth/login?username=regular&password=RegularPass!` | Regular user logs in |
+| 2 | PUT | `/api/products/{product_id}?internal_status=hidden` | User sets internal status field |
 
 #### Injection Vector Example
 
 | Step | HTTP Method | Endpoint | Purpose/Attack |
 |------|-------------|----------|----------------|
-| 1 | GET | `/products/search?name=' OR 1=1 --` | Attempt SQL/NoSQL injection (limited impact in demo, but demonstrates input vector) |
+| 1 | GET | `/api/products/search?name=' OR 1=1 --` | Attempt SQL/NoSQL injection (limited impact in demo, but demonstrates input vector) |
 
 ---

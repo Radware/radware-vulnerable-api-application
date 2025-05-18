@@ -13,7 +13,7 @@ def test_bola_user_details_access(http_client, regular_auth_headers, another_reg
     
     # Try to access another user's details
     response = http_client.get(
-        f"/users/{victim_user_id}",
+        f"/api/users/{victim_user_id}",
         headers=regular_auth_headers
     )
     
@@ -33,7 +33,7 @@ def test_bola_user_addresses_access(http_client, regular_auth_headers, another_r
     
     # Try to access another user's addresses
     response = http_client.get(
-        f"/users/{victim_user_id}/addresses",
+        f"/api/users/{victim_user_id}/addresses",
         headers=regular_auth_headers
     )
     
@@ -53,7 +53,7 @@ def test_bola_user_credit_cards_access(http_client, regular_auth_headers, anothe
     
     # Try to access another user's credit cards
     response = http_client.get(
-        f"/users/{victim_user_id}/credit-cards",
+        f"/api/users/{victim_user_id}/credit-cards",
         headers=regular_auth_headers
     )
     
@@ -73,7 +73,7 @@ def test_bola_user_orders_access(http_client, regular_auth_headers, another_regu
     
     # Try to access another user's orders
     response = http_client.get(
-        f"/users/{victim_user_id}/orders",
+        f"/api/users/{victim_user_id}/orders",
         headers=regular_auth_headers
     )
     
@@ -90,7 +90,7 @@ def test_bola_create_address_for_another_user(http_client, regular_auth_headers,
     
     # Try to create an address for another user
     response = http_client.post(
-        f"/users/{victim_user_id}/addresses?street=Hacked%20Street&city=Exploit%20City&country=Vulnerabilia&zip_code=31337&is_default=false",
+        f"/api/users/{victim_user_id}/addresses?street=Hacked%20Street&city=Exploit%20City&country=Vulnerabilia&zip_code=31337&is_default=false",
         headers=regular_auth_headers
     )
     
@@ -101,7 +101,7 @@ def test_bola_create_address_for_another_user(http_client, regular_auth_headers,
     
     # Clean up the created address
     http_client.delete(
-        f"/users/{victim_user_id}/addresses/{new_address['address_id']}",
+        f"/api/users/{victim_user_id}/addresses/{new_address['address_id']}",
         headers=regular_auth_headers
     )
 
@@ -117,7 +117,7 @@ def test_bola_cross_user_order_creation(http_client, regular_auth_headers, anoth
     
     # Try to create an order for another user
     response = http_client.post(
-        f"/users/{victim_user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={victim_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
+        f"/api/users/{victim_user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={victim_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
         headers=regular_auth_headers
     )
     
@@ -140,7 +140,7 @@ def test_bola_using_another_users_address_for_order(http_client, regular_auth_he
     
     # Try to create an order with another user's address
     response = http_client.post(
-        f"/users/{user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={user_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
+        f"/api/users/{user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={user_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
         headers=regular_auth_headers
     )
     
@@ -162,7 +162,7 @@ def test_bfla_product_creation_by_regular_user(http_client, regular_auth_headers
     
     # Try to create a product as a regular user
     response = http_client.post(
-        f"/products?name={product_name}&price=99.99&description=This%20should%20not%20be%20allowed&category=Test",
+        f"/api/products?name={product_name}&price=99.99&description=This%20should%20not%20be%20allowed&category=Test",
         headers=regular_auth_headers
     )
     
@@ -179,7 +179,7 @@ def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers
     # First create a product to delete
     product_name = f"Delete Test Product {uuid.uuid4().hex[:8]}"
     create_response = http_client.post(
-        f"/products?name={product_name}&price=99.99&description=To%20be%20deleted&category=Test",
+        f"/api/products?name={product_name}&price=99.99&description=To%20be%20deleted&category=Test",
         headers=regular_auth_headers
     )
     assert create_response.status_code == 201
@@ -187,7 +187,7 @@ def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers
     
     # Try to delete the product as a regular user
     delete_response = http_client.delete(
-        f"/products/{product_id}",
+        f"/api/products/{product_id}",
         headers=regular_auth_headers
     )
     
@@ -195,7 +195,7 @@ def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers
     assert delete_response.status_code == 204
     
     # Verify deletion
-    get_response = http_client.get(f"/products/{product_id}")
+    get_response = http_client.get(f"/api/products/{product_id}")
     assert get_response.status_code == 404
 
 def test_bfla_stock_update_by_regular_user(http_client, regular_auth_headers, test_data):
@@ -207,14 +207,14 @@ def test_bfla_stock_update_by_regular_user(http_client, regular_auth_headers, te
     product_id = test_data["products"][0]["product_id"]
     
     # Get current stock
-    get_stock_response = http_client.get(f"/products/{product_id}/stock")
+    get_stock_response = http_client.get(f"/api/products/{product_id}/stock")
     assert get_stock_response.status_code == 200
     current_stock = get_stock_response.json()["quantity"]
     
     # Update stock to a new value
     new_stock = current_stock + 1000
     update_response = http_client.put(
-        f"/products/{product_id}/stock?quantity={new_stock}",
+        f"/api/products/{product_id}/stock?quantity={new_stock}",
         headers=regular_auth_headers
     )
     
@@ -225,7 +225,7 @@ def test_bfla_stock_update_by_regular_user(http_client, regular_auth_headers, te
     
     # Reset stock to original value
     http_client.put(
-        f"/products/{product_id}/stock?quantity={current_stock}",
+        f"/api/products/{product_id}/stock?quantity={current_stock}",
         headers=regular_auth_headers
     )
 
@@ -237,14 +237,14 @@ def test_bfla_user_deletion_by_regular_user(http_client, regular_auth_headers, t
     # First create a test user to delete
     unique_username = f"delete_victim_{uuid.uuid4().hex[:8]}"
     register_response = http_client.post(
-        f"/auth/register?username={unique_username}&email={unique_username}@example.com&password=DeleteMe123!"
+        f"/api/auth/register?username={unique_username}&email={unique_username}@example.com&password=DeleteMe123!"
     )
     assert register_response.status_code == 201
     victim_user_id = register_response.json()["user_id"]
     
     # Try to delete the user as a regular user
     delete_response = http_client.delete(
-        f"/users/{victim_user_id}",
+        f"/api/users/{victim_user_id}",
         headers=regular_auth_headers
     )
     
@@ -253,7 +253,7 @@ def test_bfla_user_deletion_by_regular_user(http_client, regular_auth_headers, t
     
     # Verify deletion
     get_response = http_client.get(
-        f"/users/{victim_user_id}",
+        f"/api/users/{victim_user_id}",
         headers=regular_auth_headers
     )
     assert get_response.status_code == 404
@@ -269,7 +269,7 @@ def test_parameter_pollution_admin_escalation(http_client, regular_auth_headers,
     
     # Try to update user with is_admin parameter
     response = http_client.put(
-        f"/users/{user_id}?email={regular_user_info['email']}&is_admin=true",
+        f"/api/users/{user_id}?email={regular_user_info['email']}&is_admin=true",
         headers=regular_auth_headers
     )
     
@@ -280,7 +280,7 @@ def test_parameter_pollution_admin_escalation(http_client, regular_auth_headers,
     
     # Reset the user to non-admin
     http_client.put(
-        f"/users/{user_id}?email={regular_user_info['email']}&is_admin=false",
+        f"/api/users/{user_id}?email={regular_user_info['email']}&is_admin=false",
         headers=regular_auth_headers
     )
 
@@ -293,7 +293,7 @@ def test_parameter_pollution_product_internal_status(http_client, regular_auth_h
     
     # Try to update product with internal_status parameter
     response = http_client.put(
-        f"/products/{product_id}?name=Same%20Name&internal_status=hacked",
+        f"/api/products/{product_id}?name=Same%20Name&internal_status=hacked",
         headers=regular_auth_headers
     )
     
@@ -304,7 +304,7 @@ def test_parameter_pollution_product_internal_status(http_client, regular_auth_h
     
     # Reset the internal_status
     http_client.put(
-        f"/products/{product_id}?internal_status=",
+        f"/api/products/{product_id}?internal_status=",
         headers=regular_auth_headers
     )
 
@@ -317,7 +317,7 @@ def test_sql_injection_in_product_search(http_client):
     """
     # Try a search with SQL injection characters
     injection_string = "' OR '1'='1"
-    response = http_client.get(f"/products/search/?name={injection_string}")
+    response = http_client.get(f"/api/products/search/?name={injection_string}")
     
     # The vulnerability is present if the search doesn't error out and potentially returns unexpected results
     assert response.status_code == 200

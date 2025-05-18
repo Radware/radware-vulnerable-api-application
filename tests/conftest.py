@@ -113,7 +113,7 @@ def regular_user_credentials(test_data):
 def admin_token(http_client, admin_credentials):
     """Get authentication token for the admin user."""
     response = http_client.post(
-        f"/auth/login?username={admin_credentials['username']}&password={admin_credentials['password']}"
+        f"/api/auth/login?username={admin_credentials['username']}&password={admin_credentials['password']}"
     )
     assert response.status_code == 200
     return response.json()["access_token"]
@@ -122,7 +122,7 @@ def admin_token(http_client, admin_credentials):
 def regular_token(http_client, regular_user_credentials):
     """Get authentication token for a regular user."""
     response = http_client.post(
-        f"/auth/login?username={regular_user_credentials['username']}&password={regular_user_credentials['password']}"
+        f"/api/auth/login?username={regular_user_credentials['username']}&password={regular_user_credentials['password']}"
     )
     assert response.status_code == 200
     return response.json()["access_token"]

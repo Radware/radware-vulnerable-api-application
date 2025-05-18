@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="hero-section">
+        <div class="main-header">
+            <h1>Welcome to the Radware Vulnerable API E-Commerce Demo</h1>
+            <p class="subtitle">Browse our selection of high-quality tech products</p>
+        </div>
+        
+        <div class="search-section" data-testid="search-section">
+            <form id="search-form" class="search-form">
+                <div class="search-input-wrapper">
+                    <input type="text" id="search-term" data-testid="search-input" placeholder="Search products by name...">
+                    <button type="submit" data-testid="search-button" class="search-button">
+                        <span class="search-icon"></span>
+                        Search
+                    </button>
+                </div>
+                <div id="search-info" class="search-info" data-testid="search-info">
+                    <p><strong>Note:</strong> This search feature demonstrates potential injection vulnerabilities.</p>
+                </div>
+            </form>
+        </div>
+    </section>
+    
+    <section class="products-section">
+        <div id="loading-indicator" class="loading-skeleton" data-testid="loading-indicator">
+            <!-- Skeleton placeholders will be inserted here by JS -->
+        </div>
+        <div id="products-container" class="product-grid" data-testid="products-container">
+            <!-- Products will be inserted here by JS -->
+        </div>
+        <div id="no-products-message" class="no-products-message" style="display: none;">
+            <p>No products found matching your search.</p>
+        </div>
+    </section>
+    
+    <div id="error-message-container" style="display: none;"></div>
+    <div id="success-message-container" style="display: none;"></div>
+    
+    <!-- Toast notification element -->
+    <div id="toast-notification" class="toast-notification" data-testid="toast-notification"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show search vulnerability info on search focus
+        const searchInput = document.getElementById('search-term');
+        if (searchInput) {
+            searchInput.addEventListener('focus', function() {
+                document.getElementById('search-info').style.display = 'block';
+            });
+            
+            searchInput.addEventListener('blur', function() {
+                if (this.value === '') {
+                    document.getElementById('search-info').style.display = 'none';
+                }
+            });
+        }
+        
+        // Show skeleton loading while products load
+        showLoadingSkeletons();
+    });
+    
+    function showLoadingSkeletons() {
+        const loadingContainer = document.getElementById('loading-indicator');
+        if (!loadingContainer) return;
+        
+        let skeletonHTML = '';
+        for (let i = 0; i < 8; i++) {
+            skeletonHTML += `
+                <div class="product-card skeleton">
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-desc"></div>
+                    <div class="skeleton-price"></div>
+                    <div class="skeleton-stock"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            `;
+        }
+        
+        loadingContainer.innerHTML = skeletonHTML;
+    }
+</script>
+{% endblock %}

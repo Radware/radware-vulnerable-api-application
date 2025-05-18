@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RVA eCommerce{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav id="navbar">
+        <div class="nav-content-wrapper">
+            <a class="brand" href="/">
+                <img src="/static/images/ASE.svg" alt="RVA Logo" class="ase-logo">
+                <span>RVA</span>
+            </a>
+            <div id="dynamic-nav-links">
+                <!-- Dynamic links will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; <span id="current-year"></span> RVA eCommerce Demo</p>
+            <a href="https://www.radware.com" class="footer-logo" target="_blank">
+                <img src="/static/images/Radware_logo.svg" alt="Radware" class="radware-logo">
+            </a>
+        </div>
+    </footer>
+
+    <!-- Message Containers -->
+    <div id="global-message-container"></div>
+    <div id="error-message-container" style="display:none;"></div>
+    <div id="success-message-container" style="display:none;"></div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/main.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

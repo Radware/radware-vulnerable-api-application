@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Order History</h1>
+    <div id="error-message-container"></div>
+    <div id="success-message-container"></div>
+    
+    <!-- BOLA Demo - View Other User's Orders -->
+    <div class="vulnerability-demo-section">
+        <h2>BOLA Vulnerability Demo: Access Other Users' Orders</h2>
+        <div class="vulnerability-warning">
+            <h3>Security Alert: Broken Object Level Authorization (BOLA)</h3>
+            <p>
+                This page demonstrates <strong>Broken Object Level Authorization (BOLA)</strong>.
+                You can view another user's private order history by simply entering their user ID.
+            </p>
+        </div>
+        
+        <form id="view-orders-form">
+             <input type="hidden" id="viewing-user-id-orders" value=""> <!-- Added hidden input for orders BOLA state -->
+            <div class="form-group">
+                <label for="target-user-id">Enter User ID to View Orders:</label>
+                <input type="text" id="target-user-id" name="target-user-id" placeholder="Enter another user's ID" class="form-control vulnerability-input">
+                <small class="helper-text">Try user IDs from `prepopulated_data.json`.</small>
+            </div>
+            <button type="submit" class="btn-exploit">View Another User's Orders</button>
+        </form>
+        
+        <div id="current-viewing" style="display: none;" class="current-viewing-indicator">
+            <strong>Currently viewing orders for:</strong> <span id="viewing-username"></span> (User ID: <span id="viewing-user-id-display"></span>)
+            <button id="return-to-own-orders" class="btn-secondary btn-sm">Return to Your Orders</button>
+        </div>
+    </div>
+    
+    <div id="orders-container" class="profile-section">
+        <p class="loading-indicator">Loading orders...</p>
+    </div>
+    
+{% endblock %}
+
+{% block scripts %}
+{# Removed the specific script block from here as initOrdersPage in main.js handles it #}
+{% endblock %}
