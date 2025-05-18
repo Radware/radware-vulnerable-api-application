@@ -1,0 +1,53 @@
+{
+    "id": "flow_alice_places_multi_product_order_alternate_address",
+    "name": "AliceSmith Places Multi-Product Order to Alternate Address",
+    "description": "AliceSmith logs in, uses her non-default address and default credit card to order multiple different products.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "aliceUserId": "00000002-0000-0000-0000-000000000002",
+      "aliceUsername": "AliceSmith",
+      "alicePassword": "AlicePass1!",
+      "aliceAlternateAddressId": "ad000002-0002-0000-0000-000000000002",
+      "aliceDefaultCardId": "cc000002-0001-0000-0000-000000000001",
+      "product1Id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      "product2Id": "b2c3d4e5-f6a7-8901-2345-678901bcdef0"
+    },
+    "steps": [
+      {
+        "id": "step_login_alice_multi_order",
+        "name": "Login AliceSmith",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{aliceUsername}}&password={{alicePassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "alice_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_alice_place_multi_product_order",
+        "name": "Alice Places Multi-Product Order",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{aliceUserId}}/orders?address_id={{aliceAlternateAddressId}}&credit_card_id={{aliceDefaultCardId}}&product_id_1={{product1Id}}&quantity_1=1&product_id_2={{product2Id}}&quantity_2=2",
+        "headers": {
+          "Authorization": "Bearer {{alice_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "alice_multi_order_id": "body.order_id"
+        }
+      },
+      {
+        "id": "step_alice_get_multi_product_order_details",
+        "name": "Alice Gets Multi-Product Order Details",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{aliceUserId}}/orders/{{alice_multi_order_id}}",
+        "headers": {
+          "Authorization": "Bearer {{alice_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

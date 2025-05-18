@@ -1,0 +1,63 @@
+{
+    "id": "flow_bfla_frankmiller_manages_stock",
+    "name": "BFLA: FrankMiller (Regular User) Manages Stock",
+    "description": "FrankMiller, a non-admin user, exploits BFLA to update the stock of an existing product.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "frankUsername": "FrankMiller",
+      "frankPassword": "FrankPass6^",
+      "targetProductIdForStock": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    },
+    "steps": [
+      {
+        "id": "step_login_frankmiller_bfla_stock",
+        "name": "Login FrankMiller",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{frankUsername}}&password={{frankPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "frank_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_frankmiller_get_initial_stock",
+        "name": "FrankMiller Gets Initial Stock",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStock}}/stock",
+        "headers": {
+          "Authorization": "Bearer {{frank_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "initial_stock_quantity": "body.quantity"
+        }
+      },
+      {
+        "id": "step_frankmiller_update_stock_bfla",
+        "name": "FrankMiller Updates Stock (BFLA)",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStock}}/stock?quantity=5555",
+        "headers": {
+          "Authorization": "Bearer {{frank_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_frankmiller_verify_stock_update",
+        "name": "FrankMiller Verifies Stock Update",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStock}}/stock",
+        "headers": {
+          "Authorization": "Bearer {{frank_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "updated_stock_quantity": "body.quantity"
+        }
+      }
+    ]
+  }

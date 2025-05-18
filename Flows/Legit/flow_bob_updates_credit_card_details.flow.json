@@ -1,0 +1,60 @@
+{
+    "id": "flow_bob_updates_credit_card_details",
+    "name": "BobJohnson Updates Credit Card Details",
+    "description": "BobJohnson logs in and updates the expiry year and default status of one of his non-default credit cards.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "bobUserId": "00000003-0000-0000-0000-000000000003",
+      "bobUsername": "BobJohnson",
+      "bobPassword": "BobPass2@",
+      "bobNonDefaultCardId": "cc000003-0002-0000-0000-000000000002",
+      "newExpiryYear": "2031",
+      "newIsDefaultStatus": "true"
+    },
+    "steps": [
+      {
+        "id": "step_login_bob_card_update",
+        "name": "Login BobJohnson",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{bobUsername}}&password={{bobPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "bob_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_bob_get_card_before_update",
+        "name": "Bob Gets Card Details Before Update",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/credit-cards/{{bobNonDefaultCardId}}",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_update_card_details",
+        "name": "Bob Updates Credit Card Details",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/credit-cards/{{bobNonDefaultCardId}}?expiry_year={{newExpiryYear}}&is_default={{newIsDefaultStatus}}",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_get_card_after_update",
+        "name": "Bob Gets Card Details After Update",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/credit-cards/{{bobNonDefaultCardId}}",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

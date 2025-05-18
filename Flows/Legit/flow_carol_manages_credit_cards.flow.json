@@ -1,0 +1,71 @@
+{
+    "id": "flow_carol_manages_credit_cards",
+    "name": "CarolWhite Manages Credit Cards",
+    "description": "CarolWhite logs in, adds a new credit card, lists cards, and then deletes the new card.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "carolUserId": "00000004-0000-0000-0000-000000000004",
+      "carolUsername": "CarolWhite",
+      "carolPassword": "CarolPass3#"
+    },
+    "steps": [
+      {
+        "id": "step_login_carol",
+        "name": "Login CarolWhite",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{carolUsername}}&password={{carolPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "carol_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_carol_list_initial_cards",
+        "name": "Carol Lists Initial Credit Cards",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{carolUserId}}/credit-cards",
+        "headers": {
+          "Authorization": "Bearer {{carol_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_carol_add_new_card",
+        "name": "Carol Adds New Credit Card",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{carolUserId}}/credit-cards?cardholder_name=Carol%20W%20Secondary&card_number=4555666677778888&expiry_month=07&expiry_year=2030&cvv=567&is_default=false",
+        "headers": {
+          "Authorization": "Bearer {{carol_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "carol_new_card_id": "body.card_id"
+        }
+      },
+      {
+        "id": "step_carol_list_all_cards",
+        "name": "Carol Lists All Credit Cards",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{carolUserId}}/credit-cards",
+        "headers": {
+          "Authorization": "Bearer {{carol_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_carol_delete_new_card",
+        "name": "Carol Deletes New Credit Card",
+        "type": "request",
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/users/{{carolUserId}}/credit-cards/{{carol_new_card_id}}",
+        "headers": {
+          "Authorization": "Bearer {{carol_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

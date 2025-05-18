@@ -1,0 +1,93 @@
+{
+    "id": "flow_bob_updates_profile_manages_address",
+    "name": "BobJohnson Updates Profile and Manages Address",
+    "description": "BobJohnson logs in, updates his email, adds a new address, lists addresses, and then deletes the new address.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "bobUserId": "00000003-0000-0000-0000-000000000003",
+      "bobUsername": "BobJohnson",
+      "bobPassword": "BobPass2@"
+    },
+    "steps": [
+      {
+        "id": "step_login_bob",
+        "name": "Login BobJohnson",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{bobUsername}}&password={{bobPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "bob_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_bob_update_email",
+        "name": "Bob Updates Email Address",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}?email=bob.updated%40example.com",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_get_updated_profile",
+        "name": "Bob Retrieves Updated Profile",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_list_initial_addresses",
+        "name": "Bob Lists Initial Addresses",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_add_new_address",
+        "name": "Bob Adds New Address",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses?street=Work%20Ave&city=MetroCity&country=USA&zip_code=90210&is_default=false",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "bob_new_address_id": "body.address_id"
+        }
+      },
+      {
+        "id": "step_bob_list_all_addresses",
+        "name": "Bob Lists All Addresses",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_bob_delete_new_address",
+        "name": "Bob Deletes New Address",
+        "type": "request",
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses/{{bob_new_address_id}}",
+        "headers": {
+          "Authorization": "Bearer {{bob_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

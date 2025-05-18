@@ -1,0 +1,113 @@
+{
+  "id": "flow_existing_user_login_and_order",
+  "name": "Existing User Login, Profile Update, and Order Placement",
+  "description": "Simulates an existing user (AliceSmith from prepopulated_data.json) logging in, adding a new address/card, and placing an order.",
+  "staticVars": {
+    "baseUrl": "http://localhost:8000",
+    "aliceExistingUserId": "00000002-0000-0000-0000-000000000002",
+    "aliceExistingUsername": "AliceSmith",
+    "aliceExistingPassword": "AlicePass1!"
+  },
+  "steps": [
+    {
+      "id": "step_login_existing_user_alice",
+      "name": "Login Existing User AliceSmith",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{aliceExistingUsername}}&password={{aliceExistingPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "alice_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_browse_products_existing_user",
+      "name": "Browse Product Catalog",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "selected_product_id": "body[0].product_id"
+      }
+    },
+    {
+      "id": "step_list_alice_existing_addresses",
+      "name": "List Alice's Existing Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/addresses",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_add_alice_new_address",
+      "name": "Add Alice's New Shipping Address",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/addresses?street=New%20St&city=Newtown&country=USA&zip_code=99999&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_new_address_id": "body.address_id"
+      }
+    },
+    {
+      "id": "step_list_alice_existing_credit_cards",
+      "name": "List Alice's Existing Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_add_alice_new_credit_card",
+      "name": "Add Alice's New Credit Card",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/credit-cards?cardholder_name=Alice%20Newcard&card_number=4999888877776666&expiry_month=02&expiry_year=2031&cvv=789&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_new_card_id": "body.card_id"
+      }
+    },
+    {
+      "id": "step_place_alice_new_order",
+      "name": "Place Order for Alice (using new address and new card)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/orders?address_id={{alice_new_address_id}}&credit_card_id={{alice_new_card_id}}&product_id_1={{selected_product_id}}&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_order_id": "body.order_id"
+      }
+    },
+    {
+      "id": "step_list_alice_orders_final_existing_user",
+      "name": "List Alice's Orders (Final)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceExistingUserId}}/orders",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ]
+}

