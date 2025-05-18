@@ -2258,16 +2258,18 @@ async function handleOrderSubmission(e) {
     submitButton.innerHTML = 'Processing...';
     submitButton.disabled = true;
     
-    const addressId = document.getElementById('address-id').value;
-    const creditCardId = document.getElementById('credit-card-id').value;
+    const addressId = document.getElementById('address-id')?.value || '';
+    const creditCardId = document.getElementById('credit-card-id')?.value || '';
     
     // Check if form is valid
     const bolaCheckbox = document.getElementById('order-for-other-user');
     const targetUserId = document.getElementById('target-user-id');
     const targetCreditCardId = document.getElementById('target-credit-card-id');
+    const targetAddressId = document.getElementById('target-address-id');
+    
     if (bolaCheckbox && bolaCheckbox.checked) {
         // BOLA mode: require victim user and card
-            if (!targetUserId || !targetCreditCardId || !targetUserId.value.trim() || !targetCreditCardId.value.trim()) {
+        if (!targetUserId?.value?.trim() || !targetCreditCardId?.value?.trim()) {
             displayError('Please select a victim user AND a victim credit card for the BOLA exploit.');
             submitButton.innerHTML = originalButtonText;
             submitButton.disabled = false;
@@ -2284,21 +2286,17 @@ async function handleOrderSubmission(e) {
     }
     
     try {
-        // Check if we're using BOLA demo to order for another user
-        const bolaCheckbox = document.getElementById('order-for-other-user');
-        const targetUserId = document.getElementById('target-user-id');
-        const targetCreditCardId = document.getElementById('target-credit-card-id');
-        
         // Determine which user ID to use for the order
         let userIdForOrder = currentUser.user_id;
         let creditCardIdForOrder = creditCardId;
+        let addressIdForOrder = addressId;
         let exploitedUserName = '';
         let exploitedCardDetails = null;
         
         // Check if BOLA exploit is active
         if (bolaCheckbox && bolaCheckbox.checked) {
             // Get victim user info if available
-            if (targetUserId && targetUserId.value.trim()) {
+            if (targetUserId?.value?.trim()) {
                 try {
                     const targetUserInfo = await apiCall(`/api/users/${targetUserId.value.trim()}`, 'GET', null, true);
                     if (targetUserInfo) {
@@ -2311,22 +2309,35 @@ async function handleOrderSubmission(e) {
             }
             
             // If target credit card ID is provided, use it (this demonstrates the BOLA vulnerability)
-            if (targetCreditCardId && targetCreditCardId.value.trim()) {
+            if (targetCreditCardId?.value?.trim()) {
+                creditCardIdForOrder = targetCreditCardId.value.trim();
+                console.warn('BOLA VULNERABILITY DEMONSTRATED: Using another user\'s credit card:', creditCardIdForOrder);
+                
                 try {
                     // Get details about the stolen card for better feedback
                     const allCards = await apiCall(`/api/users/${userIdForOrder}/credit-cards`, 'GET', null, true);
-                    exploitedCardDetails = allCards.find(card => card.card_id === targetCreditCardId.value.trim());
-                    
-                    creditCardIdForOrder = targetCreditCardId.value.trim();
-                    console.warn('BOLA VULNERABILITY DEMONSTRATED: Using another user\'s credit card:', creditCardIdForOrder);
+                    exploitedCardDetails = allCards.find(card => card.card_id === creditCardIdForOrder);
                 } catch (error) {
                     console.warn("Could not fetch details of stolen card:", error);
                 }
             }
+            
+            // If target address ID is provided, use it instead of the user's
+            if (targetAddressId?.value?.trim()) {
+                addressIdForOrder = targetAddressId.value.trim();
+            }
+        }
+        
+        // Ensure we have an address ID before continuing
+        if (!addressIdForOrder) {
+            displayError('Please select a shipping address.');
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+            return;
         }
         
         // Construct API URL with query parameters
-        let orderEndpoint = `/api/users/${userIdForOrder}/orders?address_id=${addressId}&credit_card_id=${creditCardIdForOrder}`;
+        let orderEndpoint = `/api/users/${userIdForOrder}/orders?address_id=${addressIdForOrder}&credit_card_id=${creditCardIdForOrder}`;
         
         // Add all cart items to the query parameters
         cart.forEach((item, index) => {
