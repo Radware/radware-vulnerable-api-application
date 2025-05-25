@@ -307,66 +307,419 @@ function initCartPage() {
     }
 }
 
+let currentlyViewedUserId = null;
+let currentlyViewedUsername = 'Your'; // Default to 'Your' for titles etc.
+
+// --- Updated Profile Page Initialization ---
 function initProfilePage() {
     console.log('Initializing Profile Page');
     if (!currentUser) {
         window.location.href = '/login';
         return;
     }
-    let viewingUserIdInput = document.getElementById('viewing-user-id');
-    if (!viewingUserIdInput) {
-        viewingUserIdInput = document.createElement('input');
-        viewingUserIdInput.type = 'hidden';
-        viewingUserIdInput.id = 'viewing-user-id';
-        document.body.appendChild(viewingUserIdInput);
-    }
-    viewingUserIdInput.value = currentUser.user_id;
 
-    fetchAndDisplayUserProfile();
-    initializeProfilePageInteractions(); 
-
-    const viewProfileBtn = document.getElementById('view-profile-btn');
-    const returnToProfileBtn = document.getElementById('return-to-profile-btn');
-    const targetUserIdField = document.getElementById('target-user-id');
-
-    if (viewProfileBtn && targetUserIdField && viewingUserIdInput) {
-        viewProfileBtn.addEventListener('click', () => {
-            const targetId = targetUserIdField.value.trim();
-            if (targetId) {
-                viewingUserIdInput.value = targetId;
-                fetchAndDisplayUserProfile();
-            } else {
-                displayError('Please enter a User ID to view.');
-            }
-        });
-    }
-
-    if (returnToProfileBtn && viewingUserIdInput && targetUserIdField) {
-        returnToProfileBtn.addEventListener('click', () => {
-            viewingUserIdInput.value = currentUser.user_id;
-            targetUserIdField.value = '';
-            fetchAndDisplayUserProfile();
-        });
-    }
-
-    const addAddressForm = document.getElementById('add-address-form');
-    if (addAddressForm) {
-        addAddressForm.addEventListener('submit', handleAddOrUpdateAddress);
-    }
-
-    const addCreditCardForm = document.getElementById('add-creditcard-form');
-    if (addCreditCardForm) {
-        addCreditCardForm.addEventListener('submit', handleAddOrUpdateCreditCard);
-    }
-
-    const searchUsersBtn = document.getElementById('search-users-btn');
-    if (searchUsersBtn) {
-        searchUsersBtn.addEventListener('click', searchUsers);
+    currentlyViewedUserId = currentUser.user_id;
+    currentlyViewedUsername = currentUser.username;
+    const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
+    if (hiddenUserIdInput) {
+        hiddenUserIdInput.value = currentlyViewedUserId;
     }
 
 
+    fetchAndDisplayFullProfile(currentlyViewedUserId);
+    setupProfilePageEventListeners();
+}
+
+
+function setupProfilePageEventListeners() {
+    // BOLA Demo Listeners
+    document.getElementById('discover-users-btn')?.addEventListener('click', listAvailableVictims);
+    document.getElementById('return-to-my-profile-btn')?.addEventListener('click', () => {
+        currentlyViewedUserId = currentUser.user_id;
+        currentlyViewedUsername = currentUser.username;
+        const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
+        if (hiddenUserIdInput) {
+            hiddenUserIdInput.value = currentlyViewedUserId;
+        }
+        
+        const discoveredUsersContainer = document.getElementById('discovered-users-container');
+        if(discoveredUsersContainer) discoveredUsersContainer.style.display = 'none';
+        
+        const returnBtn = document.getElementById('return-to-my-profile-btn');
+        if(returnBtn) returnBtn.style.display = 'none';
+        
+        const discoverBtn = document.getElementById('discover-users-btn');
+        if(discoverBtn) discoverBtn.style.display = 'inline-block';
+
+        fetchAndDisplayFullProfile(currentlyViewedUserId);
+        displayGlobalMessage('Returned to viewing your own profile.', 'info');
+    });
+
+    // Edit Email Listeners
+    document.getElementById('toggle-edit-email-form-btn')?.addEventListener('click', toggleEditEmailForm);
+    document.getElementById('edit-email-form')?.addEventListener('submit', handleEditEmailSubmit);
+    document.getElementById('cancel-edit-email-btn')?.addEventListener('click', () => {
+        const editEmailForm = document.getElementById('edit-email-form');
+        const toggleBtn = document.getElementById('toggle-edit-email-form-btn');
+        if (editEmailForm) editEmailForm.style.display = 'none';
+        if (toggleBtn) toggleBtn.style.display = 'inline-block';
+    });
+
+    // Admin Escalation Listener
+    document.getElementById('attempt-admin-escalation-btn')?.addEventListener('click', attemptAdminEscalation);
+
+    // Address Form Listeners
+    document.getElementById('toggle-address-form-btn')?.addEventListener('click', () => toggleItemForm('address'));
+    document.getElementById('address-form')?.addEventListener('submit', handleAddressFormSubmit);
+    document.getElementById('address-form-cancel-btn')?.addEventListener('click', () => cancelItemForm('address'));
+
+    // Credit Card Form Listeners
+    document.getElementById('toggle-card-form-btn')?.addEventListener('click', () => toggleItemForm('card'));
+    document.getElementById('card-form')?.addEventListener('submit', handleCardFormSubmit);
+    document.getElementById('card-form-cancel-btn')?.addEventListener('click', () => cancelItemForm('card'));
+}
+// --- BOLA Demo Functions ---
+async function listAvailableVictims() {
+    const usersListElement = document.getElementById('discovered-users-list');
+    const usersContainer = document.getElementById('discovered-users-container');
+    if (!usersListElement || !usersContainer) {
+        console.error("Missing elements for victim discovery.");
+        return;
+    }
+
+    usersListElement.innerHTML = '<li class="list-group-item">Discovering users (BFLA Exploit)... <i class="fas fa-spinner fa-spin"></i></li>';
+    usersContainer.style.display = 'block';
+
+    try {
+        const users = await apiCall('/api/users', 'GET'); 
+        if (users && users.length > 0) {
+            usersListElement.innerHTML = ''; 
+            users.forEach(user => {
+                if (user.user_id === currentUser.user_id) return; 
+
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.innerHTML = `
+                    <span>${user.username} (ID: <code>${user.user_id.substring(0,8)}...</code>)</span>
+                    <button class="btn btn-sm btn-outline-danger select-victim-btn" data-victim-id="${user.user_id}" data-victim-name="${user.username}">
+                        <i class="fas fa-eye"></i> View Profile (BOLA Exploit)
+                    </button>
+                `;
+                usersListElement.appendChild(listItem);
+            });
+
+            document.querySelectorAll('.select-victim-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const victimId = this.dataset.victimId;
+                    const victimName = this.dataset.victimName;
+                    
+                    currentlyViewedUserId = victimId;
+                    currentlyViewedUsername = victimName; 
+                    const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
+                    if (hiddenUserIdInput) {
+                        hiddenUserIdInput.value = victimId;
+                    }
+                    
+                    fetchAndDisplayFullProfile(victimId);
+                    
+                    document.getElementById('return-to-my-profile-btn').style.display = 'inline-block';
+                    document.getElementById('discover-users-btn').style.display = 'none';
+                    usersContainer.style.display = 'none'; 
+                    displayGlobalMessage(`Now viewing ${victimName}'s profile. (BOLA Demo Active)`, 'warning');
+                });
+            });
+        } else {
+            usersListElement.innerHTML = '<li class="list-group-item">No other users found.</li>';
+        }
+    } catch (error) {
+        displayGlobalMessage(`Error discovering users: ${error.message}`, 'error');
+        usersListElement.innerHTML = `<li class="list-group-item text-danger">Failed to load users. Check console.</li>`;
+    }
+}
+
+
+async function fetchAndDisplayFullProfile(userId) {
+    // Close any open forms when switching profiles
+    cancelItemForm('address');
+    cancelItemForm('card');
+    const editEmailForm = document.getElementById('edit-email-form');
+    if (editEmailForm) editEmailForm.style.display = 'none';
+    const toggleEditEmailBtn = document.getElementById('toggle-edit-email-form-btn');
+    if (toggleEditEmailBtn) toggleEditEmailBtn.style.display = 'inline-block';
+
+
+    const profileInfoContent = document.getElementById('profile-info-content');
+    const addressListContainer = document.getElementById('address-list-container');
+    const cardListContainer = document.getElementById('card-list-container');
+    const profilePageTitle = document.getElementById('profile-page-title');
+    const userInfoHeader = document.getElementById('user-info-header');
+    const addressesHeader = document.getElementById('addresses-header');
+    const creditCardsHeader = document.getElementById('credit-cards-header');
+    const profileViewIndicator = document.getElementById('profile-view-indicator');
+    const currentViewingUsernameSpan = document.getElementById('current-viewing-username-span');
+    const bolaDemoActiveBanner = document.getElementById('bola-demo-active-banner');
+    const escalationTargetUsernameSpan = document.getElementById('escalation-target-username');
+    const escalationTargetBtnUsernameSpan = document.getElementById('escalation-target-btn-username');
+    const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
+
+
+    if (profileInfoContent) profileInfoContent.innerHTML = '<p class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading profile...</p>';
+    if (addressListContainer) addressListContainer.innerHTML = '<p class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading addresses...</p>';
+    if (cardListContainer) cardListContainer.innerHTML = '<p class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading cards...</p>';
     
-    // setupFormToggles(); // This was called here but might be redundant if initializeProfilePageInteractions covers it
+    if (hiddenUserIdInput) hiddenUserIdInput.value = userId;
+
+
+    try {
+        const userDetails = await apiCall(`/api/users/${userId}`, 'GET');
+        currentlyViewedUsername = userDetails.username; 
+
+        const possessiveName = userId === currentUser.user_id ? "Your" : `${userDetails.username}'s`;
+        const displayName = userId === currentUser.user_id ? "Your" : userDetails.username;
+
+        if (profilePageTitle) profilePageTitle.textContent = `${possessiveName} Profile`;
+        if (userInfoHeader) userInfoHeader.textContent = `${displayName} Information`;
+        if (addressesHeader) addressesHeader.innerHTML = `<i class="fas fa-map-marker-alt address-icon"></i> ${displayName} Addresses`;
+        if (creditCardsHeader) creditCardsHeader.innerHTML = `<i class="fas fa-credit-card card-icon"></i> ${displayName} Credit Cards`;
+        
+        if(escalationTargetUsernameSpan) escalationTargetUsernameSpan.textContent = displayName;
+        if(escalationTargetBtnUsernameSpan) escalationTargetBtnUsernameSpan.textContent = displayName;
+
+        if(profileViewIndicator && currentViewingUsernameSpan) {
+            currentViewingUsernameSpan.textContent = userId === currentUser.user_id ? "Your Profile" : `${userDetails.username}'s Profile`;
+            profileViewIndicator.style.display = 'block';
+        }
+        if(bolaDemoActiveBanner) {
+            bolaDemoActiveBanner.style.display = userId === currentUser.user_id ? 'none' : 'block';
+        }
+
+        if (profileInfoContent) {
+            profileInfoContent.innerHTML = `
+                <p><strong>Username:</strong> ${userDetails.username} ${userDetails.is_admin ? '<span class="admin-badge">Admin</span>' : ''}</p>
+                <p><strong>Email:</strong> <span id="current-email-display">${userDetails.email}</span></p>
+                <p><strong>User ID:</strong> <code>${userDetails.user_id}</code></p>
+            `;
+            const newEmailInput = document.getElementById('new-email-input');
+            if (newEmailInput) newEmailInput.value = userDetails.email;
+        }
+
+        const addresses = await apiCall(`/api/users/${userId}/addresses`, 'GET');
+        renderAddresses(addresses, addressListContainer);
+
+        const cards = await apiCall(`/api/users/${userId}/credit-cards`, 'GET');
+        renderCreditCards(cards, cardListContainer);
+
+    } catch (error) {
+        displayGlobalMessage(`Error loading profile for User ID ${userId.substring(0,8)}...: ${error.message}`, 'error');
+        if (profileInfoContent) profileInfoContent.innerHTML = '<p class="text-danger">Could not load profile information.</p>';
+        if (addressListContainer) addressListContainer.innerHTML = '<p class="text-danger">Could not load addresses.</p>';
+        if (cardListContainer) cardListContainer.innerHTML = '<p class="text-danger">Could not load credit cards.</p>';
+        
+        if (userId !== currentUser.user_id) {
+            displayGlobalMessage("Failed to load victim's profile. Returning to your profile.", "error");
+            const returnBtn = document.getElementById('return-to-my-profile-btn');
+            if(returnBtn) returnBtn.click();
+        }
+    }
+}
+// --- Email Edit Functions ---
+function toggleEditEmailForm() {
+    const form = document.getElementById('edit-email-form');
+    const button = document.getElementById('toggle-edit-email-form-btn');
+    const currentEmailDisplay = document.getElementById('current-email-display');
+    
+    if (!form || !button || !currentEmailDisplay) return;
+
+    const currentEmail = currentEmailDisplay.textContent;
+    const newEmailInput = document.getElementById('new-email-input');
+    if (newEmailInput) newEmailInput.value = currentEmail;
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        button.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        button.style.display = 'inline-block';
+    }
+}
+
+async function handleEditEmailSubmit(event) {
+    event.preventDefault();
+    const newEmailInput = document.getElementById('new-email-input');
+    if (!newEmailInput) return;
+    const newEmail = newEmailInput.value.trim();
+
+    if (!newEmail) {
+        displayGlobalMessage('Email cannot be empty.', 'error');
+        return;
+    }
+
+    const userIdToUpdate = document.getElementById('currently-viewed-user-id').value;
+    if (!userIdToUpdate) {
+        displayGlobalMessage('Error: No user context for updating email.', 'error');
+        return;
+    }
+    
+    const endpoint = `/api/users/${userIdToUpdate}?email=${encodeURIComponent(newEmail)}`;
+
+    try {
+        await apiCall(endpoint, 'PUT', null, true);
+        displayGlobalMessage(`Email for ${currentlyViewedUsername} updated successfully!`, 'success');
+        await fetchAndDisplayFullProfile(userIdToUpdate); 
+        
+        if (userIdToUpdate === currentUser.user_id) {
+            currentUser.email = newEmail;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateNavbar(); 
+        }
+    } catch (error) {
+        displayGlobalMessage(`Failed to update email for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    }
+}
+// --- Parameter Pollution: Admin Escalation ---
+async function attemptAdminEscalation() {
+    const userIdToEscalate = document.getElementById('currently-viewed-user-id').value;
+    if (!userIdToEscalate) {
+        displayGlobalMessage('Error: No user context for admin escalation.', 'error');
+        return;
+    }
+
+    const userToEscalateName = currentlyViewedUsername || "the selected user";
+    if (!confirm(`Attempt to make ${userToEscalateName} an admin? This demonstrates Parameter Pollution.`)) return;
+
+    const endpoint = `/api/users/${userIdToEscalate}?is_admin=true`;
+
+    try {
+        await apiCall(endpoint, 'PUT', null, true); 
+        displayGlobalMessage(`Admin escalation attempt sent for ${userToEscalateName}. Refreshing profile to see effect...`, 'success');
+        await fetchAndDisplayFullProfile(userIdToEscalate); 
+    } catch (error) {
+        displayGlobalMessage(`Admin escalation attempt failed for ${userToEscalateName}: ${error.message}`, 'error');
+    }
+}
+
+
+// --- Generic Item Form Toggle and Cancel ---
+function toggleItemForm(itemType) { 
+    const formContainer = document.getElementById(`${itemType}-form-container`);
+    const toggleBtn = document.getElementById(`toggle-${itemType}-form-btn`);
+    const editModeIndicator = document.getElementById(`${itemType}-edit-mode-indicator`);
+
+    if (!formContainer || !toggleBtn) return;
+
+    const isOpen = formContainer.classList.toggle('open');
+    toggleBtn.classList.toggle('active', isOpen);
+    const icon = toggleBtn.querySelector('i');
+    const span = toggleBtn.querySelector('span');
+
+    if (isOpen) {
+        if (icon) icon.className = 'fas fa-minus';
+        if (span) span.textContent = 'Cancel';
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        if (icon) icon.className = 'fas fa-plus';
+        if (span) span.textContent = toggleBtn.dataset.addText || `Add New ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`;
+        if (editModeIndicator) editModeIndicator.style.display = 'none';
+        
+        const form = document.getElementById(`${itemType}-form`);
+        if (form) form.reset();
+        
+        const hiddenIdInput = document.getElementById(`${itemType}-id-hidden`);
+        if (hiddenIdInput) hiddenIdInput.value = '';
+        
+        const submitBtn = document.getElementById(`${itemType}-form-submit-btn`);
+        if (submitBtn) submitBtn.textContent = `Add ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`;
+        
+        if (itemType === 'card') { 
+            const cardNumberInput = document.getElementById('card-number-input');
+            const cardCvvInput = document.getElementById('card-cvv-input');
+            if(cardNumberInput) {
+                cardNumberInput.placeholder = 'Required for new cards';
+                cardNumberInput.disabled = false;
+            }
+            if(cardCvvInput) {
+                cardCvvInput.placeholder = 'Required for new cards';
+                cardCvvInput.disabled = false;
+            }
+        }
+    }
+}
+
+function cancelItemForm(itemType) {
+    const formContainer = document.getElementById(`${itemType}-form-container`);
+    const toggleBtn = document.getElementById(`toggle-${itemType}-form-btn`);
+    const editModeIndicator = document.getElementById(`${itemType}-edit-mode-indicator`);
+
+    if (formContainer) formContainer.classList.remove('open');
+    if (toggleBtn) {
+        toggleBtn.classList.remove('active');
+        const icon = toggleBtn.querySelector('i');
+        const span = toggleBtn.querySelector('span');
+        if (icon) icon.className = 'fas fa-plus';
+        if (span) span.textContent = toggleBtn.dataset.addText || `Add New ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`;
+    }
+    if (editModeIndicator) editModeIndicator.style.display = 'none';
+    
+    const form = document.getElementById(`${itemType}-form`);
+    if(form) form.reset();
+
+    const hiddenIdInput = document.getElementById(`${itemType}-id-hidden`);
+    if(hiddenIdInput) hiddenIdInput.value = '';
+    
+    const submitBtn = document.getElementById(`${itemType}-form-submit-btn`);
+    if(submitBtn) submitBtn.textContent = `Add ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}`;
+
+    if (itemType === 'card') {
+        const cardNumberInput = document.getElementById('card-number-input');
+        const cardCvvInput = document.getElementById('card-cvv-input');
+        if(cardNumberInput) {
+            cardNumberInput.placeholder = 'Required for new cards';
+            cardNumberInput.disabled = false;
+        }
+        if(cardCvvInput) {
+            cardCvvInput.placeholder = 'Required for new cards';
+            cardCvvInput.disabled = false;
+        }
+    }
+}
+
+
+// --- Address Management Functions ---
+function renderAddresses(addresses, container) {
+    if (!container) return;
+    // const userIdForRequest = document.getElementById('currently-viewed-user-id').value; // Not needed if onclick calls global currentlyViewedUserId
+
+    if (!addresses || addresses.length === 0) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>No addresses found for ${currentlyViewedUsername}.</p></div>`;
+        return;
+    }
+    let html = addresses.map(addr => `
+        <div class="item-card address-card" id="address-item-${addr.address_id.substring(0,8)}">
+            <div class="item-card-header">
+                <i class="fas fa-map-marker-alt"></i>
+                <h4>${addr.street} 
+                    ${addr.is_default ? '<span class="default-badge">Default</span>' : `<button class="btn-xs set-default-btn" onclick="setDefaultAddress('${addr.address_id}')">Set Default</button>`}
+                </h4>
+            </div>
+            <div class="item-card-content">
+                <p><i class="fas fa-city"></i> ${addr.city}, ${addr.country}</p>
+                <p><i class="fas fa-mail-bulk"></i> ${addr.zip_code}</p>
+                <p class="text-muted"><small>ID: ${addr.address_id.substring(0,8)}...</small></p>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-sm btn-secondary edit-address-btn" data-address-id="${addr.address_id}"><i class="fas fa-pen"></i> Edit</button>
+                <button class="btn btn-sm btn-danger delete-address-btn" data-address-id="${addr.address_id}"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>
+    `).join('');
+    container.innerHTML = html;
+
+    document.querySelectorAll('.edit-address-btn').forEach(btn => 
+        btn.addEventListener('click', () => populateAddressFormForEdit(btn.dataset.addressId, addresses))
+    );
+    document.querySelectorAll('.delete-address-btn').forEach(btn => 
+        btn.addEventListener('click', () => handleDeleteAddress(btn.dataset.addressId))
+    );
 }
 
 function initCheckoutPage() {
@@ -1808,42 +2161,30 @@ async function fetchAndDisplayUserProfile() {
 }
 
 function populateAddressFormForEdit(addressId, allAddresses) {
-    const addressToEdit = allAddresses.find(addr => addr.address_id === addressId);
-    if (!addressToEdit) {
-        displayError('Address not found for editing.');
+    const address = allAddresses.find(a => a.address_id === addressId);
+    if (!address) {
+        displayGlobalMessage("Address not found for editing.", "error");
         return;
     }
 
-    document.getElementById('address-line1').value = addressToEdit.street;
-    document.getElementById('address-city').value = addressToEdit.city;
-    document.getElementById('address-country').value = addressToEdit.country;
-    document.getElementById('address-postal-code').value = addressToEdit.zip_code;
-
-    const form = document.getElementById('add-address-form');
-    form.setAttribute('data-editing-id', addressId);
+    document.getElementById('address-id-hidden').value = address.address_id;
+    document.getElementById('address-street').value = address.street; // HTML ID
+    document.getElementById('address-city').value = address.city;
+    document.getElementById('address-country').value = address.country;
+    document.getElementById('address-zip').value = address.zip_code; // HTML ID
+    document.getElementById('address-form-submit-btn').textContent = 'Update Address';
     
-    const submitBtn = document.getElementById('add-address-form-submit-btn');
-    if (submitBtn) submitBtn.textContent = 'Update Address';
+    const editIndicator = document.getElementById('address-edit-mode-indicator');
+    if (editIndicator) {
+        editIndicator.innerHTML = `<i class="fas fa-pen"></i> Editing Address: <strong>${address.street}</strong>`; // Update innerHTML directly
+        editIndicator.style.display = 'flex'; // Or 'block'
+    }
     
     const formContainer = document.getElementById('address-form-container');
     if (formContainer && !formContainer.classList.contains('open')) {
-        formContainer.classList.add('open');
-        const toggleBtn = document.getElementById('toggle-address-form-btn');
-        if (toggleBtn) {
-            toggleBtn.classList.add('active');
-            const icon = toggleBtn.querySelector('i');
-            if (icon) { icon.className = 'fas fa-minus'; }
-            const span = toggleBtn.querySelector('span');
-            if (span) { span.textContent = 'Cancel'; }
-        }
+        toggleItemForm('address');
     }
-    
-    const editMode = document.getElementById('address-edit-mode');
-    if (editMode) {
-        editMode.classList.add('active');
-        editMode.innerHTML = `<i class="fas fa-pen"></i> Editing Address: <strong>${addressToEdit.street}</strong>`;
-    }
-    formContainer?.scrollIntoView({ behavior: 'smooth' });
+    if(formContainer) formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function handleAddOrUpdateAddress(e) {
@@ -1907,72 +2248,134 @@ async function handleAddOrUpdateAddress(e) {
     }
 }
 
-async function handleDeleteAddress(addressId) {
-    if (!confirm('Are you sure you want to delete this address?')) return;
+async function handleAddressFormSubmit(event) {
+    event.preventDefault();
+    const addressId = document.getElementById('address-id-hidden').value;
+    const isEditing = !!addressId;
+
+    const street = document.getElementById('address-street').value.trim(); // HTML ID
+    const city = document.getElementById('address-city').value.trim();
+    const country = document.getElementById('address-country').value.trim();
+    const zip_code = document.getElementById('address-zip').value.trim(); // HTML ID
+
+    if (!street || !city || !country || !zip_code) {
+        displayGlobalMessage('All address fields are required.', 'error');
+        return;
+    }
     
-    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
-    const addressElement = document.getElementById(`address-${addressId.substring(0,8)}`);
-    
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
+    let queryParams = `street=${encodeURIComponent(street)}&city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&zip_code=${encodeURIComponent(zip_code)}`;
+    const method = isEditing ? 'PUT' : 'POST';
+    const endpoint = isEditing ? `/api/users/${userIdForRequest}/addresses/${addressId}?${queryParams}` : `/api/users/${userIdForRequest}/addresses?${queryParams}`;
+    const actionText = isEditing ? 'updated' : 'added';
+
     try {
-        if (addressElement) {
-            highlightElement(`address-${addressId.substring(0,8)}`);
-            addressElement.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            addressElement.style.opacity = '0.5';
-            addressElement.style.transform = 'translateX(10px)';
-        }
+        const response = await apiCall(endpoint, method, null);
+        displayGlobalMessage(`Address for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
         
-        await apiCall(`/api/users/${userIdForAction}/addresses/${addressId}`, 'DELETE', null, true);
-        displaySuccess('Address deleted successfully!');
-        fetchAndDisplayUserProfile();
-    } catch (error) {
-        displayError(`Failed to delete address: ${error.message}`);
-        if (addressElement) {
-            addressElement.style.opacity = '1';
-            addressElement.style.transform = 'translateX(0)';
+        const newOrUpdatedAddressId = isEditing ? addressId : response.address_id;
+        
+        await fetchAndDisplayFullProfile(userIdForRequest); 
+        cancelItemForm('address'); 
+        if (newOrUpdatedAddressId) {
+            highlightElement(`address-item-${newOrUpdatedAddressId.substring(0,8)}`);
         }
+    } catch (error) {
+        displayGlobalMessage(`Error ${actionText} address for ${currentlyViewedUsername}: ${error.message}`, 'error');
     }
 }
 
+async function handleDeleteAddress(addressId) {
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
+    if (!confirm(`Are you sure you want to delete this address from ${currentlyViewedUsername}'s profile?`)) return;
+
+    try {
+        await apiCall(`/api/users/${userIdForRequest}/addresses/${addressId}`, 'DELETE');
+        displayGlobalMessage(`Address deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
+        fetchAndDisplayFullProfile(userIdForRequest);
+    } catch (error) {
+        displayGlobalMessage(`Error deleting address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    }
+}
+
+
+// --- Credit Card Management Functions ---
+function renderCreditCards(cards, container) {
+    if (!container) return;
+    // const userIdForRequest = document.getElementById('currently-viewed-user-id').value; // Not needed if onclick uses global
+
+    if (!cards || cards.length === 0) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-credit-card"></i><p>No credit cards found for ${currentlyViewedUsername}.</p></div>`;
+        return;
+    }
+    let html = cards.map(card => `
+        <div class="item-card credit-card-card" id="card-item-${card.card_id.substring(0,8)}">
+            <div class="item-card-header">
+                <i class="fas fa-credit-card"></i>
+                <h4>${card.cardholder_name}
+                    ${card.is_default ? '<span class="default-badge">Default</span>' : `<button class="btn-xs set-default-btn" onclick="setDefaultCard('${card.card_id}')">Set Default</button>`}
+                </h4>
+            </div>
+            <div class="item-card-content">
+                <p><span class="card-detail-text">Number:</span> •••• •••• •••• ${card.card_last_four}</p>
+                <p><span class="card-detail-text">Expires:</span> ${card.expiry_month}/${card.expiry_year.substring(2)}</p>
+                <p class="text-muted"><small>ID: ${card.card_id.substring(0,8)}...</small></p>
+            </div>
+            <div class="item-actions">
+                <button class="btn btn-sm btn-secondary edit-card-btn" data-card-id="${card.card_id}"><i class="fas fa-pen"></i> Edit</button>
+                <button class="btn btn-sm btn-danger delete-card-btn" data-card-id="${card.card_id}"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>
+    `).join('');
+    container.innerHTML = html;
+
+    document.querySelectorAll('.edit-card-btn').forEach(btn => 
+        btn.addEventListener('click', () => populateCardFormForEdit(btn.dataset.cardId, cards))
+    );
+    document.querySelectorAll('.delete-card-btn').forEach(btn => 
+        btn.addEventListener('click', () => handleDeleteCreditCard(btn.dataset.cardId))
+    );
+}
+
 function populateCardFormForEdit(cardId, allCards) {
-    const cardToEdit = allCards.find(card => card.card_id === cardId);
-    if (!cardToEdit) {
-        displayError('Credit card not found for editing.');
+    const card = allCards.find(c => c.card_id === cardId);
+    if (!card) {
+        displayGlobalMessage("Credit card not found for editing.", "error");
         return;
     }
 
-    document.getElementById('card-name').value = cardToEdit.cardholder_name;
-    document.getElementById('card-expiry').value = `${cardToEdit.expiry_month}/${cardToEdit.expiry_year.substring(2)}`;
+    document.getElementById('card-id-hidden').value = card.card_id;
+    document.getElementById('card-cardholder-name').value = card.cardholder_name;
+    document.getElementById('card-expiry-month').value = card.expiry_month;
+    document.getElementById('card-expiry-year').value = card.expiry_year;
     
-    document.getElementById('card-number').value = '';
-    document.getElementById('card-number').placeholder = 'Leave blank to keep current';
-    document.getElementById('card-cvv').value = '';
-    document.getElementById('card-cvv').placeholder = 'Leave blank to keep current';
+    const cardNumberInput = document.getElementById('card-number-input');
+    const cardCvvInput = document.getElementById('card-cvv-input');
 
-    const form = document.getElementById('add-creditcard-form');
-    form.setAttribute('data-editing-id', cardId);
+    if (cardNumberInput) {
+        cardNumberInput.value = '';
+        cardNumberInput.placeholder = 'Not updatable';
+        cardNumberInput.disabled = true; 
+    }
+    if (cardCvvInput) {
+        cardCvvInput.value = '';
+        cardCvvInput.placeholder = 'Not updatable';
+        cardCvvInput.disabled = true; 
+    }
     
-    const submitBtn = document.getElementById('add-creditcard-form-submit-btn');
-    if (submitBtn) submitBtn.textContent = 'Update Credit Card';
+    document.getElementById('card-form-submit-btn').textContent = 'Update Card';
     
-    const formContainer = document.getElementById('creditcard-form-container');
+    const editIndicator = document.getElementById('card-edit-mode-indicator');
+    if (editIndicator) {
+        editIndicator.innerHTML = `<i class="fas fa-pen"></i> Editing Card: <strong>Ending in ${card.card_last_four}</strong>`; // Update innerHTML
+        editIndicator.style.display = 'flex'; // Or 'block'
+    }
+    
+    const formContainer = document.getElementById('card-form-container');
     if (formContainer && !formContainer.classList.contains('open')) {
-        formContainer.classList.add('open');
-        const toggleBtn = document.getElementById('toggle-creditcard-form-btn');
-        if (toggleBtn) {
-            toggleBtn.classList.add('active');
-            const icon = toggleBtn.querySelector('i');
-            if (icon) { icon.className = 'fas fa-minus'; }
-            const span = toggleBtn.querySelector('span');
-            if (span) { span.textContent = 'Cancel'; }
-        }
+        toggleItemForm('card');
     }
-    
-    const editMode = document.getElementById('card-edit-mode');
-    if (editMode) {
-        editMode.classList.add('active');
-        editMode.innerHTML = `<i class="fas fa-pen"></i> Editing Card: <strong>${cardToEdit.cardholder_name}'s Card</strong>`;
-    }
-    formContainer?.scrollIntoView({ behavior: 'smooth' });
+    if(formContainer) formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function handleAddOrUpdateCreditCard(e) {
@@ -2054,27 +2457,98 @@ async function handleAddOrUpdateCreditCard(e) {
     }
 }
 
-async function handleDeleteCreditCard(cardId) {
-    if (!confirm('Are you sure you want to delete this credit card?')) return;
+async function handleCardFormSubmit(event) {
+    event.preventDefault();
+    const cardIdHiddenInput = document.getElementById('card-id-hidden');
+    const cardId = cardIdHiddenInput ? cardIdHiddenInput.value : null;
+    const isEditing = !!cardId;
+
+    const cardholderNameInput = document.getElementById('card-cardholder-name');
+    const expiryMonthInput = document.getElementById('card-expiry-month');
+    const expiryYearInput = document.getElementById('card-expiry-year');
+    const cardNumberInput = document.getElementById('card-number-input');
+    const cvvInput = document.getElementById('card-cvv-input');
+
+    if (!cardholderNameInput || !expiryMonthInput || !expiryYearInput || !cardNumberInput || !cvvInput) {
+        displayGlobalMessage('One or more card form fields are missing from the page.', 'error');
+        console.error("Card form input elements not found.");
+        return;
+    }
+
+    const cardholder_name = cardholderNameInput.value.trim();
+    const expiry_month = expiryMonthInput.value.trim();
+    const expiry_year = expiryYearInput.value.trim();
     
-    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
-    const cardElement = document.getElementById(`card-${cardId.substring(0,8)}`);
+    const card_number = cardNumberInput.value.trim();
+    const cvv = cvvInput.value.trim();
+
+    if (!cardholder_name || !expiry_month || !expiry_year) {
+        displayGlobalMessage('Cardholder name, expiry month, and expiry year are required.', 'error');
+        return;
+    }
+    if (!isEditing && (!card_number || !cvv)) {
+        displayGlobalMessage('Card number and CVV are required for new cards.', 'error');
+        return;
+    }
+    if (!/^(0[1-9]|1[0-2])$/.test(expiry_month)) {
+        displayGlobalMessage('Invalid expiry month format. Please use MM (e.g., 01 for January).', 'error');
+        return;
+    }
+    if (!/^20[2-9][0-9]$/.test(expiry_year)) { // Validates YYYY from 2020-2099
+        displayGlobalMessage('Invalid expiry year format. Please use YYYY (e.g., 2027).', 'error');
+        return;
+    }
+
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
+    if (!userIdForRequest) {
+        displayGlobalMessage('Cannot process card: User context is missing.', 'error');
+        return;
+    }
+    
+    let queryParams = `cardholder_name=${encodeURIComponent(cardholder_name)}&expiry_month=${encodeURIComponent(expiry_month)}&expiry_year=${encodeURIComponent(expiry_year)}`;
+    
+    let method = 'POST';
+    let endpoint = `/api/users/${userIdForRequest}/credit-cards?${queryParams}`; // Base for POST
+    let actionText = 'added';
+
+    if (isEditing) {
+        method = 'PUT';
+        // For PUT, card_number and cvv are not included in queryParams as per backend (user_profile_router.py)
+        endpoint = `/api/users/${userIdForRequest}/credit-cards/${cardId}?${queryParams}`;
+        actionText = 'updated';
+    } else {
+        // For new cards (POST), add card_number and cvv
+        queryParams += `&card_number=${encodeURIComponent(card_number)}&cvv=${encodeURIComponent(cvv)}`;
+        endpoint = `/api/users/${userIdForRequest}/credit-cards?${queryParams}`; // Re-assign endpoint with new params
+    }
+    
+    try {
+        const response = await apiCall(endpoint, method, null); // Body is null as data is in query params
+        displayGlobalMessage(`Credit card for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
+        
+        const newOrUpdatedCardId = isEditing ? cardId : response.card_id;
+
+        await fetchAndDisplayFullProfile(userIdForRequest); // Refresh the entire profile view
+        cancelItemForm('card'); // Close and reset the form
+        
+        if (newOrUpdatedCardId) {
+            highlightElement(`card-item-${newOrUpdatedCardId.substring(0,8)}`);
+        }
+    } catch (error) {
+        displayGlobalMessage(`Error ${actionText} card for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    }
+}
+
+async function handleDeleteCreditCard(cardId) {
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
+    if (!confirm(`Are you sure you want to delete this credit card from ${currentlyViewedUsername}'s profile?`)) return;
 
     try {
-        if (cardElement) {
-            highlightElement(`card-${cardId.substring(0,8)}`);
-            cardElement.style.transition = 'opacity 0.5s ease';
-            cardElement.style.opacity = '0.5';
-        }
-        
-        await apiCall(`/api/users/${userIdForAction}/credit-cards/${cardId}`, 'DELETE', null, true);
-        displaySuccess('Credit card deleted successfully!');
-        fetchAndDisplayUserProfile();
+        await apiCall(`/api/users/${userIdForRequest}/credit-cards/${cardId}`, 'DELETE');
+        displayGlobalMessage(`Credit card deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
+        fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
-        displayError(`Failed to delete credit card: ${error.message}`);
-        if (cardElement) {
-            cardElement.style.opacity = '1';
-        }
+        displayGlobalMessage(`Error deleting credit card: ${error.message}`, 'error');
     }
 }
 
@@ -2188,41 +2662,37 @@ function showFormSuccessIndicator(formId) {
 }
 
 async function setDefaultAddress(addressId) {
-    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     try {
-        // The backend /users/{user_id}/addresses/{address_id} PUT endpoint handles is_default.
-        // We need to fetch the address, set is_default to true, and PUT all fields.
-        const addresses = await apiCall(`/users/${userIdForAction}/addresses`, 'GET', null, true);
-        const addressToSetDefault = addresses.find(a => a.address_id === addressId);
-        if (!addressToSetDefault) throw new Error("Address not found");
+        const addresses = await apiCall(`/api/users/${userIdForRequest}/addresses`, 'GET');
+        const addressToUpdate = addresses.find(a => a.address_id === addressId);
+        if (!addressToUpdate) throw new Error("Address not found.");
 
-        let queryParams = `street=${encodeURIComponent(addressToSetDefault.street)}&city=${encodeURIComponent(addressToSetDefault.city)}&country=${encodeURIComponent(addressToSetDefault.country)}&zip_code=${encodeURIComponent(addressToSetDefault.zip_code)}&is_default=true`;
-        
-        await apiCall(`/api/users/${userIdForAction}/addresses/${addressId}?${queryParams}`, 'PUT', null, true);
-        displaySuccess('Default address updated successfully');
-        await fetchAndDisplayUserProfile();
-        highlightElement(`address-${addressId.substring(0,8)}`);
+        let queryParams = `street=${encodeURIComponent(addressToUpdate.street)}&city=${encodeURIComponent(addressToUpdate.city)}&country=${encodeURIComponent(addressToUpdate.country)}&zip_code=${encodeURIComponent(addressToUpdate.zip_code)}&is_default=true`;
+
+        await apiCall(`/api/users/${userIdForRequest}/addresses/${addressId}?${queryParams}`, 'PUT', null);
+        displayGlobalMessage(`Default address for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
+        await fetchAndDisplayFullProfile(userIdForRequest);
+        highlightElement(`address-item-${addressId.substring(0,8)}`);
     } catch (error) {
-        displayError(`Could not set default address: ${error.message}`);
+        displayGlobalMessage(`Error setting default address for ${currentlyViewedUsername}: ${error.message}`, 'error');
     }
 }
 
 async function setDefaultCard(cardId) {
-    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
+    const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     try {
-        // Similar to address, PUT to the card with is_default=true
-        const cards = await apiCall(`/users/${userIdForAction}/credit-cards`, 'GET', null, true);
-        const cardToSetDefault = cards.find(c => c.card_id === cardId);
-        if (!cardToSetDefault) throw new Error("Card not found");
+        const cards = await apiCall(`/api/users/${userIdForRequest}/credit-cards`, 'GET');
+        const cardToUpdate = cards.find(c => c.card_id === cardId);
+        if (!cardToUpdate) throw new Error("Card not found.");
 
-        let queryParams = `cardholder_name=${encodeURIComponent(cardToSetDefault.cardholder_name)}&expiry_month=${encodeURIComponent(cardToSetDefault.expiry_month)}&expiry_year=${encodeURIComponent(cardToSetDefault.expiry_year)}&is_default=true`;
+        let queryParams = `cardholder_name=${encodeURIComponent(cardToUpdate.cardholder_name)}&expiry_month=${encodeURIComponent(cardToUpdate.expiry_month)}&expiry_year=${encodeURIComponent(cardToUpdate.expiry_year)}&is_default=true`;
 
-        await apiCall(`/api/users/${userIdForAction}/credit-cards/${cardId}?${queryParams}`, 'PUT', null, true);
-        displaySuccess('Default payment method updated successfully');
-        await fetchAndDisplayUserProfile();
-        highlightElement(`card-${cardId.substring(0,8)}`);
+        await apiCall(`/api/users/${userIdForRequest}/credit-cards/${cardId}?${queryParams}`, 'PUT', null);
+        displayGlobalMessage(`Default credit card for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
+        fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
-        displayError(`Could not set default card: ${error.message}`);
+        displayGlobalMessage(`Error setting default credit card: ${error.message}`, 'error');
     }
 }
 
