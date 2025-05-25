@@ -58,6 +58,21 @@ async def create_user_address(
     if not path_user_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found. Cannot create address.")
 
+    duplicate = next(
+        (
+            a
+            for a in db.db["addresses"]
+            if a.user_id == user_id
+            and a.street == street
+            and a.city == city
+            and a.country == country
+            and a.zip_code == zip_code
+        ),
+        None,
+    )
+    if duplicate:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Address already exists for this user.")
+
     address_data = AddressCreate(street=street, city=city, country=country, zip_code=zip_code, is_default=is_default)
     new_address = AddressInDBBase(**address_data.model_dump(), user_id=user_id) # Assign to user_id from path
     db.db["addresses"].append(new_address)
