@@ -151,6 +151,12 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
     ```
     The API will be accessible at `http://localhost:8000`.
 
+    Set `UVICORN_WORKERS` to control the number of worker processes:
+    ```sh
+    docker run -d -p 8000:8000 -e UVICORN_WORKERS=4 \
+      --name radware-vuln-api vulnerable-ecommerce-api
+    ```
+
 #### Running Locally (Alternative)
 
 1.  **Clone the Repository (if applicable):**
