@@ -12,10 +12,7 @@
     <div id="error-message-container"></div> <!-- Added for specific errors -->
     
     <!-- Security vulnerability demonstration banner -->
-    <div id="bola-demo-banner" class="vulnerability-warning" style="display: none;"> <!-- Changed class for consistency -->
-        <strong>⚠️ Security Alert: BOLA Demo!</strong> 
-        <p>You are viewing another user's profile data, demonstrating a Broken Object Level Authorization vulnerability.</p>
-    </div>
+    <div id="bola-demo-banner" class="vulnerability-warning" style="display: none;"></div>
 
     <!-- User profile information -->
     <div id="profile-container" class="profile-section card-style">
@@ -33,7 +30,7 @@
             <label for="target-user-id">Target User ID:</label>
             <div class="user-search-container">
                 <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter another user's ID">
-                <button type="button" id="search-users-btn" class="btn btn-sm btn-secondary">Find Users</button>
+                <button type="button" id="search-users-btn" class="btn btn-sm btn-warning">Discover Other Users</button>
             </div>
             <small class="form-text text-muted">Try user IDs like `00000002-0000-0000-0000-000000000002` (AliceSmith) or `00000003-0000-0000-0000-000000000003` (BobJohnson) from `prepopulated_data.json`.</small>
         </div>
@@ -42,26 +39,10 @@
             <div id="user-list" class="demo-result-list"></div>
         </div>
 
-        <button id="view-profile-btn" class="btn btn-exploit">View Profile</button>
-        <button id="return-to-profile-btn" class="btn btn-secondary" style="display: none;">Return to My Profile</button>
+        <button id="view-profile-btn" class="btn btn-exploit">View by ID</button>
+        <button id="return-to-profile-btn" class="btn btn-secondary" style="display: none;">Return to My Own Profile</button>
     </div>
 
-    <div class="section-container card-style" id="edit-profile-section">
-        <h2>Edit Profile (Parameter Pollution)</h2>
-        <form id="edit-profile-form">
-            <div class="form-group">
-                <label for="profile-email">Email:</label>
-                <input type="email" id="profile-email" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label class="vulnerability-input-label">
-                    <input type="checkbox" id="profile-is-admin">
-                    <span class="checkbox-text">Become Admin (is_admin=true)</span>
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Profile</button>
-        </form>
-    </div>
 
     <div class="profile-management-sections">
     <!-- Addresses Section -->
