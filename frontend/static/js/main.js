@@ -358,6 +358,16 @@ function initProfilePage() {
     if (addCreditCardForm) {
         addCreditCardForm.addEventListener('submit', handleAddOrUpdateCreditCard);
     }
+
+    const searchUsersBtn = document.getElementById('search-users-btn');
+    if (searchUsersBtn) {
+        searchUsersBtn.addEventListener('click', searchUsers);
+    }
+
+    const editProfileForm = document.getElementById('edit-profile-form');
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', handleProfileUpdate);
+    }
     
     // setupFormToggles(); // This was called here but might be redundant if initializeProfilePageInteractions covers it
 }
@@ -1620,6 +1630,8 @@ async function fetchAndDisplayUserProfile() {
             <p><strong>Username:</strong> ${userProfile.username}</p>
             <p><strong>Email:</strong> ${userProfile.email}</p>`;
         profileContainer.innerHTML = profileHTML;
+        const emailInput = document.getElementById('profile-email');
+        if (emailInput) emailInput.value = userProfile.email;
         
         const bolaBanner = document.getElementById('bola-demo-banner');
         const viewProfileBtn = document.getElementById('view-profile-btn');
@@ -2159,6 +2171,29 @@ async function setDefaultCard(cardId) {
         highlightElement(`card-${cardId.substring(0,8)}`);
     } catch (error) {
         displayError(`Could not set default card: ${error.message}`);
+    }
+}
+
+async function handleProfileUpdate(e) {
+    e.preventDefault();
+    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
+    const email = document.getElementById('profile-email').value.trim();
+    const isAdmin = document.getElementById('profile-is-admin').checked;
+    let queryParams = [];
+    if (email) queryParams.push(`email=${encodeURIComponent(email)}`);
+    if (isAdmin) queryParams.push(`is_admin=${isAdmin}`);
+    const queryString = queryParams.join('&');
+    try {
+        const updatedUser = await apiCall(`/api/users/${userIdForAction}?${queryString}`, 'PUT', null, true);
+        displaySuccess('Profile updated successfully!');
+        if (userIdForAction === currentUser.user_id) {
+            currentUser = updatedUser;
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            updateNavbar();
+        }
+        await fetchAndDisplayUserProfile();
+    } catch (err) {
+        displayError(`Failed to update profile: ${err.message}`);
     }
 }
 

@@ -31,12 +31,36 @@
 
         <div class="form-group">
             <label for="target-user-id">Target User ID:</label>
-            <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter another user's ID">
+            <div class="user-search-container">
+                <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter another user's ID">
+                <button type="button" id="search-users-btn" class="btn btn-sm btn-secondary">Find Users</button>
+            </div>
             <small class="form-text text-muted">Try user IDs like `00000002-0000-0000-0000-000000000002` (AliceSmith) or `00000003-0000-0000-0000-000000000003` (BobJohnson) from `prepopulated_data.json`.</small>
         </div>
-        
-        <button id="view-profile-btn" class="btn btn-exploit">View Profile</button> <!-- Changed class for demo -->
+        <div id="user-search-results" style="display: none;" class="vulnerability-search-results">
+            <h5>Available Users:</h5>
+            <div id="user-list" class="demo-result-list"></div>
+        </div>
+
+        <button id="view-profile-btn" class="btn btn-exploit">View Profile</button>
         <button id="return-to-profile-btn" class="btn btn-secondary" style="display: none;">Return to My Profile</button>
+    </div>
+
+    <div class="section-container card-style" id="edit-profile-section">
+        <h2>Edit Profile (Parameter Pollution)</h2>
+        <form id="edit-profile-form">
+            <div class="form-group">
+                <label for="profile-email">Email:</label>
+                <input type="email" id="profile-email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="vulnerability-input-label">
+                    <input type="checkbox" id="profile-is-admin">
+                    <span class="checkbox-text">Become Admin (is_admin=true)</span>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
     </div>
 
     <div class="profile-management-sections">

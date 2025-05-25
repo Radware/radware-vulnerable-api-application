@@ -93,6 +93,7 @@ async def get_user_by_id(
 @router.put("/users/{user_id}", response_model=User, tags=["Users"])
 async def update_user(
     user_id: UUID,
+    username: Optional[str] = Query(None),
     email: Optional[str] = Query(None),
     is_admin_param: Optional[bool] = Query(None, alias="is_admin"), # Parameter pollution target
     # current_user: TokenData = Depends(get_current_user) # BOLA: No check initially
@@ -103,6 +104,11 @@ async def update_user(
 
     # BOLA: No check if current_user.user_id matches user_id from path.
     update_data = {}
+    if username is not None:
+        existing_username_user = next((u for u in db.db["users"] if u.username == username and u.user_id != user_id), None)
+        if existing_username_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Username '{username}' already in use.")
+        update_data["username"] = username
     if email is not None:
         # Check if new email is already taken by another user
         existing_email_user = next((u for u in db.db["users"] if u.email == email and u.user_id != user_id), None)

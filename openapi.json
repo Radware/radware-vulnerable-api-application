@@ -134,20 +134,29 @@
         "operationId": "updateUserByUserId",
         "parameters": [
           {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "ID of the user to update"
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
           },
-          {
-            "name": "email",
-            "in": "query",
-            "required": false,
-            "schema": {
+          "description": "ID of the user to update"
+        },
+        {
+          "name": "username",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "New username for the user"
+        },
+        {
+          "name": "email",
+          "in": "query",
+          "required": false,
+          "schema": {
               "type": "string",
               "format": "email"
             },
