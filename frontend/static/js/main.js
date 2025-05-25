@@ -180,6 +180,23 @@ function displayGlobalMessage(message, type = 'info') {
     setTimeout(() => { messageElement.remove(); }, 5000);
 }
 
+function showPageLoader(message = 'Loading...') {
+    let loader = document.getElementById('page-loader');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'page-loader';
+        loader.className = 'loading-indicator-overlay';
+        document.body.appendChild(loader);
+    }
+    loader.innerHTML = `<div class="loading-spinner"></div><p>${message}</p>`;
+    loader.style.display = 'flex';
+}
+
+function hidePageLoader() {
+    const loader = document.getElementById('page-loader');
+    if (loader) loader.style.display = 'none';
+}
+
 // Helper function to get product image filename
 function getProductImageFilename(product) {
     // Early validation to prevent undefined product issues
@@ -272,6 +289,9 @@ function initProductDetailPage() {
     const productIdWithSuffix = pathParts[pathParts.length - 1];
     const productId = productIdWithSuffix.replace('.html', '');
     fetchAndDisplayProductDetail(productId);
+    if (typeof setupParameterPollutionDemo === 'function') {
+        setupParameterPollutionDemo(productId);
+    }
 }
 
 function initLoginPage() {
@@ -393,7 +413,8 @@ async function listAvailableVictims() {
     usersContainer.style.display = 'block';
 
     try {
-        const users = await apiCall('/api/users', 'GET'); 
+        showPageLoader('Loading users...');
+        const users = await apiCall('/api/users', 'GET');
         if (users && users.length > 0) {
             usersListElement.innerHTML = ''; 
             users.forEach(user => {
@@ -436,6 +457,8 @@ async function listAvailableVictims() {
     } catch (error) {
         displayGlobalMessage(`Error discovering users: ${error.message}`, 'error');
         usersListElement.innerHTML = `<li class="list-group-item text-danger">Failed to load users. Check console.</li>`;
+    } finally {
+        hidePageLoader();
     }
 }
 
@@ -473,6 +496,7 @@ async function fetchAndDisplayFullProfile(userId) {
 
 
     try {
+        showPageLoader('Loading profile...');
         const userDetails = await apiCall(`/api/users/${userId}`, 'GET');
         currentlyViewedUsername = userDetails.username; 
 
@@ -522,6 +546,19 @@ async function fetchAndDisplayFullProfile(userId) {
             const returnBtn = document.getElementById('return-to-my-profile-btn');
             if(returnBtn) returnBtn.click();
         }
+    } finally {
+        const victimEls = [
+            document.getElementById('address-form-container'),
+            document.getElementById('card-form-container'),
+            document.getElementById('address-list-container'),
+            document.getElementById('card-list-container')
+        ];
+        if (userId !== currentUser.user_id) {
+            victimEls.forEach(el => el && el.classList.add('victim-data-active'));
+        } else {
+            victimEls.forEach(el => el && el.classList.remove('victim-data-active'));
+        }
+        hidePageLoader();
     }
 }
 // --- Email Edit Functions ---
@@ -565,9 +602,10 @@ async function handleEditEmailSubmit(event) {
     const endpoint = `/api/users/${userIdToUpdate}?email=${encodeURIComponent(newEmail)}`;
 
     try {
+        showPageLoader('Updating email...');
         await apiCall(endpoint, 'PUT', null, true);
         displayGlobalMessage(`Email for ${currentlyViewedUsername} updated successfully!`, 'success');
-        await fetchAndDisplayFullProfile(userIdToUpdate); 
+        await fetchAndDisplayFullProfile(userIdToUpdate);
         
         if (userIdToUpdate === currentUser.user_id) {
             currentUser.email = newEmail;
@@ -576,6 +614,8 @@ async function handleEditEmailSubmit(event) {
         }
     } catch (error) {
         displayGlobalMessage(`Failed to update email for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    } finally {
+        hidePageLoader();
     }
 }
 
@@ -597,6 +637,7 @@ async function handleUpdateProfileSubmit(event) {
     }
     const endpoint = `/api/users/${userIdToUpdate}?${params.toString()}`;
     try {
+        showPageLoader('Updating profile...');
         await apiCall(endpoint, 'PUT', null, true);
         displayGlobalMessage(`Profile for ${currentlyViewedUsername} updated.`, 'success');
         await fetchAndDisplayFullProfile(userIdToUpdate);
@@ -608,6 +649,8 @@ async function handleUpdateProfileSubmit(event) {
         }
     } catch (error) {
         displayGlobalMessage(`Failed to update profile: ${error.message}`, 'error');
+    } finally {
+        hidePageLoader();
     }
 }
 // --- Parameter Pollution: Admin Escalation ---
@@ -624,11 +667,14 @@ async function attemptAdminEscalation() {
     const endpoint = `/api/users/${userIdToEscalate}?is_admin=true`;
 
     try {
-        await apiCall(endpoint, 'PUT', null, true); 
+        showPageLoader('Escalating...');
+        await apiCall(endpoint, 'PUT', null, true);
         displayGlobalMessage(`Admin escalation attempt sent for ${userToEscalateName}. Refreshing profile to see effect...`, 'success');
-        await fetchAndDisplayFullProfile(userIdToEscalate); 
+        await fetchAndDisplayFullProfile(userIdToEscalate);
     } catch (error) {
         displayGlobalMessage(`Admin escalation attempt failed for ${userToEscalateName}: ${error.message}`, 'error');
+    } finally {
+        hidePageLoader();
     }
 }
 
@@ -2356,6 +2402,7 @@ async function handleAddressFormSubmit(event) {
     const actionText = isEditing ? 'updated' : 'added';
 
     try {
+        showPageLoader(isEditing ? 'Updating address...' : 'Adding address...');
         const response = await apiCall(endpoint, method, null);
         displayGlobalMessage(`Address for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
         
@@ -2368,6 +2415,8 @@ async function handleAddressFormSubmit(event) {
         }
     } catch (error) {
         displayGlobalMessage(`Error ${actionText} address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    } finally {
+        hidePageLoader();
     }
 }
 
@@ -2609,6 +2658,7 @@ async function handleCardFormSubmit(event) {
     }
     
     try {
+        showPageLoader(isEditing ? 'Updating card...' : 'Adding card...');
         const response = await apiCall(endpoint, method, null); // Body is null as data is in query params
         displayGlobalMessage(`Credit card for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
         
@@ -2622,6 +2672,8 @@ async function handleCardFormSubmit(event) {
         }
     } catch (error) {
         displayGlobalMessage(`Error ${actionText} card for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    } finally {
+        hidePageLoader();
     }
 }
 

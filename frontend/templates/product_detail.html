@@ -69,4 +69,5 @@
 {% block scripts %}
     {{ super() }}
     <!-- main.js is included in base.html and contains product detail logic -->
+    <script src="{{ url_for('static', filename='js/product-detail.js') }}"></script>
 {% endblock %}
