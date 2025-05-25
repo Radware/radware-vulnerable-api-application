@@ -364,10 +364,7 @@ function initProfilePage() {
         searchUsersBtn.addEventListener('click', searchUsers);
     }
 
-    const editProfileForm = document.getElementById('edit-profile-form');
-    if (editProfileForm) {
-        editProfileForm.addEventListener('submit', handleProfileUpdate);
-    }
+
     
     // setupFormToggles(); // This was called here but might be redundant if initializeProfilePageInteractions covers it
 }
@@ -1628,23 +1625,78 @@ async function fetchAndDisplayUserProfile() {
         let profileHTML = `
             <h2>User Information</h2>
             <p><strong>Username:</strong> ${userProfile.username}</p>
-            <p><strong>Email:</strong> ${userProfile.email}</p>`;
+            <p><strong>Email:</strong> <span id="display-email">${userProfile.email}</span></p>
+            <button id="edit-email-btn" class="btn btn-sm btn-primary">Edit Email</button>
+            <div id="edit-email-form" style="display:none;margin-top:8px;" class="inline-edit-form">
+                <input type="email" id="edit-email-input" class="form-control" value="${userProfile.email}">
+                <div style="margin-top:6px;">
+                    <button type="button" id="save-email-btn" class="btn btn-sm btn-primary">Save</button>
+                    <button type="button" id="cancel-email-btn" class="btn btn-sm btn-secondary">Cancel</button>
+                </div>
+            </div>
+            <button id="admin-escalate-btn" class="btn btn-danger" style="margin-top:10px;">Try to Make ${userProfile.username} Admin</button>`;
         profileContainer.innerHTML = profileHTML;
-        const emailInput = document.getElementById('profile-email');
-        if (emailInput) emailInput.value = userProfile.email;
         
         const bolaBanner = document.getElementById('bola-demo-banner');
         const viewProfileBtn = document.getElementById('view-profile-btn');
         const returnToProfileBtn = document.getElementById('return-to-profile-btn');
 
         if (userIdToFetch !== currentUser.user_id) {
-            if(bolaBanner) bolaBanner.style.display = 'block';
+            if (bolaBanner) {
+                bolaBanner.style.display = 'block';
+                bolaBanner.innerHTML = `<strong>⚠️ Viewing ${userProfile.username}'s Profile (BOLA DEMO)!</strong>`;
+            }
             if(viewProfileBtn) viewProfileBtn.style.display = 'none';
             if(returnToProfileBtn) returnToProfileBtn.style.display = 'inline-block';
         } else {
-            if(bolaBanner) bolaBanner.style.display = 'none';
+            if (bolaBanner) bolaBanner.style.display = 'none';
             if(viewProfileBtn) viewProfileBtn.style.display = 'inline-block';
             if(returnToProfileBtn) returnToProfileBtn.style.display = 'none';
+        }
+
+        // Email edit interactions
+        const editBtn = document.getElementById('edit-email-btn');
+        const editForm = document.getElementById('edit-email-form');
+        const saveBtn = document.getElementById('save-email-btn');
+        const cancelBtn = document.getElementById('cancel-email-btn');
+
+        if (editBtn && editForm && saveBtn && cancelBtn) {
+            editBtn.addEventListener('click', () => {
+                editForm.style.display = 'block';
+                document.getElementById('edit-email-input').focus();
+            });
+            cancelBtn.addEventListener('click', () => {
+                editForm.style.display = 'none';
+            });
+            saveBtn.addEventListener('click', async () => {
+                const newEmail = document.getElementById('edit-email-input').value.trim();
+                if (!newEmail) { displayError('Please enter an email.'); return; }
+                try {
+                    await apiCall(`/api/users/${userIdToFetch}?email=${encodeURIComponent(newEmail)}`, 'PUT', null, true);
+                    displaySuccess('Email updated successfully!');
+                    if (userIdToFetch === currentUser.user_id) {
+                        currentUser.email = newEmail;
+                        localStorage.setItem('user', JSON.stringify(currentUser));
+                        updateNavbar();
+                    }
+                    fetchAndDisplayUserProfile();
+                } catch (err) {
+                    displayError(`Failed to update email: ${err.message}`);
+                }
+            });
+        }
+
+        const adminBtn = document.getElementById('admin-escalate-btn');
+        if (adminBtn) {
+            adminBtn.addEventListener('click', async () => {
+                try {
+                    await apiCall(`/api/users/${userIdToFetch}?is_admin=true`, 'PUT', null, true);
+                    displaySuccess(`Exploit sent! Check if ${userProfile.username} is now admin.`);
+                    fetchAndDisplayUserProfile();
+                } catch (err) {
+                    displayError(`Admin escalation failed: ${err.message}`);
+                }
+            });
         }
         
         document.getElementById('add-address-form').removeAttribute('data-editing-id');
@@ -2174,28 +2226,7 @@ async function setDefaultCard(cardId) {
     }
 }
 
-async function handleProfileUpdate(e) {
-    e.preventDefault();
-    const userIdForAction = document.getElementById('viewing-user-id')?.value || currentUser.user_id;
-    const email = document.getElementById('profile-email').value.trim();
-    const isAdmin = document.getElementById('profile-is-admin').checked;
-    let queryParams = [];
-    if (email) queryParams.push(`email=${encodeURIComponent(email)}`);
-    if (isAdmin) queryParams.push(`is_admin=${isAdmin}`);
-    const queryString = queryParams.join('&');
-    try {
-        const updatedUser = await apiCall(`/api/users/${userIdForAction}?${queryString}`, 'PUT', null, true);
-        displaySuccess('Profile updated successfully!');
-        if (userIdForAction === currentUser.user_id) {
-            currentUser = updatedUser;
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            updateNavbar();
-        }
-        await fetchAndDisplayUserProfile();
-    } catch (err) {
-        displayError(`Failed to update profile: ${err.message}`);
-    }
-}
+
 
 // Checkout Page Functions
 function displayCheckoutItems() {
