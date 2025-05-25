@@ -15,8 +15,9 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
 
 class UserUpdate(BaseModel):
+    username: Optional[str] = None
     email: Optional[EmailStr] = None
-    is_admin: Optional[bool] = None # For admin privilege escalation demo
+    is_admin: Optional[bool] = None  # For admin privilege escalation demo
 
 class UserInDBBase(UserBase):
     user_id: UUID = Field(default_factory=uuid4)
