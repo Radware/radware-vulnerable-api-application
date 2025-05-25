@@ -1464,8 +1464,9 @@ function renderProducts(products) {
         if (noProductsMessage) noProductsMessage.style.display = 'block';
         return;
     }
-    
+
     if (noProductsMessage) noProductsMessage.style.display = 'none';
+    productsContainer.style.display = 'grid';
     
     let renderPromises = [];
     
@@ -2964,12 +2965,11 @@ async function setDefaultAddress(addressId) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     try {
         const addresses = await apiCall(`/api/users/${userIdForRequest}/addresses`, 'GET');
-        const addressToUpdate = addresses.find(a => a.address_id === addressId);
-        if (!addressToUpdate) throw new Error("Address not found.");
-
-        let queryParams = `street=${encodeURIComponent(addressToUpdate.street)}&city=${encodeURIComponent(addressToUpdate.city)}&country=${encodeURIComponent(addressToUpdate.country)}&zip_code=${encodeURIComponent(addressToUpdate.zip_code)}&is_default=true`;
-
-        await apiCall(`/api/users/${userIdForRequest}/addresses/${addressId}?${queryParams}`, 'PUT', null);
+        for (const addr of addresses) {
+            const isTarget = addr.address_id === addressId;
+            const params = `street=${encodeURIComponent(addr.street)}&city=${encodeURIComponent(addr.city)}&country=${encodeURIComponent(addr.country)}&zip_code=${encodeURIComponent(addr.zip_code)}&is_default=${isTarget}`;
+            await apiCall(`/api/users/${userIdForRequest}/addresses/${addr.address_id}?${params}`, 'PUT', null);
+        }
         displayGlobalMessage(`Default address for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
         await fetchAndDisplayFullProfile(userIdForRequest);
         highlightElement(`address-item-${addressId.substring(0,8)}`);
@@ -2982,12 +2982,11 @@ async function setDefaultCard(cardId) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     try {
         const cards = await apiCall(`/api/users/${userIdForRequest}/credit-cards`, 'GET');
-        const cardToUpdate = cards.find(c => c.card_id === cardId);
-        if (!cardToUpdate) throw new Error("Card not found.");
-
-        let queryParams = `cardholder_name=${encodeURIComponent(cardToUpdate.cardholder_name)}&expiry_month=${encodeURIComponent(cardToUpdate.expiry_month)}&expiry_year=${encodeURIComponent(cardToUpdate.expiry_year)}&is_default=true`;
-
-        await apiCall(`/api/users/${userIdForRequest}/credit-cards/${cardId}?${queryParams}`, 'PUT', null);
+        for (const card of cards) {
+            const isTarget = card.card_id === cardId;
+            const params = `cardholder_name=${encodeURIComponent(card.cardholder_name)}&expiry_month=${encodeURIComponent(card.expiry_month)}&expiry_year=${encodeURIComponent(card.expiry_year)}&is_default=${isTarget}`;
+            await apiCall(`/api/users/${userIdForRequest}/credit-cards/${card.card_id}?${params}`, 'PUT', null);
+        }
         displayGlobalMessage(`Default credit card for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
