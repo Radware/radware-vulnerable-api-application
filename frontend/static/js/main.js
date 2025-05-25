@@ -362,7 +362,6 @@ function initProfilePage() {
     // setupFormToggles(); // This was called here but might be redundant if initializeProfilePageInteractions covers it
 }
 
-
 function initCheckoutPage() {
     console.log('Initializing Checkout Page');
     if (!currentUser) {
@@ -376,143 +375,121 @@ function initCheckoutPage() {
         return;
     }
 
-    displayCheckoutItems(); // This is the function that was missing
-    populateAddressDropdown(); 
+    displayCheckoutItems(); 
+    populateAddressDropdown();  
     populateCreditCardDropdown(); 
     
-    // Add event listener for checkout form submission
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', handleOrderSubmission);
     }
     
-    // Initialize BOLA demo checkbox if it exists
     const bolaCheckbox = document.getElementById('order-for-other-user');
-    const bolaFields = document.getElementById('bola-demo-fields');
-    const userIdInput = document.getElementById('target-user-id');
-    const creditCardIdInput = document.getElementById('target-credit-card-id');
-    const vulnerabilityBanner = document.getElementById('bola-vulnerability-banner');
-    
+    const bolaFields = document.getElementById('bola-demo-fields'); 
+    const targetUserIdInput = document.getElementById('target-user-id');
+    const targetAddressIdInput = document.getElementById('target-address-id');
+    const targetCreditCardIdInput = document.getElementById('target-credit-card-id');
+    const bolaWarningContainerOnCheckout = document.getElementById('bola-warning-container'); // Specific warning div on checkout.html
+
     if (bolaCheckbox) {
         bolaCheckbox.addEventListener('change', function() {
-            if (bolaFields) {
-                bolaFields.style.display = this.checked ? 'block' : 'none';
+            if (bolaFields) bolaFields.style.display = this.checked ? 'block' : 'none';
+            
+            if (targetUserIdInput) {
+                targetUserIdInput.disabled = !this.checked;
+                if (!this.checked) targetUserIdInput.value = ''; 
+            }
+            if (targetAddressIdInput) {
+                targetAddressIdInput.disabled = !this.checked;
+                if (!this.checked) targetAddressIdInput.value = ''; 
+            }
+            if (targetCreditCardIdInput) {
+                targetCreditCardIdInput.disabled = !this.checked;
+                if (!this.checked) targetCreditCardIdInput.value = ''; 
             }
             
-            if (userIdInput) {
-                userIdInput.disabled = !this.checked;
+            if (bolaWarningContainerOnCheckout) {
+                 bolaWarningContainerOnCheckout.style.display = this.checked ? 'block' : 'none';
+                 if(this.checked) {
+                    bolaWarningContainerOnCheckout.innerHTML = `
+                        <h3>⚠️ BOLA Vulnerability Exploit Mode Active!</h3>
+                        <p>You are now configuring an order that may use another user's details or payment methods. 
+                           Proceed with caution for demonstration purposes.</p>
+                        <p>If Target User ID is left blank, the order will be placed for <strong>you (${currentUser.username})</strong>.</p>
+                        <p>If Target Address ID is left blank, your selected/default address will be used for shipping.</p>
+                        <p><strong>You MUST select/enter a Target Credit Card ID to demonstrate payment theft.</strong></p>
+                    `;
+                 } else {
+                    bolaWarningContainerOnCheckout.innerHTML = ''; 
+                 }
             }
-            
-            if (creditCardIdInput) {
-                creditCardIdInput.disabled = !this.checked;
-            }
-            
-            if (vulnerabilityBanner) {
-                vulnerabilityBanner.style.display = this.checked ? 'block' : 'none';
-            }
-            
-            if (!this.checked) {
-                if (userIdInput) userIdInput.value = '';
-                if (creditCardIdInput) creditCardIdInput.value = '';
-                
-                // Hide results and user info when checkbox is unchecked
+
+            if (!this.checked) { 
                 const userSearchResults = document.getElementById('user-search-results');
-                const cardSearchResults = document.getElementById('card-search-results');
-                const targetUserInfo = document.getElementById('target-user-info');
-                
                 if (userSearchResults) userSearchResults.style.display = 'none';
+                
+                const addressSearchResults = document.getElementById('address-search-results');
+                if (addressSearchResults) addressSearchResults.style.display = 'none';
+
+                const cardSearchResults = document.getElementById('card-search-results');
                 if (cardSearchResults) cardSearchResults.style.display = 'none';
-                if (targetUserInfo) targetUserInfo.style.display = 'none';
+                
+                const theftPreview = document.getElementById('theft-preview');
+                if (theftPreview) {
+                    theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Enable BOLA exploit and select a target card to see preview.</div>';
+                }
             }
         });
     }
     
-    // Initialize search buttons
-    const searchUsersBtn = document.getElementById('search-users-btn');
-    if (searchUsersBtn) {
-        searchUsersBtn.addEventListener('click', searchUsers);
-    }
+    document.getElementById('search-users-btn')?.addEventListener('click', searchUsers);
+    document.getElementById('search-addresses-btn')?.addEventListener('click', searchAddressesForBola);
+    document.getElementById('search-cards-btn')?.addEventListener('click', searchCreditCards);
     
-    const searchCardsBtn = document.getElementById('search-cards-btn');
-    if (searchCardsBtn) {
-        searchCardsBtn.addEventListener('click', searchCreditCards);
-    }
-    
-    // Add event listener for when target user ID changes
-    if (userIdInput) {
-        userIdInput.addEventListener('change', updateTargetUserInfo);
+    const theftPreview = document.getElementById('theft-preview');
+    if (theftPreview) {
+        theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Enable BOLA exploit and select a target card to see preview.</div>';
     }
 }
 
 async function searchUsers() {
     const userList = document.getElementById('user-list');
     const resultsContainer = document.getElementById('user-search-results');
+    if (!userList || !resultsContainer) return;
     
-    if (!userList || !resultsContainer)
-        return;
-    
-    userList.innerHTML = '<p>Searching for users...</p>';
+    userList.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Searching for users...</p>';
     resultsContainer.style.display = 'block';
-    
+
     try {
-        const users = await apiCall('/api/users', 'GET');
+        const users = await apiCall('/api/users', 'GET'); 
         if (!users || users.length === 0) {
-            userList.innerHTML = '<p class="text-muted">No users found.</p>';
+            userList.innerHTML = '<p class="text-muted">No other users found to target.</p>';
             return;
         }
         
-        let usersHTML = '<div class="vulnerability-warning mb-3">' +
-                        '<strong>⚠️ BOLA Vulnerability:</strong> You can see and select other users\' IDs!' +
-                        '</div><ul class="list-group">';
-        
+        let usersHTML = '<ul class="demo-result-list">';
         users.forEach(user => {
-            const isCurrentUser = currentUser && user.user_id === currentUser.user_id;
-            const userClass = isCurrentUser ? 'list-group-item-primary' : 'list-group-item-warning';
-            const userLabel = isCurrentUser ? ' (Your Account)' : ' (Another User)';
-            
+            if (user.user_id === currentUser.user_id) return; 
             usersHTML += `
-                <li class="list-group-item ${userClass}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${user.username}</strong>${userLabel}<br>
-                            <small>User ID: <code>${user.user_id}</code></small>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger select-user-btn" 
-                                data-user-id="${user.user_id}" 
-                                data-username="${user.username}">
-                            Select as Target
-                        </button>
+                <li class="demo-user-item">
+                    <div>
+                        <strong>${user.username}</strong><br>
+                        <small>ID: <code>${user.user_id.substring(0,8)}...</code></small>
                     </div>
-                </li>
-            `;
+                    <button class="btn btn-sm btn-outline-primary select-user-btn" 
+                            data-user-id="${user.user_id}" 
+                            data-username="${user.username}">Select User</button>
+                </li>`;
         });
-        
         usersHTML += '</ul>';
         userList.innerHTML = usersHTML;
         
-        // Add click handlers to select buttons
         document.querySelectorAll('.select-user-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const userId = this.getAttribute('data-user-id');
-                const username = this.getAttribute('data-username');
-                document.getElementById('target-user-id').value = userId;
-                
-                // Show success message
-                displayGlobalMessage(`Selected user: ${username} (ID: ${userId})`, 'warning');
-                
-                // Also update the theft preview if it exists
-                const theftPreview = document.getElementById('theft-preview');
-                if (theftPreview) {
-                    theftPreview.innerHTML = `<div class="alert alert-danger">
-                        <strong>⚠️ Target Selected:</strong> ${username} (ID: ${userId})
-                    </div>`;
-                }
-                
-                // Try to auto-search for credit cards for this user
-                const searchCardsBtn = document.getElementById('search-cards-btn');
-                if (searchCardsBtn) {
-                    searchCardsBtn.click();
-                }
+                document.getElementById('target-user-id').value = this.getAttribute('data-user-id');
+                displayGlobalMessage(`Target user set to: ${this.getAttribute('data-username')}`, 'info');
+                document.getElementById('search-addresses-btn')?.click();
+                document.getElementById('search-cards-btn')?.click();
             });
         });
     } catch (error) {
@@ -521,134 +498,107 @@ async function searchUsers() {
 }
 
 async function searchCreditCards() {
-    const targetUserId = document.getElementById('target-user-id').value.trim();
-    const cardList = document.getElementById('card-list');
+    const targetUserIdInput = document.getElementById('target-user-id');
+    const targetUserId = targetUserIdInput ? targetUserIdInput.value.trim() : null;
+    const cardListDiv = document.getElementById('card-list');
     const resultsContainer = document.getElementById('card-search-results');
     const theftPreview = document.getElementById('theft-preview');
-    
-    if (!cardList || !resultsContainer)
-        return;
-    
-    if (!targetUserId) {
-        cardList.innerHTML = '<p class="text-danger">Please select a target user first.</p>';
+
+    if (!cardListDiv || !resultsContainer) return;
+
+    const userIdToSearchCards = targetUserId || (currentUser ? currentUser.user_id : null);
+
+    if (!userIdToSearchCards) {
+        cardListDiv.innerHTML = '<p class="text-danger">Please select or enter a Target User ID first to search for their cards.</p>';
         resultsContainer.style.display = 'block';
+        if (theftPreview) theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Select a target user and then search for their cards.</div>';
         return;
     }
-    
-    // Show loading state
-    cardList.innerHTML = '<p>Searching for credit cards to steal...</p>';
+
+    cardListDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Searching for credit cards...</p>';
     resultsContainer.style.display = 'block';
-    
-    if (theftPreview) {
-        theftPreview.innerHTML = '<div class="alert alert-info">Searching for payment methods...</div>';
-    }
-    
+    if (theftPreview) theftPreview.innerHTML = '<div class="alert alert-info">Searching for payment methods for the target user...</div>';
+
     try {
-        // Get user info for better context
-        let targetUserName = "Unknown User";
+        let targetUserNameForDisplay = "Target User"; 
         try {
-            const userInfo = await apiCall(`/api/users/${targetUserId}`, 'GET');
-            if (userInfo && userInfo.username) {
-                targetUserName = userInfo.username;
-            }
-        } catch (e) {
-            console.warn("Couldn't fetch user details:", e);
-        }
-        
-        // Highlight the vulnerability
-        const isCurrentUser = currentUser && targetUserId === currentUser.user_id;
-        const targetUserLabel = isCurrentUser ? 'YOUR OWN' : 'ANOTHER USER\'S';
-        
-        // Now get the credit cards
-        const cards = await apiCall(`/api/users/${targetUserId}/credit-cards`, 'GET');
+            const userInfo = await apiCall(`/api/users/${userIdToSearchCards}`, 'GET', null, true);
+            if (userInfo && userInfo.username) targetUserNameForDisplay = userInfo.username;
+        } catch (e) { console.warn("Couldn't fetch target user details:", e); }
+
+        const cards = await apiCall(`/api/users/${userIdToSearchCards}/credit-cards`, 'GET', null, true);
         if (!cards || cards.length === 0) {
-            cardList.innerHTML = `<p class="text-muted">No credit cards found for ${targetUserName}.</p>`;
+            cardListDiv.innerHTML = `<p class="text-muted">No credit cards found for ${targetUserNameForDisplay}.</p>`;
+            if (theftPreview) theftPreview.innerHTML = `<div class="no-theft-selected alert alert-secondary">No cards found for ${targetUserNameForDisplay}.</div>`;
             return;
         }
         
-        // Update the theft preview first with stronger warning
         if (theftPreview) {
-            theftPreview.innerHTML = `
-                <div class="alert alert-danger">
-                    <h4 class="alert-heading">⚠️ BOLA Vulnerability Demo</h4>
-                    <p>You are about to place an order using ${targetUserLabel} payment method.</p>
-                    <p><strong>Target User:</strong> ${targetUserName} (ID: ${targetUserId})</p>
-                    <hr>
-                    <p class="mb-0">This demonstrates a Broken Object Level Authorization (BOLA) vulnerability where you can charge purchases to another user's payment method.</p>
+             theftPreview.innerHTML = `
+                <div class="alert alert-secondary">
+                    <h4 class="alert-heading">Configuring BOLA Payment Exploit</h4>
+                    <p>Select a card below to use for the order. The order will be placed by <strong>${currentUser.username}</strong> (you).</p>
+                    <p><strong>Targeting cards of:</strong> ${targetUserNameForDisplay} (ID: ${userIdToSearchCards.substring(0,8)}...)</p>
                 </div>
             `;
         }
-        
-        let cardsHTML = `
-            <div class="vulnerability-warning mb-3">
-                <strong>⚠️ BOLA Vulnerability:</strong> You can see and use ${targetUserLabel} credit cards!
-            </div>
-            <div class="alert alert-${isCurrentUser ? 'info' : 'danger'} mb-3">
-                Viewing credit cards belonging to: <strong>${targetUserName}</strong> (ID: ${targetUserId})
-            </div>
-            <ul class="list-group">
-        `;
-        
+
+        let cardsHTML = '<ul class="demo-card-list">';
         cards.forEach(card => {
-            const cardOwnership = isCurrentUser ? 'YOUR OWN CARD' : 'ANOTHER USER\'S CARD';
-            const cardClass = isCurrentUser ? 'list-group-item-info' : 'list-group-item-danger';
-            
+            const isDefaultBadge = card.is_default ? '<span class="default-badge">Default</span>' : '';
             cardsHTML += `
-                <li class="list-group-item ${cardClass}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge badge-warning">${cardOwnership}</span>
-                            <br>
-                            <strong>${card.cardholder_name}</strong><br>
-                            <small>Card ending in: ${card.card_last_four}</small><br>
-                            <small>Expires: ${card.expiry_month}/${card.expiry_year.substring(2)}</small><br>
-                            <small>Card ID: <code>${card.card_id}</code></small>
-                        </div>
-                        <button class="btn btn-sm btn-outline-danger select-card-btn" 
-                                data-card-id="${card.card_id}"
-                                data-last-four="${card.card_last_four}"
-                                data-owner-name="${targetUserName}">
-                            Use This Card
-                        </button>
+                <li class="demo-card-item ${card.is_default ? 'is-default' : ''}">
+                    <div class="demo-card-info">
+                        <strong>${card.cardholder_name}</strong> ${isDefaultBadge}<br>
+                        <small>Card: •••• ${card.card_last_four} | Expires: ${card.expiry_month}/${card.expiry_year.substring(2)}</small><br>
+                        <small>ID: <code>${card.card_id.substring(0,8)}...</code></small>
                     </div>
-                </li>
-            `;
+                    <button class="btn btn-sm btn-outline-danger select-card-btn" 
+                            data-card-id="${card.card_id}"
+                            data-last-four="${card.card_last_four}"
+                            data-cardholder-name="${card.cardholder_name}"
+                            data-owner-name="${targetUserNameForDisplay}">
+                        Use This Card
+                    </button>
+                </li>`;
         });
-        
         cardsHTML += '</ul>';
-        cardList.innerHTML = cardsHTML;
-        
-        // Add click handlers to select buttons
+        cardListDiv.innerHTML = cardsHTML;
+
         document.querySelectorAll('.select-card-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const cardId = this.getAttribute('data-card-id');
                 const lastFour = this.getAttribute('data-last-four');
-                const ownerName = this.getAttribute('data-owner-name');
+                const cardholderName = this.getAttribute('data-cardholder-name');
+                const ownerName = this.getAttribute('data-owner-name'); 
+
                 document.getElementById('target-credit-card-id').value = cardId;
+
+                document.querySelectorAll('#card-list .demo-card-item.selected').forEach(item => item.classList.remove('selected'));
+                this.closest('.demo-card-item').classList.add('selected');
                 
-                // Show stronger warning message
-                if (isCurrentUser) {
-                    displayGlobalMessage(`Selected your own card ending in ${lastFour}`, 'info');
-                } else {
-                    displayGlobalMessage(`⚠️ VULNERABILITY DEMO: Selected ${ownerName}'s card ending in ${lastFour}`, 'warning');
-                    
-                    // Show a larger warning in the theft preview
-                    if (theftPreview) {
-                        theftPreview.innerHTML += `
-                            <div class="alert alert-warning">
-                                <strong>Card Selected:</strong> ${ownerName}'s card ending in ${lastFour}
-                                <hr>
-                                <p>You can now complete the order charging to this card!</p>
-                            </div>
-                        `;
-                    }
+                if (theftPreview) {
+                    theftPreview.innerHTML = `
+                        <div class="card-theft-preview">
+                             <h4><span class="exploit-indicator">EXPLOIT READY</span> Payment Method Selected for BOLA:</h4>
+                             <div class="stolen-card-details">
+                                <p class="card-detail-row"><span class="card-detail-label">Victim Cardholder:</span> <span class="card-detail-value">${cardholderName} (${ownerName})</span></p>
+                                <p class="card-detail-row"><span class="card-detail-label">Card:</span> <span class="card-detail-value">•••• •••• •••• ${lastFour}</span> <span class="stolen-badge">VICTIM'S</span></p>
+                                <p class="card-detail-row"><span class="card-detail-label">Card ID:</span> <code>${cardId.substring(0,8)}...</code></p>
+                             </div>
+                             <p class="mt-2">Order will be placed by <strong>${currentUser.username}</strong>. Shipping address will be based on your selection in the main form or the BOLA address field (if filled).</p>
+                             <p>Click "Place Order" to execute.</p>
+                        </div>
+                    `;
                 }
             });
         });
     } catch (error) {
-        cardList.innerHTML = `<p class="text-danger">Error loading credit cards: ${error.message}</p>`;
+        cardListDiv.innerHTML = `<p class="text-danger">Error loading credit cards: ${error.message}</p>`;
+        if (theftPreview) theftPreview.innerHTML = '<div class="alert alert-danger">Error fetching cards.</div>';
     }
 }
+
 
 async function updateTargetUserInfo() {
     const targetUserId = document.getElementById('target-user-id').value.trim();
@@ -727,6 +677,73 @@ async function updateTargetUserInfo() {
     }
 }
 
+
+async function searchAddressesForBola() {
+    const targetUserIdInput = document.getElementById('target-user-id');
+    const targetUserId = targetUserIdInput ? targetUserIdInput.value.trim() : null;
+    const addressListDiv = document.getElementById('address-list');
+    const resultsContainer = document.getElementById('address-search-results');
+
+    if (!addressListDiv || !resultsContainer) {
+        console.error("Address search result containers not found.");
+        return;
+    }
+
+    if (!targetUserId) {
+        addressListDiv.innerHTML = '<p class="text-danger">Please select or enter a Target User ID first to search for their addresses.</p>';
+        resultsContainer.style.display = 'block';
+        return;
+    }
+
+    addressListDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Searching for addresses...</p>';
+    resultsContainer.style.display = 'block';
+
+    try {
+        const addresses = await apiCall(`/api/users/${targetUserId}/addresses`, 'GET', null, true); 
+        
+        if (!addresses || addresses.length === 0) {
+            addressListDiv.innerHTML = '<p class="text-muted">No addresses found for this user.</p>';
+            return;
+        }
+
+        let addressesHTML = '<ul class="demo-result-list">';
+        addresses.forEach(addr => {
+            const isDefaultBadge = addr.is_default ? '<span class="default-badge">Default</span>' : '';
+            addressesHTML += `
+                <li class="demo-card-item">
+                    <div class="demo-card-info">
+                        <strong>${addr.street}</strong>, ${addr.city} ${isDefaultBadge}<br>
+                        <small>${addr.country}, ${addr.zip_code}</small><br>
+                        <small>ID: <code>${addr.address_id.substring(0,8)}...</code></small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-warning select-address-btn" 
+                            data-address-id="${addr.address_id}">Use This Address</button>
+                </li>`;
+        });
+        addressesHTML += '</ul>';
+        addressListDiv.innerHTML = addressesHTML;
+
+        document.querySelectorAll('.select-address-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const selectedAddressId = this.getAttribute('data-address-id');
+                const targetAddressIdInputEl = document.getElementById('target-address-id');
+                if (targetAddressIdInputEl) {
+                    targetAddressIdInputEl.value = selectedAddressId;
+                }
+                displayGlobalMessage(`Target Address ID set to: ${selectedAddressId.substring(0,8)}...`, 'info');
+                
+                document.querySelectorAll('#address-list .demo-card-item.selected').forEach(item => item.classList.remove('selected'));
+                this.closest('.demo-card-item').classList.add('selected');
+            });
+        });
+
+    } catch (error) {
+        addressListDiv.innerHTML = `<p class="text-danger">Error loading addresses: ${error.message}</p>`;
+        console.error("Error in searchAddressesForBola:", error);
+    }
+}
+
+
 function initOrdersPage() {
     console.log('Initializing Orders Page');
     if (!currentUser) {
@@ -734,68 +751,60 @@ function initOrdersPage() {
         return;
     }
     
-    // Check if we were viewing another user's orders after BOLA exploit
-    const storedTargetUserId = sessionStorage.getItem('view_orders_for_user_id');
-    const storedTargetUsername = sessionStorage.getItem('view_orders_for_username');
-    
+    const bolaTargetUserIdFromStorage = sessionStorage.getItem('view_orders_for_user_id');
+    const bolaTargetUsernameFromStorage = sessionStorage.getItem('view_orders_for_username');
+
     let viewingUserIdInput = document.getElementById('viewing-user-id-orders');
     if (!viewingUserIdInput) {
         viewingUserIdInput = document.createElement('input');
         viewingUserIdInput.type = 'hidden';
         viewingUserIdInput.id = 'viewing-user-id-orders';
-        const demoSection = document.querySelector('.vulnerability-demo-section');
-        if (demoSection) {
-            demoSection.appendChild(viewingUserIdInput);
-        } else {
-            document.body.appendChild(viewingUserIdInput);
-        }
+        const demoSection = document.getElementById('view-orders-form'); 
+        if (demoSection) demoSection.appendChild(viewingUserIdInput);
+        else document.body.appendChild(viewingUserIdInput);
+    }
+
+    viewingUserIdInput.value = bolaTargetUserIdFromStorage || currentUser.user_id;
+    
+    const targetUserIdFieldOnPage = document.getElementById('target-user-id'); 
+    if (targetUserIdFieldOnPage && bolaTargetUserIdFromStorage) {
+        targetUserIdFieldOnPage.value = bolaTargetUserIdFromStorage; 
+    }
+
+    fetchAndDisplayOrders(); 
+
+    if (bolaTargetUserIdFromStorage && bolaTargetUserIdFromStorage !== currentUser.user_id) {
+        const displayUsername = bolaTargetUsernameFromStorage || `User ID ${bolaTargetUserIdFromStorage.substring(0,8)}...`;
+        displayGlobalMessage(`BOLA Context: Displaying orders for ${displayUsername}.`, 'warning', 7000);
     }
     
-    // If we have a stored target user ID from the checkout BOLA exploit, use it
-    if (storedTargetUserId) {
-        viewingUserIdInput.value = storedTargetUserId;
-        
-        // Also populate the target user ID field for visibility
-        const targetUserIdField = document.getElementById('target-user-id');
-        if (targetUserIdField) {
-            targetUserIdField.value = storedTargetUserId;
-        }
-        
-        // Show a message that we're viewing another user's orders
-        displayGlobalMessage(`BOLA Vulnerability Demo: Viewing orders for user ${storedTargetUsername || storedTargetUserId}`, 'warning');
-        
-        // Clear the stored values after using them
-        sessionStorage.removeItem('view_orders_for_user_id');
-        sessionStorage.removeItem('view_orders_for_username');
-    } else {
-        viewingUserIdInput.value = currentUser.user_id;
-    }
-
-    fetchAndDisplayOrders();
+    // Clear immediately after use for this page load only
+    sessionStorage.removeItem('view_orders_for_user_id');
+    sessionStorage.removeItem('view_orders_for_username');
 
     const viewOrdersForm = document.getElementById('view-orders-form');
-    const targetUserIdField = document.getElementById('target-user-id');
     const returnButton = document.getElementById('return-to-own-orders');
 
-    if (viewOrdersForm && targetUserIdField && viewingUserIdInput) {
+    if (viewOrdersForm && targetUserIdFieldOnPage && viewingUserIdInput) {
         viewOrdersForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const targetId = targetUserIdField.value.trim();
+            const targetId = targetUserIdFieldOnPage.value.trim();
             if (targetId) {
-                viewingUserIdInput.value = targetId;
+                viewingUserIdInput.value = targetId; 
                 fetchAndDisplayOrders();
             } else {
-                displayError('Please enter a User ID to view their orders.');
+                displayGlobalMessage('Please enter a User ID to view their orders.', 'error');
             }
         });
     }
-    if (returnButton && viewingUserIdInput && targetUserIdField) {
+    if (returnButton && viewingUserIdInput && targetUserIdFieldOnPage) {
          returnButton.addEventListener('click', function() {
             viewingUserIdInput.value = currentUser.user_id;
-            targetUserIdField.value = '';
-            document.getElementById('current-viewing').style.display = 'none';
+            targetUserIdFieldOnPage.value = '';
+            const currentViewingDiv = document.getElementById('current-viewing');
+            if(currentViewingDiv) currentViewingDiv.style.display = 'none';
             fetchAndDisplayOrders();
-            displayGlobalMessage('Returned to your own orders', 'info');
+            displayGlobalMessage('Returned to viewing your own orders.', 'info');
         });
     }
 }
@@ -1504,57 +1513,80 @@ async function fetchAndDisplayOrders() {
     
     const ordersContainer = document.getElementById('orders-container');
     if (!ordersContainer) { console.error('Orders container not found.'); return; }
-    ordersContainer.innerHTML = '<div class="loading-indicator">Loading orders...</div>';
+    ordersContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Loading orders...</div>';
     
+    const currentViewingDiv = document.getElementById('current-viewing');
+    const viewingUsernameSpan = document.getElementById('viewing-username-display'); 
+    const viewingUserIdCode = document.getElementById('viewing-user-id-display-code');
+
     try {
         const userIdToFetch = document.getElementById('viewing-user-id-orders')?.value || currentUser.user_id;
         const orders = await apiCall(`/api/users/${userIdToFetch}/orders`, 'GET', null, true);
         
-        renderOrders(orders, ordersContainer);
+        // Ensure renderOrders is defined and handles the `orders` array
+        if (typeof renderOrders === 'function') {
+            renderOrders(orders, ordersContainer); 
+        } else {
+            console.error('renderOrders function is not defined.');
+            ordersContainer.innerHTML = '<p class="text-danger">Error: UI rendering function is missing.</p>';
+        }
 
-        const currentViewingDiv = document.getElementById('current-viewing');
-        // const viewOrdersForm = document.getElementById('view-orders-form'); 
 
         if (userIdToFetch !== currentUser.user_id) {
-            const targetUser = await apiCall(`/api/users/${userIdToFetch}`, 'GET', null, true);
-            if (currentViewingDiv) {
-                document.getElementById('viewing-username').textContent = targetUser.username;
-                document.getElementById('viewing-user-id-display').textContent = userIdToFetch;
-                currentViewingDiv.style.display = 'flex';
+            let fetchedTargetUsername = "Target User"; 
+            try {
+                const targetUser = await apiCall(`/api/users/${userIdToFetch}`, 'GET', null, true);
+                if (targetUser && targetUser.username) fetchedTargetUsername = targetUser.username;
+            } catch (e) { console.warn("Could not fetch target username for display on orders page", e); }
+
+            if (currentViewingDiv && viewingUsernameSpan && viewingUserIdCode) {
+                viewingUsernameSpan.textContent = fetchedTargetUsername;
+                viewingUserIdCode.textContent = userIdToFetch.substring(0,8)+"...";
+                currentViewingDiv.style.display = 'flex'; 
             }
-            displayGlobalMessage(`BOLA: Viewing orders for ${targetUser.username}`, 'warning');
         } else {
             if (currentViewingDiv) currentViewingDiv.style.display = 'none';
         }
 
     } catch (error) {
-        ordersContainer.innerHTML = '';
-        displayError(`Failed to load orders: ${error.message}`);
+        ordersContainer.innerHTML = ''; 
+        displayGlobalMessage(`Failed to load orders: ${error.message}`, 'error');
+         if (currentViewingDiv) currentViewingDiv.style.display = 'none';
     }
 }
 
 function renderOrders(orders, container) {
     if (!orders || orders.length === 0) {
-        container.innerHTML = '<p>No orders found.</p>';
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><p>No orders found.</p></div>';
         return;
     }
     let ordersHTML = `
-        <table class="orders-table table">
-            <thead><tr><th>Order ID</th><th>Date</th><th>Status</th><th>Total</th><th>Items</th></tr></thead>
+        <table class="orders-table table table-striped table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-center">Items</th>
+                </tr>
+            </thead>
             <tbody>`;
     orders.forEach(order => {
         const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A';
         let totalAmount = order.total_amount || 0;
-        if(order.items && order.items.length > 0 && totalAmount === 0) {
+        if(order.items && order.items.length > 0 && totalAmount === 0) { // Recalculate if needed
             totalAmount = order.items.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0);
         }
+        const itemCount = order.items ? order.items.length : 0;
 
         ordersHTML += `
             <tr data-order-id="${order.order_id}">
-                <td>${order.order_id.substring(0,8)}...</td><td>${orderDate}</td>
-                <td><span class="order-status ${order.status.toLowerCase()}">${order.status}</span></td>
-                <td>$${totalAmount.toFixed(2)}</td>
-                <td class="text-center">${order.items.length}</td>
+                <td><code>${order.order_id.substring(0,8)}...</code></td>
+                <td>${orderDate}</td>
+                <td><span class="badge badge-info order-status ${order.status.toLowerCase()}">${order.status}</span></td>
+                <td class="text-right">$${totalAmount.toFixed(2)}</td>
+                <td class="text-center">${itemCount}</td>
             </tr>`;
     });
     ordersHTML += `</tbody></table>`;
@@ -2241,229 +2273,193 @@ async function populateCreditCardDropdown() {
 
 async function handleOrderSubmission(e) {
     e.preventDefault();
-    // Defensive: check for error/success containers before using them
+    
     const errorContainer = document.getElementById('checkout-error');
-    const successContainer = document.getElementById('checkout-success');
     if (errorContainer) {
         errorContainer.style.display = 'none';
         errorContainer.innerHTML = '';
     }
-    if (successContainer) {
-        successContainer.style.display = 'none';
-        successContainer.innerHTML = '';
-    }
-    // Show loading state
+
     const submitButton = document.getElementById('place-order-btn');
-    const originalButtonText = submitButton.innerHTML;
-    submitButton.innerHTML = 'Processing...';
+    if (!submitButton) {
+        console.error("Place order button not found!");
+        return;
+    }
+    const originalButtonText = submitButton.textContent; 
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     submitButton.disabled = true;
-    
-    const addressId = document.getElementById('address-id')?.value || '';
-    const creditCardId = document.getElementById('credit-card-id')?.value || '';
-    
-    // Check if form is valid
+
+    const normalAddressIdEl = document.getElementById('address-id');
+    const normalCreditCardIdEl = document.getElementById('credit-card-id');
+    const normalAddressId = normalAddressIdEl?.value || '';
+    const normalCreditCardId = normalCreditCardIdEl?.value || '';
+
     const bolaCheckbox = document.getElementById('order-for-other-user');
-    const targetUserId = document.getElementById('target-user-id');
-    const targetCreditCardId = document.getElementById('target-credit-card-id');
-    const targetAddressId = document.getElementById('target-address-id');
+    const targetUserIdInput = document.getElementById('target-user-id');
+    const targetAddressIdInput = document.getElementById('target-address-id');
+    const targetCreditCardIdInput = document.getElementById('target-credit-card-id');
+
+    let userIdForOrder = currentUser.user_id; 
+    let addressIdForOrder = normalAddressId; 
+    let creditCardIdForOrder = normalCreditCardId; 
     
-    if (bolaCheckbox && bolaCheckbox.checked) {
-        // BOLA mode: require victim user and card
-        if (!targetUserId?.value?.trim() || !targetCreditCardId?.value?.trim()) {
-            displayError('Please select a victim user AND a victim credit card for the BOLA exploit.');
+    let victimUserNameForMessage = ''; // User whose resources are being targeted or whose card is used
+    let isBOLAExploitActive = bolaCheckbox && bolaCheckbox.checked;
+    let wasPaymentTheftAttempted = false; // Specifically for using another's card for current user's order
+
+    if (isBOLAExploitActive) {
+        const victimUserIdValue = targetUserIdInput?.value?.trim(); // User ID entered in BOLA field
+        const victimAddressIdValue = targetAddressIdInput?.value?.trim();
+        const victimCreditCardIdValue = targetCreditCardIdInput?.value?.trim();
+
+        if (victimUserIdValue) { // If a target user ID is provided for BOLA (order AS another user)
+            userIdForOrder = victimUserIdValue;
+            try {
+                const victimInfo = await apiCall(`/api/users/${victimUserIdValue}`, 'GET', null, true);
+                if (victimInfo) victimUserNameForMessage = victimInfo.username;
+            } catch (err) { console.warn("Could not fetch victim user info:", err); victimUserNameForMessage = "Target User"; }
+        } else { 
+            // No BOLA target user ID, so order is for currentUser.
+            // victimUserNameForMessage will be populated later if a victim's card is used.
+        }
+        
+        if (victimAddressIdValue) { 
+            addressIdForOrder = victimAddressIdValue;
+        } else if (userIdForOrder === currentUser.user_id && !normalAddressId) { 
+            // BOLA mode, order for self, target BOLA address blank, normal address dropdown also blank
+            // -> try to use current user's default address
+            try {
+                const addresses = await apiCall(`/api/users/${currentUser.user_id}/addresses`, 'GET', null, true);
+                const defaultAddr = addresses.find(a => a.is_default) || (addresses.length > 0 ? addresses[0] : null);
+                if (defaultAddr) addressIdForOrder = defaultAddr.address_id;
+            } catch (err) { console.warn("BOLA (ship to self): Could not fetch current user's addresses.", err); }
+        }
+        // If victimAddressIdValue is blank, and order is for self, addressIdForOrder remains normalAddressId.
+        // If victimAddressIdValue is blank, and order is FOR another user (victimUserIdValue is set), 
+        // then addressIdForOrder (which was defaulted to normalAddressId) might be the attacker's address. This is another BOLA vector.
+
+        if (victimCreditCardIdValue) { 
+            creditCardIdForOrder = victimCreditCardIdValue; // Use the card ID from BOLA input
+            if (userIdForOrder === currentUser.user_id && creditCardIdForOrder !== normalCreditCardId) {
+                // If order is for current user, but the BOLA card is different from their normally selected card
+                wasPaymentTheftAttempted = true;
+                // Try to get the name of the owner of the stolen card for the message
+                const cardOwnerUserId = targetUserIdInput?.value?.trim() || currentUser.user_id; // If target user for order is blank, card might still belong to another target user whose cards were searched
+                if (cardOwnerUserId !== currentUser.user_id) { // If card owner is not current user
+                     try {
+                        const cardOwnerInfo = await apiCall(`/api/users/${cardOwnerUserId}`, 'GET', null, true);
+                        if (cardOwnerInfo) victimUserNameForMessage = cardOwnerInfo.username; else victimUserNameForMessage = "Another User";
+                    } catch(e) { victimUserNameForMessage = "Another User"; }
+                } else if (!victimUserNameForMessage) { // If order is for self, card owner must be someone else for theft
+                    victimUserNameForMessage = "Another User (Card Owner)"; // Generic if we couldn't get target user's name earlier
+                }
+            } else if (userIdForOrder !== currentUser.user_id) {
+                // Order is FOR another user, and we are using a card from BOLA fields (could be theirs, could be yet another's)
+                wasPaymentTheftAttempted = true; // Count this as attempted theft scenario for messaging
+                // victimUserNameForMessage should already be set from victimUserIdValue block
+            }
+        } else { 
+            displayGlobalMessage('BOLA Exploit: Target Credit Card ID is required if BOLA mode is enabled.', 'error');
             submitButton.innerHTML = originalButtonText;
             submitButton.disabled = false;
             return;
         }
-    } else {
-        // Normal mode: require own address/card
-        if (!addressId || !creditCardId) {
-            displayError('Please select both a shipping address and payment method.');
+    } else { // Normal Checkout (BOLA checkbox not checked)
+        if (!addressIdForOrder) {
+            displayGlobalMessage('Please select a shipping address.', 'error');
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+            return;
+        }
+        if (!creditCardIdForOrder) {
+            displayGlobalMessage('Please select a payment method.', 'error');
             submitButton.innerHTML = originalButtonText;
             submitButton.disabled = false;
             return;
         }
     }
-    
-    try {
-        // Determine which user ID to use for the order
-        let userIdForOrder = currentUser.user_id;
-        let creditCardIdForOrder = creditCardId;
-        let addressIdForOrder = addressId;
-        let exploitedUserName = '';
-        let exploitedCardDetails = null;
-        
-        // Check if BOLA exploit is active
-        if (bolaCheckbox && bolaCheckbox.checked) {
-            // Get victim user info if available
-            if (targetUserId?.value?.trim()) {
-                try {
-                    const targetUserInfo = await apiCall(`/api/users/${targetUserId.value.trim()}`, 'GET', null, true);
-                    if (targetUserInfo) {
-                        exploitedUserName = targetUserInfo.username;
-                        userIdForOrder = targetUserId.value.trim();
-                    }
-                } catch (error) {
-                    console.warn("Could not fetch target user info:", error);
-                }
-            }
-            
-            // If target credit card ID is provided, use it (this demonstrates the BOLA vulnerability)
-            if (targetCreditCardId?.value?.trim()) {
-                creditCardIdForOrder = targetCreditCardId.value.trim();
-                console.warn('BOLA VULNERABILITY DEMONSTRATED: Using another user\'s credit card:', creditCardIdForOrder);
-                
-                try {
-                    // Get details about the stolen card for better feedback
-                    const allCards = await apiCall(`/api/users/${userIdForOrder}/credit-cards`, 'GET', null, true);
-                    exploitedCardDetails = allCards.find(card => card.card_id === creditCardIdForOrder);
-                } catch (error) {
-                    console.warn("Could not fetch details of stolen card:", error);
-                }
-            }
-            
-            // If target address ID is provided, use it instead of the user's
-            if (targetAddressId?.value?.trim()) {
-                addressIdForOrder = targetAddressId.value.trim();
-            }
-        }
-        
-        // Ensure we have an address ID before continuing
-        if (!addressIdForOrder) {
-            displayError('Please select a shipping address.');
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-            return;
-        }
-        
-        // Construct API URL with query parameters
-        let orderEndpoint = `/api/users/${userIdForOrder}/orders?address_id=${addressIdForOrder}&credit_card_id=${creditCardIdForOrder}`;
-        
-        // Add all cart items to the query parameters
-        cart.forEach((item, index) => {
-            const i = index + 1; // 1-based index for API
-            orderEndpoint += `&product_id_${i}=${item.product_id}&quantity_${i}=${item.quantity}`;
-        });
-        
-        // Call the API to create the order
-        const newOrder = await apiCall(orderEndpoint, 'POST', null, true);
-        
-        // Clear the cart after successful order
-        cart = [];
-        saveCart();
-        
-        // Show success message with vulnerability notice if applicable
-        let successMessage = `Order placed successfully! Order ID: ${newOrder.order_id}`;
-        let exploitDetails = '';
-        
-        // Enhanced feedback for credit card theft
-        if (creditCardIdForOrder !== creditCardId) {
-            // We're using a stolen credit card
-            successMessage = `BOLA Exploit: Order charged to ${exploitedUserName || "another user"}'s credit card!`;
-            
-            // Create more detailed exploit feedback
-            exploitDetails = `
-                <div class="exploit-success">
-                    <div class="exploit-header">
-                        <div class="exploit-icon">🔐</div>
-                        <h3>Security Vulnerability Exploited!</h3>
-                    </div>
-                    
-                    <div class="exploit-details">
-                        <p>You've successfully demonstrated a <strong>Broken Object Level Authorization (BOLA)</strong> vulnerability by:</p>
-                        <ul>
-                            <li>Placing an order as yourself (${currentUser.username})</li>
-                            <li>But charging it to <strong>${exploitedUserName || "another user"}</strong>'s credit card</li>
-                        </ul>
-                        
-                        <div class="stolen-card-summary">
-                            <h4>Stolen Payment Details:</h4>
-                            <div class="card-theft-details">
-                                ${exploitedCardDetails ? `
-                                    <p><strong>Cardholder:</strong> ${exploitedCardDetails.cardholder_name}</p>
-                                    <p><strong>Card:</strong> •••• •••• •••• ${exploitedCardDetails.card_last_four}</p>
-                                    <p><strong>Expires:</strong> ${exploitedCardDetails.expiry_month}/${exploitedCardDetails.expiry_year.substring(2)}</p>
-                                ` : `
-                                    <p><strong>Card ID:</strong> ${creditCardIdForOrder.substring(0,8)}...</p>
-                                `}
-                            </div>
-                        </div>
-                        
-                        <div class="security-impact-large">
-                            <span>Security Impact:</span>
-                            <div class="impact-meter high">
-                                <span>CRITICAL</span>
-                            </div>
-                        </div>
-                        
-                        <p>In a real application, this vulnerability would allow attackers to make unauthorized charges to any user's payment method.</p>
-                        
-                        <div class="action-buttons">
-                            <button id="view-victim-orders" class="btn btn-warning">
-                                View ${exploitedUserName || "Victim"}'s Orders
-                            </button>
-                            <button id="view-own-orders" class="btn btn-primary">
-                                View Your Orders
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Replace form with exploit details
-            const checkoutForm = document.getElementById('checkout-form');
-            if (checkoutForm) {
-                checkoutForm.innerHTML = '';
-                
-                const exploitSuccessElement = document.createElement('div');
-                exploitSuccessElement.className = 'vulnerability-exploit-success';
-                exploitSuccessElement.innerHTML = exploitDetails;
-                
-                checkoutForm.appendChild(exploitSuccessElement);
-                
-                // Add event listeners to the buttons
-                document.getElementById('view-victim-orders').addEventListener('click', () => {
-                    // Store the target user ID in session to view their orders
-                    sessionStorage.setItem('view_orders_for_user_id', userIdForOrder);
-                    sessionStorage.setItem('view_orders_for_username', exploitedUserName || "Target User");
-                    window.location.href = '/orders';
-                });
-                
-                document.getElementById('view-own-orders').addEventListener('click', () => {
-                    window.location.href = '/orders';
-                });
-                
-                displayGlobalMessage('BOLA Vulnerability Exploited: Order charged to another user\'s credit card!', 'warning');
-                // Re-enable the button and reset text to avoid stuck state
-                if (submitButton) {
-                    submitButton.innerHTML = originalButtonText;
-                    submitButton.disabled = false;
-                }
-                return;
-            }
-        } else if (userIdForOrder !== currentUser.user_id) {
-            // We're placing an order as another user
-            successMessage = `BOLA Vulnerability: Order placed as user ${exploitedUserName || userIdForOrder}!`;
-            displayGlobalMessage('BOLA Vulnerability Exploited: Order placed as another user!', 'warning');
-        }
-        
-        displaySuccess(successMessage);
-        
-        // Replace button with success indicator
-        submitButton.className = 'btn btn-success';
-        submitButton.innerHTML = '<i class="fas fa-check"></i> Order Placed!';
-        
-        // Redirect to orders page after a delay
-        setTimeout(() => {
-            window.location.href = '/orders';
-        }, 3000);
-        
-    } catch (error) {
-        displayError(`Failed to place order: ${error.message}`);
+
+    // Final validation checks
+    if (!addressIdForOrder) {
+        displayGlobalMessage('A shipping address ID is required. Please select one or add one to your profile.', 'error');
         submitButton.innerHTML = originalButtonText;
         submitButton.disabled = false;
+        return;
+    }
+    if (!creditCardIdForOrder) {
+        displayGlobalMessage('A credit card ID is required for payment. Please select one or add one.', 'error');
+        submitButton.innerHTML = originalButtonText;
+        submitButton.disabled = false;
+        return;
+    }
+    if (cart.length === 0) {
+        displayGlobalMessage('Your cart is empty. Cannot place an order.', 'error');
+        submitButton.innerHTML = originalButtonText;
+        submitButton.disabled = false;
+        return;
+    }
+
+    try {
+        let orderEndpoint = `/api/users/${userIdForOrder}/orders?address_id=${addressIdForOrder}&credit_card_id=${creditCardIdForOrder}`;
+        cart.forEach((item, index) => {
+            orderEndpoint += `&product_id_${index + 1}=${item.product_id}&quantity_${index + 1}=${item.quantity}`;
+        });
+        
+        console.log("Placing order with endpoint:", orderEndpoint); // For debugging
+        const newOrder = await apiCall(orderEndpoint, 'POST', null, true); 
+        
+        const orderIdShort = newOrder.order_id.substring(0,8);
+        cart = []; 
+        saveCart(); 
+        
+        let successMessageText = `Order ${orderIdShort}... placed successfully!`;
+        let messageType = 'success';
+        let redirectDelay = 3000;
+
+        // Set user context for the orders page redirect
+        // Default to the user FOR whom the order was placed.
+        sessionStorage.setItem('view_orders_for_user_id', userIdForOrder); 
+        sessionStorage.setItem('view_orders_for_username', victimUserNameForMessage || "User"); // Use username if available
+
+        if (isBOLAExploitActive) {
+            if (wasPaymentTheftAttempted && userIdForOrder === currentUser.user_id) {
+                // SCENARIO: Current user (attacker) orders for themselves, shipping to their own address, but using VICTIM's card.
+                successMessageText = `BOLA EXPLOIT: Order ${orderIdShort} (for you, ${currentUser.username}) charged to ${victimUserNameForMessage}'s card!`;
+                messageType = 'warning'; 
+                redirectDelay = 7000; 
+                // For the orders page, we'll still show the current user's orders, as the order belongs to them.
+                // The exploit was the payment method.
+                sessionStorage.setItem('view_orders_for_user_id', currentUser.user_id); 
+                sessionStorage.setItem('view_orders_for_username', currentUser.username);
+            } else if (userIdForOrder !== currentUser.user_id) {
+                // SCENARIO: Order placed FOR/AS another user.
+                successMessageText = `BOLA EXPLOIT: Order ${orderIdShort} placed FOR ${victimUserNameForMessage || 'target user'}!`;
+                messageType = 'warning';
+                redirectDelay = 7000;
+                // Session storage is already set to userIdForOrder (the victim) in this case.
+            }
+        }
+        
+        displayGlobalMessage(successMessageText, messageType, redirectDelay - 500); 
+        
+        if (submitButton) {
+            submitButton.className = 'btn btn-success btn-lg'; 
+            submitButton.innerHTML = '<i class="fas fa-check-circle"></i> Order Placed!';
+        }
+        
+        setTimeout(() => {
+            window.location.href = '/orders'; 
+        }, redirectDelay);
+
+    } catch (error) {
+        displayGlobalMessage(`Failed to place order: ${error.message}`, 'error');
+        if (submitButton) {
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+        }
     }
 }
+
 
 // Admin page functions
 function setupAdminInterface() {
