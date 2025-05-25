@@ -31,7 +31,31 @@
             <button id="return-to-own-orders" class="btn-secondary btn-sm">Return to Your Orders</button>
         </div>
     </div>
-    
+
+    <div class="vulnerability-demo-section">
+        <h2>List Users</h2>
+        <p>This exposes the <code>GET /api/users</code> endpoint to any authenticated user.</p>
+        <button type="button" id="list-users-btn" class="btn btn-warning btn-exploit">List Users</button>
+        <ul id="users-list" class="list-group" style="margin-top:10px;"></ul>
+    </div>
+
+    <div class="vulnerability-demo-section">
+        <h2>BOLA Demo: Order Detail</h2>
+        <p>Retrieve a specific order for any user.</p>
+        <form id="order-detail-form">
+            <div class="form-group">
+                <label for="detail-user-id">Target User ID:</label>
+                <input type="text" id="detail-user-id" class="form-control vulnerability-input" placeholder="User ID">
+            </div>
+            <div class="form-group">
+                <label for="detail-order-id">Order ID:</label>
+                <input type="text" id="detail-order-id" class="form-control vulnerability-input" placeholder="Order ID">
+            </div>
+            <button type="submit" class="btn btn-warning btn-exploit">Get Order Detail</button>
+        </form>
+        <div id="order-detail-result" class="mt-2"></div>
+    </div>
+
     <div id="orders-container" class="profile-section">
         <p class="loading-indicator">Loading orders...</p>
     </div>

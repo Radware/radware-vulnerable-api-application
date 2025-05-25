@@ -52,8 +52,8 @@
         <!-- Products table will be loaded here by admin.js -->
     </div>
 
-    <div class="add-product-section">
-        <h3>Add New Product (BFLA Demo)</h3>
+        <div class="add-product-section">
+            <h3>Add New Product (BFLA Demo)</h3>
         <p class="helper-text">This form demonstrates adding a product. As a regular user, this action should typically be restricted. If successful, it indicates a BFLA vulnerability.</p>
         <form id="add-product-form">
             <div class="form-group">
@@ -80,6 +80,34 @@
                 <small class="helper-text">This field is typically for internal use and might not be exposed to regular users.</small>
             </div>
             <button type="submit" class="btn btn-primary btn-exploit">Add Product (Demo Exploit)</button>
+        </form>
+    </div>
+
+    <div class="update-stock-section" style="margin-top: 30px;">
+        <h3>Update Product Stock (BFLA Demo)</h3>
+        <p class="helper-text">Any user can modify stock quantities without authorization.</p>
+        <form id="update-stock-form">
+            <div class="form-group">
+                <label for="stock-product-id">Product ID:</label>
+                <input type="text" id="stock-product-id" class="form-control" placeholder="Product ID">
+            </div>
+            <div class="form-group">
+                <label for="new-stock-qty">New Quantity:</label>
+                <input type="number" id="new-stock-qty" class="form-control" min="0">
+            </div>
+            <button type="submit" class="btn btn-warning btn-exploit">Update Stock</button>
+        </form>
+    </div>
+
+    <div class="delete-user-section" style="margin-top: 30px;">
+        <h3>Delete User (BFLA Demo)</h3>
+        <p class="helper-text">Demonstrates deleting any user via <code>DELETE /api/users/&lt;id&gt;</code>.</p>
+        <form id="delete-user-form">
+            <div class="form-group">
+                <label for="delete-user-id">Target User ID:</label>
+                <input type="text" id="delete-user-id" class="form-control" placeholder="User ID">
+            </div>
+            <button type="submit" class="btn btn-danger btn-exploit">Delete User</button>
         </form>
     </div>
 
