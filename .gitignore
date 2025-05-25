@@ -36,7 +36,6 @@ Thumbs.db
 
 # Shell scripts and generated files
 collect.sh
-verify.sh
 
 # Docker
 *.pid
