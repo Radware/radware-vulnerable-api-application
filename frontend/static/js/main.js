@@ -3,9 +3,11 @@ const API_BASE_URL = 'http://localhost:8000'; // Correct API base URL
 let authToken = localStorage.getItem('token');
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
 
 // DOM content loaded event to setup initial UI
 document.addEventListener('DOMContentLoaded', () => {
+    initializeUIVulnerabilityFeaturesToggle();
     updateNavbar();
     updateCurrentYear();
     
@@ -31,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (path === '/admin') {
         initAdminPage();
     }
+
+    updateUIVulnerabilityFeaturesDisplay();
 });
 
 // Helper Functions
@@ -112,6 +116,32 @@ function clearSuccess(containerId = 'success-message-container') {
     }
 }
 
+function initializeUIVulnerabilityFeaturesToggle() {
+    const toggleSwitch = document.getElementById('ui-vulnerability-features-toggle-switch');
+    const toggleStatusText = document.getElementById('ui-vulnerability-features-toggle-status');
+
+    if (toggleSwitch && toggleStatusText) {
+        toggleSwitch.checked = uiVulnerabilityFeaturesEnabled;
+        updateUIToggleStatusText(uiVulnerabilityFeaturesEnabled, toggleStatusText);
+
+        toggleSwitch.addEventListener('change', function() {
+            uiVulnerabilityFeaturesEnabled = this.checked;
+            localStorage.setItem('uiVulnerabilityFeaturesEnabled', uiVulnerabilityFeaturesEnabled);
+            updateUIToggleStatusText(uiVulnerabilityFeaturesEnabled, toggleStatusText);
+            displayGlobalMessage(`UI Vulnerability Demos ${uiVulnerabilityFeaturesEnabled ? 'ENABLED' : 'DISABLED'}. Some changes may require a page refresh or navigation.`, uiVulnerabilityFeaturesEnabled ? 'warning' : 'success', 7000);
+            updateUIVulnerabilityFeaturesDisplay();
+            updateNavbar();
+        });
+    }
+}
+
+function updateUIToggleStatusText(isEnabled, statusElement) {
+    if (statusElement) {
+        statusElement.textContent = isEnabled ? 'ON' : 'OFF';
+        statusElement.className = `toggle-status-text ${isEnabled ? 'ui-features-enabled-text' : 'ui-features-disabled-text'}`;
+    }
+}
+
 function updateNavbar() {
     const navLinksContainer = document.getElementById('dynamic-nav-links');  // New: targets the specific div for links
     if (!navLinksContainer) {
@@ -129,7 +159,9 @@ function updateNavbar() {
             <a href="/profile">Profile (${currentUser.username})</a>
             <a href="/orders">Orders</a>
         `;
-        navLinks += `<a href="/admin">Admin Demo</a>`;
+        if (currentUser.is_admin || uiVulnerabilityFeaturesEnabled) {
+            navLinks += `<a href="/admin">Admin Page ${!currentUser.is_admin && uiVulnerabilityFeaturesEnabled ? '<span class="admin-badge-nav">(Demo)</span>' : ''}</a>`;
+        }
         navLinks += `<a href="#" id="logout-link">Logout</a>`;
     } else {
         navLinks += `
@@ -197,6 +229,129 @@ function hidePageLoader() {
     if (loader) loader.style.display = 'none';
 }
 
+function updateUIVulnerabilityFeaturesDisplay() {
+    console.log(`UI Vulnerability Demos are now: ${uiVulnerabilityFeaturesEnabled ? 'ENABLED' : 'DISABLED'}`);
+    const displayStyleForBlock = uiVulnerabilityFeaturesEnabled ? 'block' : 'none';
+    const displayStyleForFlex = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none';
+
+    const toggleVisibilityBySelector = (selector, show, defaultDisplay = 'block') => {
+        document.querySelectorAll(selector).forEach(el => {
+            el.style.display = show ? defaultDisplay : 'none';
+        });
+    };
+
+    const toggleVisibilityById = (elementId, show, defaultDisplay = 'block') => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.style.display = show ? defaultDisplay : 'none';
+        }
+    };
+
+    // --- Profile Page (`profile.html`) ---
+    if (document.getElementById('profile-page-title')) {
+        const profileBolaDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section'))
+            .find(section => section.querySelector('#discover-users-btn'));
+        if (profileBolaDemoSection) profileBolaDemoSection.style.display = displayStyleForBlock;
+
+        const adminEscalationDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
+            .find(h4 => h4.textContent.includes('Parameter Pollution Demo: Admin Escalation'))?.closest('.vulnerability-demo-section');
+        if (adminEscalationDemoSection) adminEscalationDemoSection.style.display = displayStyleForBlock;
+
+        const bolaUpdateProfileDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
+            .find(h4 => h4.textContent.includes('BOLA Demo: Update Profile'))?.closest('.vulnerability-demo-section');
+        if (bolaUpdateProfileDemoSection) bolaUpdateProfileDemoSection.style.display = displayStyleForBlock;
+
+        if (!uiVulnerabilityFeaturesEnabled) {
+            toggleVisibilityById('discovered-users-container', false);
+            toggleVisibilityById('return-to-my-profile-btn', false);
+            toggleVisibilityById('bola-demo-active-banner', false, 'flex');
+
+            const currentViewingIdEl = document.getElementById('currently-viewed-user-id');
+            if (currentUser && currentViewingIdEl && currentViewingIdEl.value && currentViewingIdEl.value !== currentUser.user_id) {
+                if (typeof fetchAndDisplayFullProfile === "function") {
+                    currentlyViewedUserId = currentUser.user_id;
+                    currentlyViewedUsername = currentUser.username;
+                    currentViewingIdEl.value = currentUser.user_id;
+                    fetchAndDisplayFullProfile(currentUser.user_id);
+                    displayGlobalMessage('UI Demos disabled. Reverted to viewing your own profile.', 'info');
+                }
+                toggleVisibilityById('discover-users-btn', true, 'inline-block');
+            }
+        } else {
+             toggleVisibilityById('discover-users-btn', true, 'inline-block');
+        }
+    }
+
+    // --- Admin Page (`admin_products.html`) ---
+    if (document.querySelector('.admin-section h1')?.textContent === 'Admin Dashboard') {
+        const isRealAdmin = currentUser && currentUser.is_admin;
+        toggleVisibilityBySelector('.parameter-pollution-controls', uiVulnerabilityFeaturesEnabled);
+        toggleVisibilityBySelector('.add-product-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
+        toggleVisibilityBySelector('.update-stock-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
+        toggleVisibilityBySelector('.delete-user-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
+
+        const adminVulnerabilityBanner = document.getElementById('vulnerability-banner-admin');
+        if (adminVulnerabilityBanner) {
+            const adminEscalationCheckbox = document.getElementById('admin-escalation');
+            const revealInternalCheckbox = document.getElementById('reveal-internal');
+            const adminChecked = adminEscalationCheckbox ? adminEscalationCheckbox.checked : false;
+            const internalChecked = revealInternalCheckbox ? revealInternalCheckbox.checked : false;
+            adminVulnerabilityBanner.style.display = (uiVulnerabilityFeaturesEnabled && (adminChecked || internalChecked)) ? 'block' : 'none';
+        }
+    }
+
+    // --- Product Detail Page (`product_detail.html`) ---
+    if (document.getElementById('product-detail-page-body')) {
+        const productPollutionDemo = document.querySelector('#product-detail-page-body .vulnerability-demo-section');
+        if (productPollutionDemo) productPollutionDemo.style.display = displayStyleForBlock;
+
+        const internalStatusInfoDiv = document.querySelector('.internal-status');
+        if (internalStatusInfoDiv && !uiVulnerabilityFeaturesEnabled) {
+            internalStatusInfoDiv.style.display = 'none';
+        }
+    }
+
+    // --- Checkout Page (`checkout.html`) ---
+    if (document.getElementById('checkout-container')) {
+        toggleVisibilityById('bola-demo-section', uiVulnerabilityFeaturesEnabled);
+
+        const bolaCheckbox = document.getElementById('order-for-other-user');
+        const bolaCheckboxLabelContainer = bolaCheckbox?.closest('.form-group');
+        const bolaFields = document.getElementById('bola-demo-fields');
+        const bolaWarningContainer = document.getElementById('bola-warning-container');
+
+        if (bolaCheckboxLabelContainer) {
+             bolaCheckboxLabelContainer.style.display = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none';
+        }
+        if (!uiVulnerabilityFeaturesEnabled) {
+            if (bolaCheckbox) bolaCheckbox.checked = false;
+            if (bolaFields) bolaFields.style.display = 'none';
+            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none';
+        } else {
+            if(bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
+            if(bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
+        }
+    }
+
+    // --- Orders Page (`orders.html`) ---
+    if (document.getElementById('orders-container')) {
+         toggleVisibilityBySelector('.vulnerability-demo-section', uiVulnerabilityFeaturesEnabled);
+
+        if (!uiVulnerabilityFeaturesEnabled) {
+            toggleVisibilityById('current-viewing', false, 'flex');
+            const targetUserIdInputInForm = document.querySelector('#view-orders-form #target-user-id');
+            if (targetUserIdInputInForm) targetUserIdInputInForm.value = '';
+
+            const viewingUserIdHiddenInput = document.getElementById('viewing-user-id-orders');
+            if (typeof fetchAndDisplayOrders === "function" && viewingUserIdHiddenInput && currentUser && viewingUserIdHiddenInput.value !== currentUser.user_id) {
+                viewingUserIdHiddenInput.value = currentUser.user_id;
+                fetchAndDisplayOrders();
+                displayGlobalMessage('UI Demos disabled. Reverted to viewing your own orders.', 'info');
+            }
+        }
+    }
+}
+
 // Helper function to get product image filename
 function getProductImageFilename(product) {
     // Early validation to prevent undefined product issues
@@ -260,6 +415,7 @@ function initHomePage() {
     if (searchForm) {
         searchForm.addEventListener('submit', handleProductSearch);
     }
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 async function handleProductSearch(e) {
@@ -292,6 +448,7 @@ function initProductDetailPage() {
     if (typeof setupParameterPollutionDemo === 'function') {
         setupParameterPollutionDemo(productId);
     }
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 function initLoginPage() {
@@ -348,6 +505,7 @@ function initProfilePage() {
 
     fetchAndDisplayFullProfile(currentlyViewedUserId);
     setupProfilePageEventListeners();
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 
@@ -890,6 +1048,7 @@ function initCheckoutPage() {
     if (theftPreview) {
         theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Enable BOLA exploit and select a target card to see preview.</div>';
     }
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 async function searchUsers() {
@@ -1250,6 +1409,7 @@ function initOrdersPage() {
 
     document.getElementById('list-users-btn')?.addEventListener('click', listUsersForOrders);
     document.getElementById('order-detail-form')?.addEventListener('submit', fetchOrderDetail);
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 function initAdminPage() {
@@ -1259,6 +1419,7 @@ function initAdminPage() {
         return;
     }
     setupAdminInterface();
+    updateUIVulnerabilityFeaturesDisplay();
 }
 
 // Product handling functions
