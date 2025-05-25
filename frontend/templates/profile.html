@@ -66,6 +66,22 @@
             <p>Attempt to escalate the privileges of the <strong id="escalation-target-username">currently viewed user</strong> by adding <code>is_admin=true</code> to the update request.</p>
             <button id="attempt-admin-escalation-btn" class="btn btn-danger btn-exploit"><i class="fas fa-user-secret"></i> Attempt Admin Escalation for <span id="escalation-target-btn-username">User</span></button>
         </div>
+        <!-- BOLA Demo: Update Profile -->
+        <div class="vulnerability-demo-section" style="margin-top: 20px;">
+            <h4>BOLA Demo: Update Profile</h4>
+            <p>While viewing another user's profile you can change their username or email.</p>
+            <form id="update-profile-form" class="inline-form">
+                <div class="form-group">
+                    <label for="update-username-input">New Username:</label>
+                    <input type="text" id="update-username-input" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="update-email-input">New Email:</label>
+                    <input type="email" id="update-email-input" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-warning btn-exploit">Update Profile</button>
+            </form>
+        </div>
     </div>
 
     <!-- Hidden input to store the ID of the user whose profile is being viewed -->

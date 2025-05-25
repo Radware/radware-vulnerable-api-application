@@ -368,6 +368,8 @@ function setupProfilePageEventListeners() {
     // Admin Escalation Listener
     document.getElementById('attempt-admin-escalation-btn')?.addEventListener('click', attemptAdminEscalation);
 
+    document.getElementById('update-profile-form')?.addEventListener('submit', handleUpdateProfileSubmit);
+
     // Address Form Listeners
     document.getElementById('toggle-address-form-btn')?.addEventListener('click', () => toggleItemForm('address'));
     document.getElementById('address-form')?.addEventListener('submit', handleAddressFormSubmit);
@@ -574,6 +576,38 @@ async function handleEditEmailSubmit(event) {
         }
     } catch (error) {
         displayGlobalMessage(`Failed to update email for ${currentlyViewedUsername}: ${error.message}`, 'error');
+    }
+}
+
+async function handleUpdateProfileSubmit(event) {
+    event.preventDefault();
+    const userIdToUpdate = document.getElementById('currently-viewed-user-id').value;
+    const username = document.getElementById('update-username-input')?.value.trim();
+    const email = document.getElementById('update-email-input')?.value.trim();
+    if (!userIdToUpdate) {
+        displayGlobalMessage('Error: No user context for profile update.', 'error');
+        return;
+    }
+    const params = new URLSearchParams();
+    if (username) params.append('username', username);
+    if (email) params.append('email', email);
+    if ([...params].length === 0) {
+        displayGlobalMessage('Provide a username or email to update.', 'error');
+        return;
+    }
+    const endpoint = `/api/users/${userIdToUpdate}?${params.toString()}`;
+    try {
+        await apiCall(endpoint, 'PUT', null, true);
+        displayGlobalMessage(`Profile for ${currentlyViewedUsername} updated.`, 'success');
+        await fetchAndDisplayFullProfile(userIdToUpdate);
+        if (userIdToUpdate === currentUser.user_id) {
+            if (username) currentUser.username = username;
+            if (email) currentUser.email = email;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateNavbar();
+        }
+    } catch (error) {
+        displayGlobalMessage(`Failed to update profile: ${error.message}`, 'error');
     }
 }
 // --- Parameter Pollution: Admin Escalation ---
@@ -1158,7 +1192,7 @@ function initOrdersPage() {
         });
     }
     if (returnButton && viewingUserIdInput && targetUserIdFieldOnPage) {
-         returnButton.addEventListener('click', function() {
+        returnButton.addEventListener('click', function() {
             viewingUserIdInput.value = currentUser.user_id;
             targetUserIdFieldOnPage.value = '';
             const currentViewingDiv = document.getElementById('current-viewing');
@@ -1167,6 +1201,9 @@ function initOrdersPage() {
             displayGlobalMessage('Returned to viewing your own orders.', 'info');
         });
     }
+
+    document.getElementById('list-users-btn')?.addEventListener('click', listUsersForOrders);
+    document.getElementById('order-detail-form')?.addEventListener('submit', fetchOrderDetail);
 }
 
 function initAdminPage() {
@@ -1951,6 +1988,55 @@ function renderOrders(orders, container) {
     });
     ordersHTML += `</tbody></table>`;
     container.innerHTML = ordersHTML;
+}
+
+async function listUsersForOrders() {
+    const listEl = document.getElementById('users-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<li class="list-group-item">Loading users...</li>';
+    try {
+        const users = await apiCall('/api/users', 'GET');
+        listEl.innerHTML = '';
+        users.forEach(u => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.textContent = `${u.username} (${u.user_id.substring(0,8)}...)`;
+            listEl.appendChild(li);
+        });
+    } catch (error) {
+        listEl.innerHTML = '';
+        displayGlobalMessage(`Failed to list users: ${error.message}`, 'error');
+    }
+}
+
+async function fetchOrderDetail(event) {
+    event.preventDefault();
+    const userId = document.getElementById('detail-user-id')?.value.trim();
+    const orderId = document.getElementById('detail-order-id')?.value.trim();
+    const result = document.getElementById('order-detail-result');
+    if (!userId || !orderId) {
+        displayGlobalMessage('Both User ID and Order ID are required.', 'error');
+        return;
+    }
+    if (result) result.innerHTML = '<p class="loading-indicator">Loading...</p>';
+    try {
+        const order = await apiCall(`/api/users/${userId}/orders/${orderId}`, 'GET');
+        if (!result) return;
+        let html = `<h4>Order ${order.order_id.substring(0,8)}...</h4>`;
+        html += `<p>Status: ${order.status}</p>`;
+        if (order.items && order.items.length > 0) {
+            html += '<ul>';
+            order.items.forEach(it => {
+                const name = it.product_name || it.product_id.substring(0,8);
+                html += `<li>${it.quantity} x ${name}</li>`;
+            });
+            html += '</ul>';
+        }
+        result.innerHTML = html;
+    } catch (error) {
+        if (result) result.innerHTML = '';
+        displayGlobalMessage(`Failed to fetch order: ${error.message}`, 'error');
+    }
 }
 
 // Profile page functions

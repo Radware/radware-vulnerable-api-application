@@ -138,6 +138,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const updateStockForm = document.getElementById('update-stock-form');
+    if (updateStockForm) {
+        updateStockForm.addEventListener('submit', handleUpdateStockSubmit);
+    }
+
+    const deleteUserForm = document.getElementById('delete-user-form');
+    if (deleteUserForm) {
+        deleteUserForm.addEventListener('submit', handleDeleteUserSubmit);
+    }
     
     // Initial fetch and UI setup
     updateVulnerabilityBanner(); // This will also call fetchAdminProducts and updateConstructedUrlDisplay
@@ -269,5 +279,39 @@ async function fetchAdminProducts() {
         productsContainer.innerHTML = '<p>Error loading products. Check console for details.</p>';
     } finally {
         loadingIndicator.style.display = 'none';
+    }
+}
+
+async function handleUpdateStockSubmit(e) {
+    e.preventDefault();
+    const productId = document.getElementById('stock-product-id')?.value.trim();
+    const qty = document.getElementById('new-stock-qty')?.value.trim();
+    if (!productId || qty === '') {
+        displayGlobalMessage('Product ID and quantity required.', 'error');
+        return;
+    }
+    const endpoint = `/api/products/${productId}/stock?quantity=${encodeURIComponent(qty)}`;
+    try {
+        await apiCall(endpoint, 'PUT');
+        displayGlobalMessage(`Stock for ${productId} set to ${qty}.`, 'success');
+        fetchAdminProducts();
+    } catch (err) {
+        displayGlobalMessage(`Failed to update stock: ${err.message}`, 'error');
+    }
+}
+
+async function handleDeleteUserSubmit(e) {
+    e.preventDefault();
+    const userId = document.getElementById('delete-user-id')?.value.trim();
+    if (!userId) {
+        displayGlobalMessage('User ID required.', 'error');
+        return;
+    }
+    if (!confirm(`Delete user ${userId}?`)) return;
+    try {
+        await apiCall(`/api/users/${userId}`, 'DELETE');
+        displayGlobalMessage(`User ${userId} deleted.`, 'success');
+    } catch (err) {
+        displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
     }
 }
