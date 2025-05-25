@@ -3,7 +3,7 @@
     "name": "BFLA: GraceWilson (Regular User) Deletes Another User",
     "description": "GraceWilson, a non-admin user, exploits BFLA to delete another non-admin user (FrankMiller).",
     "staticVars": {
-      "baseUrl": "http://localhost:8000",
+      "baseUrl": "http://vampi.bowz.fr",
       "graceUsername": "GraceWilson",
       "gracePassword": "GracePass7&",
       "victimUserToDeleteId": "00000007-0000-0000-0000-000000000007",

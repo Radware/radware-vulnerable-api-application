@@ -1,0 +1,397 @@
+{
+  "id": "flow_combined_user_flows",
+  "name": "Combined User Flows: All User Scenarios",
+  "description": "Combines simulations for AliceSmith logging in, updating profile, and ordering; DavidBrown's login, Browse, and order placement; CarolWhite's credit card management; BobJohnson's profile updates, address management, and credit card detail updates; and AliceSmith's multi-product order to an alternate address.",
+  "headers": {},
+  "steps": [
+    {
+      "id": "step_login_existing_user_alice",
+      "name": "Login Existing User AliceSmith",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=AliceSmith&password=AlicePass1!",
+      "onFailure": "stop",
+      "extract": {
+        "alice_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_browse_products_existing_user",
+      "name": "Browse Product Catalog",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/products",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "selected_product_id": "body.body[0].product_id"
+      }
+    },
+    {
+      "id": "step_list_alice_existing_addresses",
+      "name": "List Alice's Existing Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/addresses",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_add_alice_new_address",
+      "name": "Add Alice's New Shipping Address",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/addresses?street=New%20St&city=Newtown&country=USA&zip_code=99999&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_new_address_id": "body.address_id"
+      }
+    },
+    {
+      "id": "step_list_alice_existing_credit_cards",
+      "name": "List Alice's Existing Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_add_alice_new_credit_card",
+      "name": "Add Alice's New Credit Card",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/credit-cards?cardholder_name=Alice%20Newcard&card_number=4999888877771234&expiry_month=02&expiry_year=2031&cvv=789&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_new_card_id": "body.card_id"
+      }
+    },
+    {
+      "id": "step_place_alice_new_order",
+      "name": "Place Order for Alice (using new address and new card)",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/orders?address_id={{alice_new_address_id}}&credit_card_id={{alice_new_card_id}}&product_id_1=f47ac10b-58cc-4372-a567-0e02b2c3d479&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_order_id": "body.order_id"
+      }
+    },
+    {
+      "id": "step_list_alice_orders_final_existing_user",
+      "name": "List Alice's Orders (Final)",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/orders",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_login_david",
+      "name": "Login DavidBrown",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=DavidBrown&password=DavidPass4$",
+      "onFailure": "stop",
+      "extract": {
+        "david_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_david_list_all_products",
+      "name": "David Lists All Products",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/products",
+      "headers": {
+        "Authorization": "Bearer {{david_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_david_get_specific_product",
+      "name": "David Gets Specific Product Details",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/products/f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "headers": {
+        "Authorization": "Bearer {{david_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_david_search_product",
+      "name": "David Searches for 'Laptop'",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/products/search?name=Laptop",
+      "headers": {
+        "Authorization": "Bearer {{david_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_david_place_order",
+      "name": "David Places an Order",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000005-0000-0000-0000-000000000005/orders?address_id=ad000005-0001-0000-0000-000000000001&credit_card_id=cc000005-0001-0000-0000-000000000001&product_id_1=f47ac10b-58cc-4372-a567-0e02b2c3d479&quantity_1=2",
+      "headers": {
+        "Authorization": "Bearer {{david_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "david_order_id": "body.order_id"
+      }
+    },
+    {
+      "id": "step_david_list_orders",
+      "name": "David Lists His Orders",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000005-0000-0000-0000-000000000005/orders",
+      "headers": {
+        "Authorization": "Bearer {{david_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_login_carol",
+      "name": "Login CarolWhite",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=CarolWhite&password=CarolPass3%23",
+      "onFailure": "stop",
+      "extract": {
+        "carol_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_carol_list_initial_cards",
+      "name": "Carol Lists Initial Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000004-0000-0000-0000-000000000004/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{carol_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carol_add_new_card",
+      "name": "Carol Adds New Credit Card",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000004-0000-0000-0000-000000000004/credit-cards?cardholder_name=Carol%20W%20Secondary&card_number=4555666677778888&expiry_month=07&expiry_year=2030&cvv=567&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{carol_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "carol_new_card_id": "body.card_id"
+      }
+    },
+    {
+      "id": "step_carol_list_all_cards",
+      "name": "Carol Lists All Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000004-0000-0000-0000-000000000004/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{carol_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carol_delete_new_card",
+      "name": "Carol Deletes New Credit Card",
+      "type": "request",
+      "method": "DELETE",
+      "url": "http://vampi.bowz.fr/api/users/00000004-0000-0000-0000-000000000004/credit-cards/{{carol_new_card_id}}",
+      "headers": {
+        "Authorization": "Bearer {{carol_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_login_bob",
+      "name": "Login BobJohnson",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=BobJohnson&password=BobPass2@",
+      "onFailure": "stop",
+      "extract": {
+        "bob_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_bob_update_email",
+      "name": "Bob Updates Email Address",
+      "type": "request",
+      "method": "PUT",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003?email=bob.updated%40example.com",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_get_updated_profile",
+      "name": "Bob Retrieves Updated Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_list_initial_addresses",
+      "name": "Bob Lists Initial Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/addresses",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_add_new_address",
+      "name": "Bob Adds New Address",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/addresses?street=Work%20Ave&city=MetroCity&country=USA&zip_code=90210&is_default=false",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "bob_new_address_id": "body.address_id"
+      }
+    },
+    {
+      "id": "step_bob_list_all_addresses",
+      "name": "Bob Lists All Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/addresses",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_delete_new_address",
+      "name": "Bob Deletes New Address",
+      "type": "request",
+      "method": "DELETE",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/addresses/{{bob_new_address_id}}",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_login_bob_card_update",
+      "name": "Login BobJohnson",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=BobJohnson&password=BobPass2@",
+      "onFailure": "stop",
+      "extract": {
+        "bob_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_bob_get_card_before_update",
+      "name": "Bob Gets Card Details Before Update",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/credit-cards/cc000003-0002-0000-0000-000000000002",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_update_card_details",
+      "name": "Bob Updates Credit Card Details",
+      "type": "request",
+      "method": "PUT",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/credit-cards/cc000003-0002-0000-0000-000000000002?expiry_year=2031&is_default=true",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_get_card_after_update",
+      "name": "Bob Gets Card Details After Update",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000003-0000-0000-0000-000000000003/credit-cards/cc000003-0002-0000-0000-000000000002",
+      "headers": {
+        "Authorization": "Bearer {{bob_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_login_alice_multi_order",
+      "name": "Login AliceSmith",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/auth/login?username=AliceSmith&password=AlicePass1!",
+      "onFailure": "stop",
+      "extract": {
+        "alice_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_alice_place_multi_product_order",
+      "name": "Alice Places Multi-Product Order",
+      "type": "request",
+      "method": "POST",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/orders?address_id=ad000002-0002-0000-0000-000000000002&credit_card_id=cc000002-0001-0000-0000-000000000001&product_id_1=a1b2c3d4-e5f6-7890-1234-567890abcdef&quantity_1=1&product_id_2=b2c3d4e5-f6a7-8901-2345-678901bcdef0&quantity_2=2",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "alice_multi_order_id": "body.order_id"
+      }
+    },
+    {
+      "id": "step_alice_get_multi_product_order_details",
+      "name": "Alice Gets Multi-Product Order Details",
+      "type": "request",
+      "method": "GET",
+      "url": "http://vampi.bowz.fr/api/users/00000002-0000-0000-0000-000000000002/orders/{{alice_multi_order_id}}",
+      "headers": {
+        "Authorization": "Bearer {{alice_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "staticVars": {},
+  "visualLayout": {}
+}

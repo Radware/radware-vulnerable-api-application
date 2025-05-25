@@ -12,7 +12,7 @@ COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install Flask Jinja2 requests
+RUN pip install Flask Jinja2 requests "Werkzeug<2.3" python-json-logger
 
 # Copy the backend and frontend code
 COPY ./app /app/app

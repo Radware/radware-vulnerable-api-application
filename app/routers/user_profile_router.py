@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Query, Depends
+from fastapi import APIRouter, HTTPException, status, Query, Depends, Body # Ensure Body is imported
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
@@ -15,17 +15,20 @@ router = APIRouter(
     tags=["User Profile"] # Grouping in OpenAPI docs
 )
 
-# --- Address Endpoints (BOLA Targets) --- 
+# --- Address Endpoints (BOLA Targets - for demonstration) ---
 
 @router.get("/addresses", response_model=List[Address])
 async def list_user_addresses(
-    user_id: UUID, 
+    user_id: UUID,
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: Authenticated, but no check if current_user.user_id matches path user_id.
-    # Any authenticated user can list addresses for any user_id specified in the path.
+    """
+    Get a list of all addresses for a specific user.
+    BOLA Vulnerability: Authenticated, but no check if current_user.user_id matches path user_id.
+    Any authenticated user can list addresses for any user_id specified in the path.
+    """
     print(f"Listing addresses for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check.")
-    
+
     # Check if the user_id from path even exists
     path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
     if not path_user_exists:
@@ -44,8 +47,11 @@ async def create_user_address(
     is_default: bool = Query(False),
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
-    # An authenticated user can create an address for another user.
+    """
+    Create a new address for a specific user.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can create an address for another user.
+    """
     print(f"Creating address for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
@@ -68,8 +74,11 @@ async def update_user_address(
     is_default: Optional[bool] = Query(None),
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
-    # An authenticated user can update an address for another user.
+    """
+    Update an existing address for a specific user.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can update an address for another user.
+    """
     print(f"Updating address {address_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     address_to_update = next((a for a in db.db["addresses"] if a.address_id == address_id and a.user_id == user_id), None)
@@ -82,7 +91,6 @@ async def update_user_address(
 
     for key, value in update_data.items():
         setattr(address_to_update, key, value)
-    # address_to_update.updated_at = datetime.utcnow() # Assuming Address model has updated_at if needed
     return Address.model_validate(address_to_update)
 
 @router.delete("/addresses/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -91,7 +99,11 @@ async def delete_user_address(
     address_id: UUID,
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    """
+    Delete an address for a specific user.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can delete an address for another user.
+    """
     print(f"Deleting address {address_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     address_index = -1
@@ -99,23 +111,27 @@ async def delete_user_address(
         if a.address_id == address_id and a.user_id == user_id:
             address_index = i
             break
-    
+
     if address_index == -1:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found for this user or address ID is incorrect.")
 
     db.db["addresses"].pop(address_index)
     return
 
-# --- Credit Card Endpoints (BOLA Targets) --- 
+# --- Credit Card Endpoints (BOLA Targets - for demonstration) ---
 
 @router.get("/credit-cards", response_model=List[CreditCard])
 async def list_user_credit_cards(
-    user_id: UUID, 
+    user_id: UUID,
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    """
+    Get a list of all credit cards for a specific user.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    Any authenticated user can list credit cards for any user_id specified in the path.
+    """
     print(f"Listing credit cards for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check.")
-    
+
     path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
     if not path_user_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found.")
@@ -127,33 +143,52 @@ async def list_user_credit_cards(
 async def create_user_credit_card(
     user_id: UUID, # User ID from path
     cardholder_name: str = Query(...),
-    # Actual card_number and cvv should be passed for hashing, not defined in OpenAPI query for brevity but handled here
-    card_number: str = Query(..., description="Actual card number - will be hashed"),
+    card_number: str = Query(...), # Actual card number
     expiry_month: str = Query(..., pattern=r"^0[1-9]|1[0-2]$"),
     expiry_year: str = Query(..., pattern=r"^20[2-9][0-9]$"),
-    cvv: Optional[str] = Query(None, description="CVV - will be hashed"), 
+    cvv: Optional[str] = Query(None),
     is_default: bool = Query(False),
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    """
+    Create a new credit card for a specific user using query parameters.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can create a credit card for another user.
+    """
     print(f"Creating credit card for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
     if not path_user_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found. Cannot create credit card.")
 
-    # Extract last four digits before hashing
-    card_last_four_digits = card_number[-4:]
-    
-    # Hash sensitive information
-    card_number_hash = get_password_hash(card_number) # Using password hasher for simplicity
-    cvv_hash = get_password_hash(cvv) if cvv else None
+    # Create a CreditCardCreate instance from query parameters for consistent validation and data processing
+    try:
+        card_data_from_query = CreditCardCreate(
+            cardholder_name=cardholder_name,
+            card_number=card_number,
+            expiry_month=expiry_month,
+            expiry_year=expiry_year,
+            cvv=cvv,
+            is_default=is_default
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Validation error for query parameters: {e}")
 
-    card_data = CreditCardCreate(cardholder_name=cardholder_name, expiry_month=expiry_month, expiry_year=expiry_year, is_default=is_default, card_last_four=card_last_four_digits)
+    # Extract last four digits before hashing
+    card_last_four_digits = card_data_from_query.card_number[-4:]
+
+    # Hash sensitive information
+    card_number_hash = get_password_hash(card_data_from_query.card_number)
+    cvv_hash = get_password_hash(card_data_from_query.cvv) if card_data_from_query.cvv else None
+
     new_card = CreditCardInDBBase(
-        **card_data.model_dump(), 
+        # Pass fields from the validated card_data_from_query (excluding sensitive ones)
+        cardholder_name=card_data_from_query.cardholder_name,
+        expiry_month=card_data_from_query.expiry_month,
+        expiry_year=card_data_from_query.expiry_year,
+        is_default=card_data_from_query.is_default,
         user_id=user_id, # Assign to user_id from path
-        card_number_hash=card_number_hash, 
+        card_number_hash=card_number_hash,
         cvv_hash=cvv_hash,
         card_last_four=card_last_four_digits
     )
@@ -168,22 +203,39 @@ async def update_user_credit_card(
     expiry_month: Optional[str] = Query(None, pattern=r"^0[1-9]|1[0-2]$"),
     expiry_year: Optional[str] = Query(None, pattern=r"^20[2-9][0-9]$"),
     is_default: Optional[bool] = Query(None),
+    # Note: Card number and CVV are typically not updated via PUT.
+    # If you need to allow changing them, it's usually via a new card or a separate process.
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    """
+    Update an existing credit card for a specific user using query parameters.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can update a credit card for another user.
+    """
     print(f"Updating credit card {card_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     card_to_update = next((cc for cc in db.db["credit_cards"] if cc.card_id == card_id and cc.user_id == user_id), None)
     if not card_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Credit card not found for this user or card ID is incorrect.")
 
-    update_data = CreditCardUpdate(cardholder_name=cardholder_name, expiry_month=expiry_month, expiry_year=expiry_year, is_default=is_default).model_dump(exclude_unset=True)
+    # Manually collect update data from query parameters
+    update_data = {}
+    if cardholder_name is not None:
+        update_data["cardholder_name"] = cardholder_name
+    if expiry_month is not None:
+        update_data["expiry_month"] = expiry_month
+    if expiry_year is not None:
+        update_data["expiry_year"] = expiry_year
+    if is_default is not None:
+        update_data["is_default"] = is_default
+
     if not update_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided")
 
+    # Apply updates to the found card
     for key, value in update_data.items():
         setattr(card_to_update, key, value)
-    # card_to_update.updated_at = datetime.utcnow() # Assuming model has updated_at if needed
+    card_to_update.updated_at = datetime.now(timezone.utc) # Update timestamp
     return CreditCard.model_validate(card_to_update)
 
 @router.delete("/credit-cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -192,7 +244,11 @@ async def delete_user_credit_card(
     card_id: UUID,
     current_user: TokenData = Depends(get_current_user)
 ):
-    # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    """
+    Delete a credit card for a specific user.
+    BOLA Vulnerability: No check if current_user.user_id matches path user_id.
+    An authenticated user can delete a credit card for another user.
+    """
     print(f"Deleting credit card {card_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check.")
 
     card_index = -1
@@ -200,7 +256,7 @@ async def delete_user_credit_card(
         if cc.card_id == card_id and cc.user_id == user_id:
             card_index = i
             break
-    
+
     if card_index == -1:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Credit card not found for this user or card ID is incorrect.")
 

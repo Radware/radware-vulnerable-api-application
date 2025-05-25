@@ -3,7 +3,7 @@
     "name": "Parameter Pollution: AliceSmith Modifies Product Status & Injection Search",
     "description": "AliceSmith modifies a product's internal status via parameter pollution and then performs a product search with an injection-like string.",
     "staticVars": {
-      "baseUrl": "http://localhost:8000",
+      "baseUrl": "http://vampi.bowz.fr",
       "aliceUsername": "AliceSmith",
       "alicePassword": "AlicePass1!",
       "targetProductIdForStatus": "a1b2c3d4-e5f6-7890-1234-567890abcdef"

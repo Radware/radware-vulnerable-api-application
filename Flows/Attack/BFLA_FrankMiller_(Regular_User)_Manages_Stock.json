@@ -3,7 +3,7 @@
     "name": "BFLA: FrankMiller (Regular User) Manages Stock",
     "description": "FrankMiller, a non-admin user, exploits BFLA to update the stock of an existing product.",
     "staticVars": {
-      "baseUrl": "http://localhost:8000",
+      "baseUrl": "http://vampi.bowz.fr",
       "frankUsername": "FrankMiller",
       "frankPassword": "FrankPass6^",
       "targetProductIdForStock": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
