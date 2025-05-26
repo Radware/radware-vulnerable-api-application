@@ -971,6 +971,110 @@ def test_get_order_not_found(test_client, regular_auth_headers, regular_user_inf
     assert f"Order with ID {fake_order}" in resp.json()["detail"]
 
 
+def test_list_orders_empty_for_new_user(test_client):
+    """A newly registered user should have no orders."""
+    uname = f"tempuser_{uuid.uuid4().hex[:6]}"
+    reg = test_client.post(
+        "/api/auth/register",
+        params={"username": uname, "email": f"{uname}@example.com", "password": "Pass123!"},
+    )
+    user_id = reg.json()["user_id"]
+    token = test_client.post(
+        "/api/auth/login",
+        params={"username": uname, "password": "Pass123!"},
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = test_client.get(f"/api/users/{user_id}/orders", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_orders_user_not_found(test_client, regular_auth_headers):
+    """Listing orders for a non-existent user returns 404."""
+    missing = uuid.uuid4()
+    resp = test_client.get(f"/api/users/{missing}/orders", headers=regular_auth_headers)
+    assert resp.status_code == 404
+
+
+def test_list_orders_invalid_user_uuid(test_client, regular_auth_headers):
+    resp = test_client.get("/api/users/not-a-uuid/orders", headers=regular_auth_headers)
+    assert resp.status_code == 422
+
+
+def test_create_order_invalid_user_uuid(test_client, regular_auth_headers, regular_user_info, test_data):
+    prod = test_data["products"][0]["product_id"]
+    addr = regular_user_info["addresses"][0]["address_id"]
+    card = regular_user_info["credit_cards"][0]["card_id"]
+    resp = test_client.post(
+        "/api/users/not-a-uuid/orders",
+        params={
+            "address_id": addr,
+            "credit_card_id": card,
+            "product_id_1": prod,
+            "quantity_1": 1,
+        },
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_create_order_invalid_address_or_card_uuid(test_client, regular_auth_headers, regular_user_info, test_data):
+    user_id = regular_user_info["user_id"]
+    product = test_data["products"][0]["product_id"]
+    resp = test_client.post(
+        f"/api/users/{user_id}/orders",
+        params={
+            "address_id": "not-a-uuid",
+            "credit_card_id": "also-not-a-uuid",
+            "product_id_1": product,
+            "quantity_1": 1,
+        },
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 400
+    assert "Invalid UUID format" in resp.json()["detail"]
+
+
+def test_create_order_invalid_product_format_and_quantity(test_client, regular_auth_headers, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    addr = regular_user_info["addresses"][0]["address_id"]
+    card = regular_user_info["credit_cards"][0]["card_id"]
+    resp = test_client.post(
+        f"/api/users/{user_id}/orders",
+        params={
+            "address_id": addr,
+            "credit_card_id": card,
+            "product_id_1": "not-a-uuid",
+            "quantity_1": -5,
+        },
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 400
+    assert "Invalid format" in resp.json()["detail"] or "must be positive" in resp.json()["detail"]
+
+
+def test_get_order_user_not_found(test_client, regular_auth_headers, regular_user_info):
+    fake_user = uuid.uuid4()
+    # Use a known order_id but wrong user_id to trigger user not found
+    # (order won't match fake_user and user doesn't exist)
+    order_id = uuid.uuid4()
+    resp = test_client.get(
+        f"/api/users/{fake_user}/orders/{order_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 404
+
+
+def test_get_order_invalid_ids(test_client, regular_auth_headers, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.get(
+        f"/api/users/{user_id}/orders/not-a-uuid",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+
 # --- New user endpoint tests ---
 
 
