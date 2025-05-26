@@ -56,9 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(typeof apiCall === 'function') {
                     await apiCall(endpoint, 'POST');
                     if (typeof displaySuccess === 'function') {
-                        const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
-                            'Product added (BFLA demo).' :
-                            'Product added successfully!';
+                      const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled)
+                          ? 'Product added (BFLA demo).'
+                          : 'Product added successfully!';
                         displaySuccess(msg);
                     }
                     addProductForm.reset();
@@ -199,6 +199,7 @@ async function fetchAdminProducts() {
                 const confirmMsg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
                     `BFLA Demo: Delete product ${productId}?` :
                     `Are you sure you want to delete product ${productId}?`;
+
                 if (confirm(confirmMsg)) {
                     try {
                         await apiCall(`/api/products/${productId}`, 'DELETE', null, true);
@@ -208,7 +209,7 @@ async function fetchAdminProducts() {
                                 `Product ${productId} deleted successfully.`;
                             displaySuccess(msg);
                         }
-                        fetchAdminProducts();
+                        fetchAdminProducts(); // Refresh table
                     } catch (error) {
                         if (typeof displayError === 'function') {
                             displayError(`Failed to delete product ${productId}: ${error.message}`);
@@ -217,6 +218,7 @@ async function fetchAdminProducts() {
                 }
             });
         });
+
             
     } catch (error) {
         if(typeof displayError === 'function') displayError(`Failed to load admin products: ${error.message}`);
