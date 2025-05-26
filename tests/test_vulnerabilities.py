@@ -332,15 +332,32 @@ def test_parameter_pollution_product_internal_status(
         headers=regular_auth_headers,
     )
 
-    # Vulnerability test passes if the update succeeds
-    assert response.status_code == 200
-    updated_product = response.json()
-    assert updated_product["internal_status"] == "hacked"
+    # Protected products should return a 403
+    assert response.status_code == 403
+    assert "protected for demo purposes" in response.json()["detail"]
 
-    # Reset the internal_status
-    http_client.put(
-        f"/api/products/{product_id}?internal_status=", headers=regular_auth_headers
+
+def test_protected_product_deletion_forbidden(http_client, regular_auth_headers, test_data):
+    """Deleting a protected product should be blocked."""
+    protected_product = next(p for p in test_data["products"] if p["is_protected"])
+    delete_response = http_client.delete(
+        f"/api/products/{protected_product['product_id']}",
+        headers=regular_auth_headers
+
     )
+    assert delete_response.status_code == 403
+    assert "protected for demo purposes" in delete_response.json()["detail"]
+
+
+def test_protected_product_stock_minimum_enforced(http_client, regular_auth_headers, test_data):
+    """Protected product stock cannot be reduced below the minimum."""
+    protected_product = next(p for p in test_data["products"] if p["is_protected"])
+    resp = http_client.put(
+        f"/api/products/{protected_product['product_id']}/stock?quantity=100",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+    assert "stock reduced below" in resp.json()["detail"]
 
 
 # Test for Injection vulnerabilities

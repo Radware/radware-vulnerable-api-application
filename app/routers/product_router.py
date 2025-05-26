@@ -23,6 +23,10 @@ from ..models.order_models import TokenData  # Ensure TokenData is imported
 
 router = APIRouter()
 
+# Minimum stock allowed for protected products when using the direct update
+# endpoint. Regular purchasing can still reduce stock normally.
+PROTECTED_STOCK_MINIMUM = 500_000
+
 
 @router.get("/products", response_model=List[Product], tags=["Products"])
 async def list_all_products():
@@ -143,6 +147,16 @@ async def update_existing_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
 
+    if product_to_update.is_protected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Product '{product_to_update.name}' is protected for demo purposes "
+                "and cannot be modified/deleted. Try a non-protected product."
+            ),
+        )
+
+
     # Use ProductUpdate model to get clean update data
     update_data = ProductUpdate(
         name=name,
@@ -193,6 +207,17 @@ async def delete_existing_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
+
+    product_to_delete = db.db["products"][product_index]
+    if product_to_delete.is_protected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Product '{product_to_delete.name}' is protected for demo purposes "
+                "and cannot be modified/deleted. Try a non-protected product."
+            ),
+        )
+
 
     print(
         f"Deleting product {product_id}. Intended BFLA: No admin check performed."
@@ -252,9 +277,22 @@ async def update_product_stock_quantity(
             detail="Product not found, cannot update stock.",
         )
 
-    if hasattr(product_exists, "is_protected") and product_exists.is_protected:
-        print(f"Updating stock for protected product {product_id}")
+    if product_exists.is_protected:
+        print(
+            f"Stock update attempted on protected product {product_exists.name} ({product_id})."
+        )
 
+        if quantity < PROTECTED_STOCK_MINIMUM:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Product '{product_exists.name}' is protected for demo purposes "
+                    f"and cannot have stock reduced below {PROTECTED_STOCK_MINIMUM}. "
+                    "Try a non-protected product or use the normal purchase flow."
+                ),
+            )
+
+   
     if not stock_to_update:
         # If product exists but stock record doesn't, create it (could happen if product was added without stock init)
         print(f"Stock record for product {product_id} not found. Creating one.")
