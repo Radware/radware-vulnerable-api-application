@@ -156,6 +156,7 @@ async def update_existing_product(
             ),
         )
 
+
     # Use ProductUpdate model to get clean update data
     update_data = ProductUpdate(
         name=name,
@@ -216,6 +217,7 @@ async def delete_existing_product(
                 "and cannot be modified/deleted. Try a non-protected product."
             ),
         )
+
 
     print(
         f"Deleting product {product_id}. Intended BFLA: No admin check performed."
@@ -290,6 +292,7 @@ async def update_product_stock_quantity(
                 ),
             )
 
+   
     if not stock_to_update:
         # If product exists but stock record doesn't, create it (could happen if product was added without stock init)
         print(f"Stock record for product {product_id} not found. Creating one.")

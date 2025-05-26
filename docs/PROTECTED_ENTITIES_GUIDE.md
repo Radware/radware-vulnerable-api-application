@@ -51,4 +51,6 @@ Alternatively, execute `./verify.sh` to set up the environment, start the API se
 
 When tests attempt destructive actions (such as deleting a user or product) against a protected record, the API should respond with **403 Forbidden** and an explanatory message. Operations against non‑protected entities should still succeed, demonstrating the vulnerabilities.
 
+Stock quantity changes for protected products are allowed but a log entry is generated noting the update. This keeps demo flows stable while highlighting that a protected item was modified.
+
 Refer to [PROTECTED_ENTITIES.md](../PROTECTED_ENTITIES.md) for the complete list of protected records and tips on choosing non‑protected items for your tests.
