@@ -13,6 +13,10 @@ def test_register_and_login(test_client):
         params={"username": unique_username, "email": f"{unique_username}@example.com", "password": "TestPass123!"},
     )
     assert register_response.status_code == 201
+    registered = register_response.json()
+    assert registered["username"] == unique_username
+    assert registered["email"] == f"{unique_username}@example.com"
+    assert "user_id" in registered
     
     # Login with the newly created user
     login_response = test_client.post(
@@ -61,6 +65,25 @@ def test_register_duplicate_email(test_client):
     )
     assert response2.status_code == 400
     assert response2.json()["detail"] == "Email already registered"
+
+
+def test_register_duplicate_username_and_email(test_client):
+    """Registering with both username and email already used should fail."""
+    username = f"bothdup_{uuid.uuid4().hex[:8]}"
+    email = f"{username}@example.com"
+
+    first = test_client.post(
+        "/api/auth/register",
+        params={"username": username, "email": email, "password": "TestPass123!"},
+    )
+    assert first.status_code == 201
+
+    second = test_client.post(
+        "/api/auth/register",
+        params={"username": username, "email": email, "password": "TestPass123!"},
+    )
+    assert second.status_code == 400
+    assert second.json()["detail"] == "Username already registered"
 
 
 @pytest.mark.parametrize(
