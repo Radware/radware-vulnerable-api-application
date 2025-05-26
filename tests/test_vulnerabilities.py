@@ -598,8 +598,10 @@ def test_sql_injection_in_product_search(test_client):
         params={"name": injection_string},
     )
 
-    # The vulnerability is present if the search doesn't error out and potentially returns unexpected results
+    # The vulnerability is present if the search doesn't error out
+    # (simulated environment won't actually execute the injection)
     assert response.status_code == 200
-
-    # Since this is a simulation, we don't expect a real SQL injection to succeed
-    # but we're verifying that the API accepts and processes the injection attempt
+    # Explicitly ensure the server didn't error out
+    assert response.status_code != 500
+    # Response should still be valid JSON (a list of products)
+    assert isinstance(response.json(), list)
