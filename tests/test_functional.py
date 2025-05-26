@@ -1,5 +1,6 @@
 import pytest
 import uuid
+from app.routers.product_router import PROTECTED_STOCK_MINIMUM
 
 # Test authentication functionality
 def test_register_and_login(test_client):
@@ -606,6 +607,154 @@ def test_product_search(test_client):
     if len(specific_results) > 0:
         for product in specific_results:
             assert "laptop" in product["name"].lower()
+
+
+# --- Additional Product and Stock Endpoint Tests ---
+
+
+def test_get_product_by_id_success(test_client, test_data):
+    product = test_data["products"][0]
+    resp = test_client.get(f"/api/products/{product['product_id']}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["product_id"] == product["product_id"]
+    assert data["name"] == product["name"]
+
+
+def test_get_product_by_id_not_found(test_client):
+    resp = test_client.get(f"/api/products/{uuid.uuid4()}")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Product not found"
+
+
+def test_get_product_by_id_invalid_uuid(test_client):
+    resp = test_client.get("/api/products/not-a-uuid")
+    assert resp.status_code == 422
+
+
+def test_product_search_special_characters(test_client):
+    for term in ["'", ";", "--", "Laptop'; DROP"]:
+        resp = test_client.get("/api/products/search", params={"name": term})
+        assert resp.status_code == 200
+
+
+def test_product_search_missing_param(test_client):
+    resp = test_client.get("/api/products/search")
+    assert resp.status_code == 422
+
+
+def test_create_update_delete_product_flow(test_client):
+    name = f"FuncProd_{uuid.uuid4().hex[:6]}"
+    create = test_client.post(
+        "/api/products",
+        params={"name": name, "price": 9.99, "description": "desc", "category": "Test"},
+    )
+    assert create.status_code == 201
+    prod = create.json()
+    pid = prod["product_id"]
+
+    update = test_client.put(
+        f"/api/products/{pid}",
+        params={"price": 19.99, "internal_status": "hidden"},
+    )
+    assert update.status_code == 200
+    up = update.json()
+    assert up["price"] == 19.99
+    assert up.get("internal_status") == "hidden"
+
+    delete_resp = test_client.delete(f"/api/products/{pid}")
+    assert delete_resp.status_code == 204
+    get_resp = test_client.get(f"/api/products/{pid}")
+    assert get_resp.status_code == 404
+
+
+def test_update_protected_product_forbidden(test_client, test_data):
+    protected = next(p for p in test_data["products"] if p["is_protected"])
+    resp = test_client.put(
+        f"/api/products/{protected['product_id']}",
+        params={"internal_status": "hack"},
+    )
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_delete_protected_product_forbidden(test_client, test_data):
+    protected = next(p for p in test_data["products"] if p["is_protected"])
+    resp = test_client.delete(f"/api/products/{protected['product_id']}")
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_update_product_not_found(test_client):
+    resp = test_client.put(f"/api/products/{uuid.uuid4()}", params={"price": 1})
+    assert resp.status_code == 404
+
+
+def test_delete_product_not_found(test_client):
+    resp = test_client.delete(f"/api/products/{uuid.uuid4()}")
+    assert resp.status_code == 404
+
+
+def test_update_product_internal_status_non_protected(test_client, test_data):
+    non_protected = next(p for p in test_data["products"] if not p["is_protected"])
+    resp = test_client.put(
+        f"/api/products/{non_protected['product_id']}",
+        params={"internal_status": "demo-status"},
+    )
+    assert resp.status_code == 200
+    assert resp.json().get("internal_status") == "demo-status"
+
+
+def test_get_product_stock_success(test_client, test_data):
+    prod_id = test_data["products"][0]["product_id"]
+    resp = test_client.get(f"/api/products/{prod_id}/stock")
+    assert resp.status_code == 200
+    assert resp.json()["product_id"] == prod_id
+
+
+def test_get_product_stock_not_found(test_client):
+    resp = test_client.get(f"/api/products/{uuid.uuid4()}/stock")
+    assert resp.status_code == 404
+
+
+def test_update_stock_non_protected_product(test_client, test_data):
+    prod = next(p for p in test_data["products"] if not p["is_protected"])
+    current = test_client.get(f"/api/products/{prod['product_id']}/stock").json()["quantity"]
+    new_qty = current + 5
+    resp = test_client.put(
+        f"/api/products/{prod['product_id']}/stock",
+        params={"quantity": new_qty},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["quantity"] == new_qty
+
+
+def test_update_stock_protected_below_minimum_forbidden(test_client, test_data):
+    protected = next(p for p in test_data["products"] if p["is_protected"])
+    resp = test_client.put(
+        f"/api/products/{protected['product_id']}/stock",
+        params={"quantity": PROTECTED_STOCK_MINIMUM - 1},
+    )
+    assert resp.status_code == 403
+    assert "stock reduced" in resp.json()["detail"]
+
+
+def test_update_stock_protected_above_minimum(test_client, test_data):
+    protected = next(p for p in test_data["products"] if p["is_protected"])
+    resp = test_client.put(
+        f"/api/products/{protected['product_id']}/stock",
+        params={"quantity": PROTECTED_STOCK_MINIMUM},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["quantity"] == PROTECTED_STOCK_MINIMUM
+
+
+def test_update_stock_product_not_found(test_client):
+    resp = test_client.put(
+        f"/api/products/{uuid.uuid4()}/stock",
+        params={"quantity": 1},
+    )
+    assert resp.status_code == 404
 
 
 # Additional order endpoint tests
