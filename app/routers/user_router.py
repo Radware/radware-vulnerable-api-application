@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from typing import List, Optional
 from uuid import UUID, uuid4  # Import uuid4 for generating UUIDs
 from datetime import datetime, timezone
+from pydantic import ValidationError
 
 from .. import db
 from ..models.user_models import (
@@ -93,9 +94,18 @@ async def create_user_endpoint(
         )
 
     hashed_password = get_password_hash(password)
-    new_user = UserInDBBase(
-        username=username, email=email, password_hash=hashed_password, is_admin=False
-    )
+    try:
+        new_user = UserInDBBase(
+            username=username,
+            email=email,
+            password_hash=hashed_password,
+            is_admin=False,
+        )
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid input",
+        )
     db.db["users"].append(new_user)
     return User.model_validate(new_user)
 
