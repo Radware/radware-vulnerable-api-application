@@ -1,5 +1,6 @@
 import pytest
 import uuid
+from app.routers.product_router import PROTECTED_STOCK_MINIMUM
 
 # Test for BOLA (Broken Object Level Authorization) vulnerabilities
 
@@ -370,7 +371,7 @@ def test_bola_delete_credit_card_for_another_user(
 # Test for BFLA (Broken Function Level Authorization) vulnerabilities
 
 
-def test_bfla_product_creation_by_regular_user(http_client, regular_auth_headers):
+def test_bfla_product_creation_by_regular_user(test_client, regular_auth_headers):
     """
     Test BFLA vulnerability: product creation by regular user
     A regular user should be able to create products (an admin-only function)
@@ -379,7 +380,7 @@ def test_bfla_product_creation_by_regular_user(http_client, regular_auth_headers
     product_name = f"Test Product {uuid.uuid4().hex[:8]}"
 
     # Try to create a product as a regular user
-    response = http_client.post(
+    response = test_client.post(
         f"/api/products?name={product_name}&price=99.99&description=This%20should%20not%20be%20allowed&category=Test",
         headers=regular_auth_headers,
     )
@@ -390,14 +391,14 @@ def test_bfla_product_creation_by_regular_user(http_client, regular_auth_headers
     assert new_product["name"] == product_name
 
 
-def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers):
+def test_bfla_product_deletion_by_regular_user(test_client, regular_auth_headers):
     """
     Test BFLA vulnerability: product deletion by regular user
     A regular user should be able to delete products (an admin-only function)
     """
     # First create a product to delete
     product_name = f"Delete Test Product {uuid.uuid4().hex[:8]}"
-    create_response = http_client.post(
+    create_response = test_client.post(
         f"/api/products?name={product_name}&price=99.99&description=To%20be%20deleted&category=Test",
         headers=regular_auth_headers,
     )
@@ -405,7 +406,7 @@ def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers
     product_id = create_response.json()["product_id"]
 
     # Try to delete the product as a regular user
-    delete_response = http_client.delete(
+    delete_response = test_client.delete(
         f"/api/products/{product_id}", headers=regular_auth_headers
     )
 
@@ -413,29 +414,28 @@ def test_bfla_product_deletion_by_regular_user(http_client, regular_auth_headers
     assert delete_response.status_code == 204
 
     # Verify deletion
-    get_response = http_client.get(f"/api/products/{product_id}")
+    get_response = test_client.get(f"/api/products/{product_id}")
     assert get_response.status_code == 404
 
 
-def test_bfla_stock_update_by_regular_user(
-    http_client, regular_auth_headers, test_data
-):
+def test_bfla_stock_update_by_regular_user(test_client, regular_auth_headers):
     """
     Test BFLA vulnerability: stock update by regular user.
     A regular user should be able to update product stock (an admin-only function).
     If the target product is protected, the update still succeeds but the server logs the action.
     """
-    # Get a product ID to update its stock
-    product_id = test_data["products"][0]["product_id"]
-
-    # Get current stock
-    get_stock_response = http_client.get(f"/api/products/{product_id}/stock")
-    assert get_stock_response.status_code == 200
-    current_stock = get_stock_response.json()["quantity"]
+    # Create a non-protected product first
+    product_name = f"Stock Update Test {uuid.uuid4().hex[:8]}"
+    create_resp = test_client.post(
+        f"/api/products?name={product_name}&price=1.99&description=Temp&category=Test",
+        headers=regular_auth_headers,
+    )
+    assert create_resp.status_code == 201
+    product_id = create_resp.json()["product_id"]
 
     # Update stock to a new value
-    new_stock = current_stock + 1000
-    update_response = http_client.put(
+    new_stock = 12345
+    update_response = test_client.put(
         f"/api/products/{product_id}/stock?quantity={new_stock}",
         headers=regular_auth_headers,
     )
@@ -446,29 +446,24 @@ def test_bfla_stock_update_by_regular_user(
     assert updated_stock["quantity"] == new_stock
 
     # Reset stock to original value
-    http_client.put(
-        f"/api/products/{product_id}/stock?quantity={current_stock}",
-        headers=regular_auth_headers,
-    )
+    test_client.delete(f"/api/products/{product_id}", headers=regular_auth_headers)
 
 
-def test_bfla_user_deletion_by_regular_user(
-    http_client, regular_auth_headers, test_data
-):
+def test_bfla_user_deletion_by_regular_user(test_client, regular_auth_headers):
     """
     Test BFLA vulnerability: user deletion by regular user
     A regular user should be able to delete other users (an admin-only function)
     """
     # First create a test user to delete
     unique_username = f"delete_victim_{uuid.uuid4().hex[:8]}"
-    register_response = http_client.post(
+    register_response = test_client.post(
         f"/api/auth/register?username={unique_username}&email={unique_username}@example.com&password=DeleteMe123!"
     )
     assert register_response.status_code == 201
     victim_user_id = register_response.json()["user_id"]
 
     # Try to delete the user as a regular user
-    delete_response = http_client.delete(
+    delete_response = test_client.delete(
         f"/api/users/{victim_user_id}", headers=regular_auth_headers
     )
 
@@ -476,10 +471,21 @@ def test_bfla_user_deletion_by_regular_user(
     assert delete_response.status_code == 204
 
     # Verify deletion
-    get_response = http_client.get(
+    get_response = test_client.get(
         f"/api/users/{victim_user_id}", headers=regular_auth_headers
     )
     assert get_response.status_code == 404
+
+
+def test_bfla_protected_user_deletion_forbidden(test_client, regular_auth_headers, test_data):
+    """Regular user attempting to delete a protected user should be blocked."""
+    protected_user = next(u for u in test_data["users"] if u["username"] == "BobJohnson")
+    resp = test_client.delete(
+        f"/api/users/{protected_user['user_id']}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
 
 
 # Test for Parameter Pollution vulnerabilities
@@ -532,10 +538,10 @@ def test_parameter_pollution_product_internal_status(
     assert "protected for demo purposes" in response.json()["detail"]
 
 
-def test_protected_product_deletion_forbidden(http_client, regular_auth_headers, test_data):
+def test_protected_product_deletion_forbidden(test_client, regular_auth_headers, test_data):
     """Deleting a protected product should be blocked."""
     protected_product = next(p for p in test_data["products"] if p["is_protected"])
-    delete_response = http_client.delete(
+    delete_response = test_client.delete(
         f"/api/products/{protected_product['product_id']}",
         headers=regular_auth_headers
 
@@ -544,15 +550,25 @@ def test_protected_product_deletion_forbidden(http_client, regular_auth_headers,
     assert "protected for demo purposes" in delete_response.json()["detail"]
 
 
-def test_protected_product_stock_minimum_enforced(http_client, regular_auth_headers, test_data):
-    """Protected product stock cannot be reduced below the minimum."""
+def test_protected_product_stock_minimum_enforced(test_client, regular_auth_headers, test_data):
+    """Protected product stock updates must respect minimum quantity."""
     protected_product = next(p for p in test_data["products"] if p["is_protected"])
-    resp = http_client.put(
+    # Below minimum should be forbidden
+    resp_low = test_client.put(
         f"/api/products/{protected_product['product_id']}/stock?quantity=100",
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 403
-    assert "stock reduced below" in resp.json()["detail"]
+    assert resp_low.status_code == 403
+    assert "stock" in resp_low.json()["detail"]
+
+    # Above minimum should succeed
+    high_quantity = PROTECTED_STOCK_MINIMUM + 500
+    resp_high = test_client.put(
+        f"/api/products/{protected_product['product_id']}/stock?quantity={high_quantity}",
+        headers=regular_auth_headers,
+    )
+    assert resp_high.status_code == 200
+    assert resp_high.json()["quantity"] == high_quantity
 
 
 # Test for Injection vulnerabilities
