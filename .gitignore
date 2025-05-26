@@ -1,4 +1,5 @@
 # Python
+push.sh
 __pycache__/
 *.py[cod]
 *.pyo
