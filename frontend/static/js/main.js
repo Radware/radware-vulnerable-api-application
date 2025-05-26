@@ -440,15 +440,52 @@ async function handleProductSearch(e) {
 }
 
 function initProductDetailPage() {
-    console.log('Initializing Product Detail Page');
+    console.log('[main.js] Initializing Product Detail Page');
     const pathParts = window.location.pathname.split('/');
-    const productIdWithSuffix = pathParts[pathParts.length - 1];
-    const productId = productIdWithSuffix.replace('.html', '');
-    fetchAndDisplayProductDetail(productId);
-    if (typeof setupParameterPollutionDemo === 'function') {
-        setupParameterPollutionDemo(productId);
+    let productIdSegment = pathParts.pop(); // Get last segment
+    if (productIdSegment === "" && pathParts.length > 0) { // Handle trailing slash
+        productIdSegment = pathParts.pop();
     }
-    updateUIVulnerabilityFeaturesDisplay();
+    
+    if (!productIdSegment) {
+        console.error("[main.js] Could not extract product ID segment from URL:", window.location.pathname);
+        if (typeof displayError === 'function') displayError("Invalid product page URL. Cannot determine product ID.", "product-detail-container");
+        else console.error("displayError function not found.");
+        return;
+    }
+
+    const productId = productIdSegment.replace('.html', ''); // Remove .html if present
+    console.log(`[main.js] Product ID extracted: '${productId}'`);
+
+    if (!productId || productId.trim() === "") {
+        console.error("[main.js] Product ID is empty after processing URL segment:", productIdSegment);
+        if (typeof displayError === 'function') displayError("Invalid or missing product ID in URL.", "product-detail-container");
+        else console.error("displayError function not found.");
+        // Optionally, hide the loading skeleton if it was shown
+        const loadingIndicator = document.getElementById('product-loading');
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        // Show a message in the main container
+        const productDetailContainer = document.getElementById('product-detail-container');
+        if(productDetailContainer) productDetailContainer.innerHTML = '<p class="error-message">Could not load product: Invalid product ID in URL.</p>';
+        return;
+    }
+
+    fetchAndDisplayProductDetail(productId);
+
+    // Setup the parameter pollution demo UI elements
+    if (typeof setupParameterPollutionDemo === 'function') {
+        console.log("[main.js] setupParameterPollutionDemo IS defined. Calling it.");
+        setupParameterPollutionDemo(productId);
+    } else {
+        console.error("[main.js] CRITICAL ERROR: setupParameterPollutionDemo function is NOT defined. The product-detail.js script might not be loaded or parsed correctly.");
+    }
+    
+    // Update visibility of UI demo features based on toggle
+    if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
+        updateUIVulnerabilityFeaturesDisplay();
+    } else {
+        console.warn("[main.js] updateUIVulnerabilityFeaturesDisplay function not found.");
+    }
 }
 
 function initLoginPage() {
@@ -1836,139 +1873,127 @@ function setupCartEventListeners() {
 }
 
 async function fetchAndDisplayProductDetail(productId) {
+    console.log(`[main.js] fetchAndDisplayProductDetail called for productId: '${productId}'`);
     const loadingIndicator = document.getElementById('product-loading');
     const productDetailContainer = document.getElementById('product-detail-container');
-    
+    const errorContainerOnPage = document.getElementById('error-message-container'); 
+
     if (!productDetailContainer) {
-        console.error('Product detail container not found');
+        console.error('[main.js] CRITICAL: Product detail container (ID: "product-detail-container") not found.');
         return;
     }
-    
+    if (errorContainerOnPage) errorContainerOnPage.style.display = 'none'; 
+
     try {
         if (loadingIndicator) loadingIndicator.style.display = 'flex';
-        if (productDetailContainer) productDetailContainer.style.display = 'none';
+        productDetailContainer.style.display = 'none';
+        productDetailContainer.innerHTML = ''; 
+
+        if (typeof apiCall !== 'function') {
+            console.error("[main.js] CRITICAL: apiCall function is not defined!");
+            throw new Error("API call function is missing, cannot fetch product data.");
+        }
         
-        // Fetch product data
+        console.log(`[main.js] Fetching product data for ID: ${productId} from /api/products/${productId}`);
         const product = await apiCall(`/api/products/${productId}`, 'GET', null, false);
         
-        // Fetch stock data
-        let stockInfo = { quantity: 0 };
+        let stockInfo = { quantity: 0, last_updated: new Date().toISOString() }; 
         try {
+            console.log(`[main.js] Fetching stock data for ID: ${productId} from /api/products/${productId}/stock`);
             stockInfo = await apiCall(`/api/products/${productId}/stock`, 'GET', null, false);
-        } catch (err) { 
-            console.warn(`Stock info for ${productId} not found.`); 
+        } catch (stockError) {
+            console.warn(`[main.js] Could not fetch stock info for product ${productId}:`, stockError.message, "Using default stock (0).");
         }
 
-        // Determine stock status for styling
-        let stockClass = 'out-of-stock';
-        let stockText = 'Out of stock';
+        console.log("[main.js] Product data received:", product);
+        console.log("[main.js] Stock data received:", stockInfo);
+
+        document.title = `${product.name || 'Product Details'} - Radware Demo E-Commerce`;
+        const breadcrumbCurrentPage = document.querySelector('.breadcrumb .current-page');
+        if (breadcrumbCurrentPage) breadcrumbCurrentPage.textContent = product.name || 'Product';
+
         let stockBadgeClass = 'badge-danger';
-        
+        let stockText = 'Out of stock';
         if (stockInfo.quantity > 10) {
-            stockClass = 'in-stock';
-            stockText = `${stockInfo.quantity} in stock`;
             stockBadgeClass = 'badge-success';
+            stockText = `${stockInfo.quantity} in stock`;
         } else if (stockInfo.quantity > 0) {
-            stockClass = 'low-stock';
-            stockText = `Only ${stockInfo.quantity} left!`;
             stockBadgeClass = 'badge-warning';
+            stockText = `Only ${stockInfo.quantity} left!`;
         }
 
-        const imagePath = `/static/images/products/${getProductImageFilename(product)}`;
+        const imageFilename = (typeof getProductImageFilename === 'function') ? getProductImageFilename(product) : 'placeholder.png';
+        const imagePath = `/static/images/products/${imageFilename}`;
+        console.log(`[main.js] Determined image path: ${imagePath}`);
 
-        // Update page title dynamically
-        document.title = `${product.name} - Radware Demo E-Commerce`;
-        
-        // Update breadcrumb
-        const breadcrumb = document.querySelector('.breadcrumb .current-page');
-        if (breadcrumb) {
-            breadcrumb.textContent = product.name;
-        }
-        
         productDetailContainer.innerHTML = `
             <div class="product-detail-layout">
                 <div class="product-detail-images">
                     <div class="main-image-container">
-                        <img src="${imagePath}" alt="${product.name}" id="product-image-detail" class="main-product-image" 
-                             onerror="this.onerror=null; this.src='/static/images/placeholder.png';">
+                        <img src="${imagePath}" alt="${product.name || 'Product Image'}" id="product-image-detail" class="main-product-image" 
+                             onerror="this.onerror=null; this.src='/static/images/placeholder.png'; console.error('Failed to load product image: ${imagePath}');">
                     </div>
                 </div>
-
                 <div class="product-detail-info">
-                    <h1 id="product-name-detail" data-testid="product-title">${product.name}</h1>
-
+                    <h1 id="product-name-detail" data-testid="product-title">${product.name || 'N/A'}</h1>
                     <div class="product-meta">
                         <span class="product-category">${product.category || 'Uncategorized'}</span>
                         <div class="product-status-tags">
                             <span class="stock-badge ${stockBadgeClass}" data-testid="stock-badge">${stockText}</span>
-                            ${product.internal_status ? `<span class="internal-status-badge">${product.internal_status}</span>` : ''}
+                            ${product.internal_status ? `<span class="internal-status-badge" data-testid="internal-status-badge">${product.internal_status}</span>` : ''}
                         </div>
                     </div>
-                    
                     <div class="product-price-container">
-                        <p class="product-price" id="product-price-detail" data-testid="product-price">$${product.price.toFixed(2)}</p>
+                        <p class="product-price" id="product-price-detail" data-testid="product-price">$${(product.price || 0).toFixed(2)}</p>
                     </div>
-                    
                     <div class="product-description-container">
                         <h3>Description</h3>
                         <p class="product-description" id="product-description-detail" data-testid="product-description">
                             ${product.description || 'No description available for this product.'}
                         </p>
                     </div>
-                    
                     <div class="product-actions">
                         <form id="add-to-cart-form" class="add-to-cart-form" data-testid="add-to-cart-form">
                             <div class="quantity-selector">
                                 <label for="quantity-detail">Quantity:</label>
                                 <div class="quantity-control">
-                                    <button type="button" class="quantity-btn decrease" data-testid="decrease-quantity">
-                                        <svg viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M19 13H5v-2h14v2z" fill="currentColor"></path>
-                                        </svg>
+                                    <button type="button" class="quantity-btn decrease" data-testid="decrease-quantity" aria-label="Decrease quantity">
+                                        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13H5v-2h14v2z" fill="currentColor"></path></svg>
                                     </button>
                                     <input type="number" id="quantity-detail" class="quantity-input" data-testid="quantity-input" 
-                                        value="1" min="1" max="${stockInfo.quantity}" 
-                                        ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
-                                    <button type="button" class="quantity-btn increase" data-testid="increase-quantity">
-                                        <svg viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
-                                        </svg>
+                                        value="1" min="1" max="${stockInfo.quantity || 0}" ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
+                                    <button type="button" class="quantity-btn increase" data-testid="increase-quantity" aria-label="Increase quantity">
+                                        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path></svg>
                                     </button>
                                 </div>
                             </div>
-                            
                             <button type="submit" id="add-to-cart-btn-detail" class="add-to-cart-btn ${stockInfo.quantity <= 0 ? 'disabled' : ''}"
                                 data-testid="add-to-cart-button"
-                                data-product-id="${productId}" 
-                                data-product-name="${product.name}" 
-                                data-product-price="${product.price}"
+                                data-product-id="${product.product_id}" 
+                                data-product-name="${product.name || 'Product'}" 
+                                data-product-price="${product.price || 0}"
                                 ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
-                                <svg class="cart-icon" viewBox="0 0 24 24" width="20" height="20">
-                                    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                                </svg>
+                                <svg class="cart-icon" viewBox="0 0 24 24" width="20" height="20"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
                                 ${stockInfo.quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
                                 <span class="btn-feedback"></span>
                             </button>
                         </form>
                     </div>
-                    
                     <div class="extra-info">
                         <div class="accordion">
                             <div class="accordion-item">
-                                <button class="accordion-header" id="shipping-header">
-                                    Shipping Information
-                                    <span class="accordion-icon">+</span>
+                                <button class="accordion-header" id="shipping-header" aria-expanded="false" aria-controls="shipping-content">
+                                    Shipping Information <span class="accordion-icon">+</span>
                                 </button>
-                                <div class="accordion-content">
+                                <div class="accordion-content" id="shipping-content">
                                     <p>Free shipping on orders over $50. Standard delivery 3-5 business days.</p>
                                 </div>
                             </div>
                             <div class="accordion-item">
-                                <button class="accordion-header" id="returns-header">
-                                    Returns & Warranty
-                                    <span class="accordion-icon">+</span>
+                                <button class="accordion-header" id="returns-header" aria-expanded="false" aria-controls="returns-content">
+                                    Returns & Warranty <span class="accordion-icon">+</span>
                                 </button>
-                                <div class="accordion-content">
+                                <div class="accordion-content" id="returns-content">
                                     <p>30-day money-back guarantee. 1-year limited warranty on all products.</p>
                                 </div>
                             </div>
@@ -1977,95 +2002,125 @@ async function fetchAndDisplayProductDetail(productId) {
                 </div>
             </div>
         `;
-        
+
         if (loadingIndicator) loadingIndicator.style.display = 'none';
         productDetailContainer.style.display = 'block';
-        
-        // Setup quantity controls
+        console.log("[main.js] Product details rendered.");
+
         const quantityInput = document.getElementById('quantity-detail');
-        const decreaseBtn = document.querySelector('#product-detail-container .quantity-btn.decrease');
-        const increaseBtn = document.querySelector('#product-detail-container .quantity-btn.increase');
+        const decreaseBtn = productDetailContainer.querySelector('.quantity-btn.decrease');
+        const increaseBtn = productDetailContainer.querySelector('.quantity-btn.increase');
         
-        if (decreaseBtn) {
+        if (quantityInput && decreaseBtn) {
             decreaseBtn.addEventListener('click', () => {
-                if (parseInt(quantityInput.value) > 1) {
-                    quantityInput.value = parseInt(quantityInput.value) - 1;
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
                 }
             });
-        }
+        } else { console.warn("[main.js] Decrease quantity button or input not found after render."); }
         
-        if (increaseBtn) {
+        if (quantityInput && increaseBtn) {
             increaseBtn.addEventListener('click', () => {
                 const maxQuantity = parseInt(quantityInput.max);
-                if (parseInt(quantityInput.value) < maxQuantity) {
-                    quantityInput.value = parseInt(quantityInput.value) + 1;
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue < maxQuantity) {
+                    quantityInput.value = currentValue + 1;
                 }
             });
-        }
+        } else { console.warn("[main.js] Increase quantity button or input not found after render."); }
         
-        // Setup add to cart form
         const addToCartForm = document.getElementById('add-to-cart-form');
         if (addToCartForm) {
             addToCartForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                console.log("[main.js] Add to cart form submitted.");
+                const btn = document.getElementById('add-to-cart-btn-detail');
+                if (!btn || btn.disabled) {
+                    console.warn("[main.js] Add to cart button is disabled or not found.");
+                    return;
+                }
+
+                const currentProductId = btn.dataset.productId;
+                const currentProductName = btn.dataset.productName;
+                const currentProductPrice = parseFloat(btn.dataset.productPrice);
+                const quantity = parseInt(document.getElementById('quantity-detail').value);
                 
-                const quantity = parseInt(quantityInput.value);
-                
-                if (quantity > 0 && quantity <= stockInfo.quantity) {
-                    // Visual feedback
-                    const addToCartBtn = document.getElementById('add-to-cart-btn-detail');
-                    addToCartBtn.classList.add('clicked');
+                if (quantity > 0 && quantity <= (stockInfo.quantity || 0)) {
+                    btn.classList.add('clicked');
+                    setTimeout(() => btn.classList.remove('clicked'), 300);
                     
-                    setTimeout(() => {
-                        addToCartBtn.classList.remove('clicked');
-                    }, 300);
-                    
-                    // Add to cart
-                    addToCart({ 
-                        product_id: productId, 
-                        name: product.name, 
-                        price: product.price, 
-                        quantity: quantity 
-                    });
+                    const feedbackEl = btn.querySelector('.btn-feedback');
+                    if(feedbackEl){
+                        feedbackEl.style.left = (e.offsetX || 0) + 'px'; 
+                        feedbackEl.style.top = (e.offsetY || 0) + 'px'; 
+                        feedbackEl.classList.add('active');
+                        setTimeout(() => feedbackEl.classList.remove('active'), 500);
+                    }
+
+                    if (typeof addToCart === 'function') {
+                        addToCart({ 
+                            product_id: currentProductId, 
+                            name: currentProductName, 
+                            price: currentProductPrice, 
+                            quantity: quantity 
+                        });
+                    } else {
+                        console.error("[main.js] CRITICAL: addToCart function is not defined.");
+                    }
                 } else { 
-                    displayError('Invalid quantity or out of stock.'); 
+                    const msg = 'Invalid quantity or product is out of stock.';
+                    if (typeof displayGlobalMessage === 'function') displayGlobalMessage(msg, 'error');
+                    else console.error(msg);
                 }
             });
-        }
+            console.log("[main.js] Add to cart form event listener attached.");
+        } else { console.error("[main.js] CRITICAL: Add to cart form not found after render."); }
         
-        // Setup accordion functionality
         document.querySelectorAll('.accordion-header').forEach(header => {
             header.addEventListener('click', function() {
-                this.classList.toggle('active');
                 const content = this.nextElementSibling;
                 const icon = this.querySelector('.accordion-icon');
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+                this.setAttribute('aria-expanded', String(!isExpanded));
+                this.classList.toggle('active', !isExpanded);
+                if (icon) icon.textContent = isExpanded ? '+' : '-';
                 
-                if (content.style.maxHeight) {
-                    content.style.maxHeight = null;
-                    icon.textContent = '+';
+                if (content) { 
+                    if (!isExpanded) { 
+                        content.style.padding = "15px";
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    } else { 
+                        content.style.maxHeight = null;
+                        setTimeout(() => { content.style.padding = "0 15px"; }, 300); 
+                    }
                 } else {
-                    content.style.maxHeight = content.scrollHeight + 'px';
-                    icon.textContent = '-';
+                    console.warn("[main.js] Accordion content not found for header:", this.id);
                 }
             });
         });
-        
+        console.log("[main.js] Accordion event listeners attached.");
+
     } catch (error) {
+        console.error("[main.js] Overall error in fetchAndDisplayProductDetail:", error);
         if (loadingIndicator) loadingIndicator.style.display = 'none';
-        displayError(`Failed to load product details: ${error.message}`);
-        productDetailContainer.innerHTML = `
+        productDetailContainer.style.display = 'block';
+        const errorMsgHtml = `
             <div class="error-state">
-                <svg class="error-icon" viewBox="0 0 24 24" width="48" height="48">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-                <p>Error loading product details.</p>
-                <button class="btn btn-primary retry-btn" onclick="fetchAndDisplayProductDetail('${productId}')">
-                    Try Again
-                </button>
-            </div>
-        `;
+                <svg class="error-icon" viewBox="0 0 24 24" width="48" height="48"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <p>Sorry, we couldn't load the product details.</p>
+                <p><small>Error: ${error.message || 'The product might not exist or there was a network issue.'}</small></p>
+                <a href="/" class="btn btn-primary retry-btn">Back to Home</a>
+            </div>`;
+        productDetailContainer.innerHTML = errorMsgHtml;
+        
+        if (typeof displayGlobalMessage === 'function') {
+            displayGlobalMessage(`Error loading product: ${error.message || 'Product not found or API error.'}`, 'error');
+        }
     }
 }
+
 
 // Authentication Functions
 async function handleLogin(e) {
