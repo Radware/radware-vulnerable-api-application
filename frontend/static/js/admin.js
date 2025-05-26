@@ -56,8 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(typeof apiCall === 'function') {
                     await apiCall(endpoint, 'POST');
                     if (typeof displaySuccess === 'function') {
-                        const msg = (currentUser && currentUser.is_admin) ?
-                            'Product added successfully!' : 'Product added (BFLA demo).';
+                      const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled)
+                          ? 'Product added (BFLA demo).'
+                          : 'Product added successfully!';
                         displaySuccess(msg);
                     }
                     addProductForm.reset();
@@ -169,7 +170,7 @@ async function fetchAdminProducts() {
                     <td class="text-center">${stockQuantity}</td>
                     <td>
                         <button class="btn btn-sm btn-primary edit-product-btn" data-product-id="${product.product_id}" disabled title="Edit (Not Implemented)">Edit</button>
-                        <button class="btn btn-sm btn-danger ${isRealAdmin ? '' : 'btn-exploit '}delete-product-btn" data-product-id="${product.product_id}">${isRealAdmin ? 'Delete' : 'Delete (BFLA Exploit)'}</button>
+                        <button class="btn btn-sm btn-danger ${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? '' : 'btn-exploit '}delete-product-btn" data-product-id="${product.product_id}">${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? 'Delete' : 'Delete (BFLA Exploit)'}</button>
                     </td>
                 </tr>
             `;
@@ -195,19 +196,20 @@ async function fetchAdminProducts() {
         document.querySelectorAll('.delete-product-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const productId = this.getAttribute('data-product-id');
-                const confirmMsg = (currentUser && currentUser.is_admin) ?
-                    `Are you sure you want to delete product ${productId}?` :
-                    `BFLA Demo: Delete product ${productId}?`;
+                const confirmMsg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+                    `BFLA Demo: Delete product ${productId}?` :
+                    `Are you sure you want to delete product ${productId}?`;
+
                 if (confirm(confirmMsg)) {
                     try {
                         await apiCall(`/api/products/${productId}`, 'DELETE', null, true);
                         if (typeof displaySuccess === 'function') {
-                            const msg = (currentUser && currentUser.is_admin) ?
-                                `Product ${productId} deleted successfully.` :
-                                `Product ${productId} deleted via BFLA.`;
+                            const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+                                `Product ${productId} deleted via BFLA.` :
+                                `Product ${productId} deleted successfully.`;
                             displaySuccess(msg);
                         }
-                        fetchAdminProducts();
+                        fetchAdminProducts(); // Refresh table
                     } catch (error) {
                         if (typeof displayError === 'function') {
                             displayError(`Failed to delete product ${productId}: ${error.message}`);
@@ -216,6 +218,7 @@ async function fetchAdminProducts() {
                 }
             });
         });
+
             
     } catch (error) {
         if(typeof displayError === 'function') displayError(`Failed to load admin products: ${error.message}`);
@@ -236,9 +239,9 @@ async function handleUpdateStockSubmit(e) {
     const endpoint = `/api/products/${productId}/stock?quantity=${encodeURIComponent(qty)}`;
     try {
         await apiCall(endpoint, 'PUT');
-        const msg = (currentUser && currentUser.is_admin) ?
-            `Stock for ${productId} set to ${qty}.` :
-            `Stock for ${productId} set to ${qty} (BFLA demo).`;
+        const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+            `Stock for ${productId} set to ${qty} (BFLA demo).` :
+            `Stock for ${productId} set to ${qty}.`;
         displayGlobalMessage(msg, 'success');
         fetchAdminProducts();
     } catch (err) {
@@ -253,15 +256,15 @@ async function handleDeleteUserSubmit(e) {
         displayGlobalMessage('User ID required.', 'error');
         return;
     }
-    const confirmMsg = (currentUser && currentUser.is_admin) ?
-        `Delete user ${userId}?` :
-        `BFLA Demo: Delete user ${userId}?`;
+    const confirmMsg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+        `BFLA Demo: Delete user ${userId}?` :
+        `Delete user ${userId}?`;
     if (!confirm(confirmMsg)) return;
     try {
         await apiCall(`/api/users/${userId}`, 'DELETE');
-        const msg = (currentUser && currentUser.is_admin) ?
-            `User ${userId} deleted.` :
-            `User ${userId} deleted via BFLA demo.`;
+        const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+            `User ${userId} deleted via BFLA demo.` :
+            `User ${userId} deleted.`;
         displayGlobalMessage(msg, 'success');
     } catch (err) {
         displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
@@ -336,6 +339,8 @@ function applyAdminPageDisplay() {
             addSubmit.textContent = 'Add Product';
         }
     } else {
+        if (addHeader) addHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Add New Product';
+        if (addHelper) addHelper.textContent = 'This form demonstrates adding a product as a non-admin. If successful, it indicates a BFLA vulnerability.';
         if (addSubmit) {
             addSubmit.classList.add('btn-warning', 'btn-exploit');
             addSubmit.textContent = 'Add Product (Demo Exploit)';
@@ -354,6 +359,8 @@ function applyAdminPageDisplay() {
             updateSubmit.textContent = 'Update Stock';
         }
     } else {
+        if (updateHeader) updateHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Update Product Stock';
+        if (updateHelper) updateHelper.textContent = 'Any user can modify stock quantities without authorization.';
         if (updateSubmit) {
             updateSubmit.classList.add('btn-warning', 'btn-exploit');
             updateSubmit.textContent = 'Update Stock (Demo Exploit)';
