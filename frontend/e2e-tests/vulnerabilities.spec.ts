@@ -241,4 +241,24 @@ test.describe('Vulnerability Demonstrations', () => {
     await expect(page.locator('#global-success-container')).toBeVisible();
     await expect(page.locator('#global-success-container')).toContainText('Product added successfully');
   });
+
+  test('should return 403 when modifying a protected product', async ({ page }) => {
+    const protectedProductId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+    const resp = await page.request.put(
+      `http://localhost:8000/api/products/${protectedProductId}?price=999`
+    );
+    expect(resp.status()).toBe(403);
+    const body = await resp.json();
+    expect(body.detail).toContain('protected for demo purposes');
+  });
+
+  test('should enforce stock minimum for protected products', async ({ page }) => {
+    const protectedProductId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+    const resp = await page.request.put(
+      `http://localhost:8000/api/products/${protectedProductId}/stock?quantity=100`
+    );
+    expect(resp.status()).toBe(403);
+    const body = await resp.json();
+    expect(body.detail).toContain('stock reduced below');
+  });
 });
