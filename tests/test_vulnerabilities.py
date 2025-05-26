@@ -86,7 +86,10 @@ def test_bola_user_orders_access(
 
     # Vulnerability test passes if the data is accessible
     assert response.status_code == 200
+    orders = response.json()
     # The response is a list of orders, which might be empty if the user hasn't placed any
+    for order in orders:
+        assert order["user_id"] == victim_user_id
 
 
 def test_bola_create_address_for_another_user(
@@ -176,6 +179,30 @@ def test_bola_using_another_users_address_for_order(
     new_order = response.json()
     assert new_order["user_id"] == user_id
     assert new_order["address_id"] == victim_address["address_id"]
+
+
+def test_bola_using_another_users_card_for_order(
+    test_client,
+    regular_auth_headers,
+    regular_user_info,
+    another_regular_user_info,
+    test_data,
+):
+    """BOLA: attacker uses victim's credit card for their own order."""
+    user_id = regular_user_info["user_id"]
+    user_address = regular_user_info["addresses"][0]
+    victim_card = another_regular_user_info["credit_cards"][0]
+    product = test_data["products"][0]
+
+    response = test_client.post(
+        f"/api/users/{user_id}/orders?address_id={user_address['address_id']}&credit_card_id={victim_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
+        headers=regular_auth_headers,
+    )
+
+    assert response.status_code == 201
+    new_order = response.json()
+    assert new_order["user_id"] == user_id
+    assert new_order["credit_card_id"] == victim_card["card_id"]
 
 
 # --- Additional BOLA address & credit card modification tests ---
