@@ -23,6 +23,109 @@ def test_register_and_login(test_client):
     assert "access_token" in login_response.json()
     assert login_response.json()["token_type"] == "bearer"
 
+
+def test_register_duplicate_username(test_client):
+    """Attempt registration with an existing username."""
+    username = f"dupuser_{uuid.uuid4().hex[:8]}"
+    # Initial registration should succeed
+    first = test_client.post(
+        "/api/auth/register",
+        params={"username": username, "email": f"{username}@example.com", "password": "TestPass123!"},
+    )
+    assert first.status_code == 201
+
+    # Second registration with same username should fail
+    second = test_client.post(
+        "/api/auth/register",
+        params={"username": username, "email": f"other_{username}@example.com", "password": "TestPass123!"},
+    )
+    assert second.status_code == 400
+    assert second.json()["detail"] == "Username already registered"
+
+
+def test_register_duplicate_email(test_client):
+    """Attempt registration with an existing email."""
+    email = f"dupemail_{uuid.uuid4().hex[:8]}@example.com"
+    username1 = f"user1_{uuid.uuid4().hex[:8]}"
+    username2 = f"user2_{uuid.uuid4().hex[:8]}"
+
+    response1 = test_client.post(
+        "/api/auth/register",
+        params={"username": username1, "email": email, "password": "TestPass123!"},
+    )
+    assert response1.status_code == 201
+
+    response2 = test_client.post(
+        "/api/auth/register",
+        params={"username": username2, "email": email, "password": "TestPass123!"},
+    )
+    assert response2.status_code == 400
+    assert response2.json()["detail"] == "Email already registered"
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"email": "a@example.com", "password": "pwd"},
+        {"username": "user", "password": "pwd"},
+        {"username": "user", "email": "a@example.com"},
+    ],
+)
+def test_register_missing_fields(test_client, params):
+    """Registration missing required fields should return 422."""
+    response = test_client.post("/api/auth/register", params=params)
+    assert response.status_code == 422
+
+
+def test_login_existing_user_success(test_client, regular_user_credentials):
+    """Login succeeds with valid credentials for an existing user."""
+    response = test_client.post(
+        "/api/auth/login",
+        params={
+            "username": regular_user_credentials["username"],
+            "password": regular_user_credentials["password"],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data and data["token_type"] == "bearer"
+
+
+def test_login_incorrect_username(test_client):
+    """Login with a non-existent username should return 401."""
+    response = test_client.post(
+        "/api/auth/login",
+        params={"username": "unknown_user", "password": "SomePass123!"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect username or password"
+
+
+def test_login_incorrect_password(test_client, regular_user_credentials):
+    """Login with incorrect password should return 401."""
+    response = test_client.post(
+        "/api/auth/login",
+        params={
+            "username": regular_user_credentials["username"],
+            "password": "WrongPass!",
+        },
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect username or password"
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"password": "pwd"},
+        {"username": "user"},
+    ],
+)
+def test_login_missing_fields(test_client, params):
+    """Login missing required fields should return 422."""
+    response = test_client.post("/api/auth/login", params=params)
+    assert response.status_code == 422
+
 # Test product listing functionality
 def test_list_products(test_client):
     """Test retrieving the list of products."""
