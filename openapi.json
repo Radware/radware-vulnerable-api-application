@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Radware Vulnerable E-commerce API",
-    "version": "1.0.0",
-    "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters."
+    "version": "1.1.0",
+    "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities."
   },
   "tags": [
     {
@@ -172,23 +172,50 @@
             "description": "Set user as admin (vulnerability)"
           }
         ],
-        "responses": {
-          "200": {
-            "description": "User updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
+      "responses": {
+        "200": {
+          "description": "User updated successfully",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
               }
             }
-          },
-          "400": {
-            "description": "Invalid input"
-          },
-          "404": {
-            "description": "User not found"
           }
+        },
+        "400": {
+          "description": "Invalid input"
+        },
+        "403": {
+          "description": "Action Forbidden: The user is protected for demo purposes"
+        },
+        "404": {
+          "description": "User not found"
+        }
+      }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete user by user ID (BFLA Target)",
+        "operationId": "deleteUserByUserId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user to delete"
+          }
+        ],
+        "responses": {
+          "204": {"description": "User deleted successfully"},
+          "403": {"description": "Action Forbidden: The user is protected for demo purposes"},
+          "404": {"description": "User not found"}
         }
       }
     },
@@ -418,7 +445,7 @@
             "description": "Product deleted successfully"
           },
           "403": {
-            "description": "Forbidden (if BFLA is fixed)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "Product not found"
@@ -541,7 +568,7 @@
             "description": "Invalid input"
           },
           "403": {
-            "description": "Forbidden (if BFLA is fixed)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "Product not found"
@@ -586,7 +613,7 @@
             "description": "Unauthorized (Not authenticated)"
           },
           "403": {
-            "description": "Forbidden (Authenticated but not authorized - BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User not found"
@@ -670,7 +697,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User not found"
@@ -765,7 +792,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or Address not found"
@@ -808,7 +835,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or Address not found"
@@ -853,7 +880,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User not found"
@@ -931,7 +958,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User not found"
@@ -1020,7 +1047,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or CreditCard not found"
@@ -1063,7 +1090,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or CreditCard not found"
@@ -1124,7 +1151,7 @@
             "description": "Unauthorized (Not authenticated)"
           },
           "403": {
-            "description": "Forbidden (Authenticated but not authorized for this user's orders - BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User not found"
@@ -1204,7 +1231,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked properly)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User, Address, or CreditCard not found"
@@ -1272,7 +1299,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Forbidden (BOLA if not checked)"
+            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or Order not found"
@@ -1385,7 +1412,7 @@
         }
       }
     },
-    "/users": {
+    "/api/users": {
       "get": {
         "tags": [
           "Users"
@@ -1464,6 +1491,11 @@
             "format": "date-time",
             "description": "Timestamp of last user update",
             "readOnly": true
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Indicates if this user is protected from deletion or certain updates",
+            "default": false
           }
         }
       },
@@ -1509,6 +1541,11 @@
             "format": "date-time",
             "description": "Timestamp of last product update",
             "readOnly": true
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Indicates if this product is protected from deletion or certain updates",
+            "default": false
           }
         }
       },
@@ -1579,6 +1616,23 @@
             "type": "boolean",
             "default": false,
             "description": "Whether this is the default address for the user"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of address creation",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last address update",
+            "readOnly": true
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Indicates if this address is protected from deletion or modification",
+            "default": false
           }
         }
       },
@@ -1635,6 +1689,23 @@
             "type": "boolean",
             "default": false,
             "description": "Whether this is the default credit card for the user"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of credit card creation",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last credit card update",
+            "readOnly": true
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "Indicates if this credit card is protected from deletion or modification",
+            "default": false
           }
         }
       },
