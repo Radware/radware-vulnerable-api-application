@@ -1,6 +1,8 @@
 # Testing and Quality Assurance Documentation
 
 This document provides comprehensive information about the testing suite, traffic generation capabilities, and stability enhancements for the Radware Vulnerable API.
+For details on the `is_protected` flag and how tests should handle protected records, see [docs/PROTECTED_ENTITIES_GUIDE.md](docs/PROTECTED_ENTITIES_GUIDE.md).
+
 
 ## Table of Contents
 1. [Testing Framework](#1-testing-framework)

@@ -308,7 +308,7 @@ footer {
     top: 20px;
     right: 20px;
     z-index: 9999;
-    width: 350px;
+    width: 420px;
     max-width: 90%;
 }
 
@@ -5004,3 +5004,21 @@ nav.breadcrumb .current-page {
 }
 
 /* ...existing code... */
+
+.protected-indicator {
+    font-size: 0.75em;
+    color: #777;
+    background-color: #f0f0f0;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+    font-weight: normal;
+    cursor: help;
+}
+
+.protected-edit-note {
+    font-size: 0.85em;
+    color: var(--warning-text);
+    margin-top: 5px;
+}
+

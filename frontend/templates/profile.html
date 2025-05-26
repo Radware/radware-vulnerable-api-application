@@ -118,6 +118,9 @@
                         <label for="address-zip">Zip Code:</label>
                         <input type="text" id="address-zip" class="form-control" required>
                     </div>
+                    <div id="address-protected-note" class="protected-edit-note" style="display:none;">
+                        This is a protected address. Only limited modifications are allowed for demo purposes.
+                    </div>
                     <div class="form-actions">
                         <button type="submit" id="address-form-submit-btn" class="btn btn-primary">Add Address</button>
                         <button type="button" id="address-form-cancel-btn" class="btn btn-form-cancel">Cancel</button>
@@ -165,6 +168,9 @@
                     <div class="form-group">
                         <label for="card-cvv-input">CVV:</label>
                         <input type="text" id="card-cvv-input" class="form-control" placeholder="Required for new cards">
+                    </div>
+                    <div id="card-protected-note" class="protected-edit-note" style="display:none;">
+                        This is a protected card. Only limited modifications are allowed for demo purposes.
                     </div>
                     <div class="form-actions">
                         <button type="submit" id="card-form-submit-btn" class="btn btn-primary">Add Card</button>

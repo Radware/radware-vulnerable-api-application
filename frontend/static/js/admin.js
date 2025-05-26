@@ -163,14 +163,14 @@ async function fetchAdminProducts() {
             tableHTML += `
                 <tr>
                     <td>${product.product_id.substring(0, 8)}...</td>
-                    <td>${product.name}</td>
+                    <td>${product.name}${product.is_protected ? ' <span class="protected-indicator" title="This item is protected for core demo stability. Destructive actions are limited.">🛡️ Protected</span>' : ''}</td>
                     <td>$${parseFloat(product.price).toFixed(2)}</td>
                     <td>${product.category || 'N/A'}</td>
                     <td>${product.internal_status || 'N/A'}</td>
                     <td class="text-center">${stockQuantity}</td>
                     <td>
                         <button class="btn btn-sm btn-primary edit-product-btn" data-product-id="${product.product_id}" disabled title="Edit (Not Implemented)">Edit</button>
-                        <button class="btn btn-sm btn-danger ${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? '' : 'btn-exploit '}delete-product-btn" data-product-id="${product.product_id}">${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? 'Delete' : 'Delete (BFLA Exploit)'}</button>
+                        <button class="btn btn-sm btn-danger ${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? '' : 'btn-exploit '}delete-product-btn" data-product-id="${product.product_id}" data-is-protected="${product.is_protected}">${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? 'Delete' : 'Delete (BFLA Exploit)'}</button>
                     </td>
                 </tr>
             `;
@@ -196,9 +196,12 @@ async function fetchAdminProducts() {
         document.querySelectorAll('.delete-product-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const productId = this.getAttribute('data-product-id');
-                const confirmMsg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
-                    `BFLA Demo: Delete product ${productId}?` :
-                    `Are you sure you want to delete product ${productId}?`;
+                const isProtected = this.getAttribute('data-is-protected') === 'true';
+                const confirmMsg = isProtected ?
+                    'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
+                    ((!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+                        `BFLA Demo: Delete product ${productId}?` :
+                        `Are you sure you want to delete product ${productId}?`);
 
                 if (confirm(confirmMsg)) {
                     try {
@@ -211,8 +214,10 @@ async function fetchAdminProducts() {
                         }
                         fetchAdminProducts(); // Refresh table
                     } catch (error) {
-                        if (typeof displayError === 'function') {
-                            displayError(`Failed to delete product ${productId}: ${error.message}`);
+                        if (!handleProtectedEntityError(error)) {
+                            if (typeof displayError === 'function') {
+                                displayError(`Failed to delete product ${productId}: ${error.message}`);
+                            }
                         }
                     }
                 }
@@ -267,7 +272,9 @@ async function handleDeleteUserSubmit(e) {
             `User ${userId} deleted.`;
         displayGlobalMessage(msg, 'success');
     } catch (err) {
-        displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
+        if (!handleProtectedEntityError(err)) {
+            displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
+        }
     }
 }
 

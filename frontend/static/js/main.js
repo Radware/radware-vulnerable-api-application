@@ -63,7 +63,11 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status} ${response.statusText} for ${method} ${fullUrl}` }));
             console.error('API Call Error Response:', errorData);
-            throw new Error(errorData.detail || `HTTP error! status: ${response.status} for ${method} ${fullUrl}`);
+            const msg = errorData.detail || `HTTP error! status: ${response.status} for ${method} ${fullUrl}`;
+            if (response.status === 403 && /protected/i.test(msg)) {
+                displayGlobalMessage(`<strong>Action Blocked:</strong> ${msg}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`, 'warning', 8000);
+            }
+            throw new Error(msg);
         }
         
         return response.status === 204 ? null : response.json();
@@ -201,15 +205,25 @@ function saveCart() {
     updateNavbar();
 }
 
-function displayGlobalMessage(message, type = 'info') {
+function displayGlobalMessage(message, type = 'info', duration = 5000) {
     const messageContainer = document.getElementById('global-message-container') || document.body.appendChild(document.createElement('div'));
-    if(messageContainer.id !== 'global-message-container') messageContainer.id = 'global-message-container';
+    if (messageContainer.id !== 'global-message-container') messageContainer.id = 'global-message-container';
 
     const messageElement = document.createElement('div');
     messageElement.className = `global-message ${type}-message`;
     messageElement.innerHTML = `<p>${message}</p><button class="close-btn" onclick="this.parentElement.remove()">×</button>`;
     messageContainer.appendChild(messageElement);
-    setTimeout(() => { messageElement.remove(); }, 5000);
+    if (duration !== 0) {
+        setTimeout(() => { messageElement.remove(); }, duration);
+    }
+}
+
+function handleProtectedEntityError(error) {
+    if (error && error.message && /protected/i.test(error.message)) {
+        displayGlobalMessage(`<strong>Action Blocked:</strong> ${error.message}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`, 'warning', 8000);
+        return true;
+    }
+    return false;
 }
 
 function showPageLoader(message = 'Loading...') {
@@ -1090,7 +1104,7 @@ function renderAddresses(addresses, container) {
         <div class="item-card address-card" id="address-item-${addr.address_id.substring(0,8)}">
             <div class="item-card-header">
                 <i class="fas fa-map-marker-alt"></i>
-                <h4>${addr.street} 
+                <h4>${addr.street}${addr.is_protected ? ' <span class="protected-indicator" title="This item is protected for core demo stability. Destructive actions are limited.">🛡️ Protected</span>' : ''}
                     ${addr.is_default ? '<span class="default-badge">Default</span>' : `<button class="btn-xs set-default-btn" onclick="setDefaultAddress('${addr.address_id}')">Set Default</button>`}
                 </h4>
             </div>
@@ -1100,18 +1114,18 @@ function renderAddresses(addresses, container) {
                 <p class="text-muted"><small>ID: ${addr.address_id.substring(0,8)}...</small></p>
             </div>
             <div class="item-actions">
-                <button class="btn btn-sm btn-secondary edit-address-btn" data-address-id="${addr.address_id}"><i class="fas fa-pen"></i> Edit</button>
-                <button class="btn btn-sm btn-danger delete-address-btn" data-address-id="${addr.address_id}"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-sm btn-secondary edit-address-btn" data-address-id="${addr.address_id}" data-is-protected="${addr.is_protected}"><i class="fas fa-pen"></i> Edit</button>
+                <button class="btn btn-sm btn-danger delete-address-btn" data-address-id="${addr.address_id}" data-is-protected="${addr.is_protected}"><i class="fas fa-trash"></i> Delete</button>
             </div>
         </div>
     `).join('');
     container.innerHTML = html;
 
-    document.querySelectorAll('.edit-address-btn').forEach(btn => 
+    document.querySelectorAll('.edit-address-btn').forEach(btn =>
         btn.addEventListener('click', () => populateAddressFormForEdit(btn.dataset.addressId, addresses))
     );
-    document.querySelectorAll('.delete-address-btn').forEach(btn => 
-        btn.addEventListener('click', () => handleDeleteAddress(btn.dataset.addressId))
+    document.querySelectorAll('.delete-address-btn').forEach(btn =>
+        btn.addEventListener('click', () => handleDeleteAddress(btn.dataset.addressId, btn.dataset.isProtected === 'true'))
     );
 }
 
@@ -2100,7 +2114,7 @@ async function fetchAndDisplayProductDetail(productId) {
                     </div>
                 </div>
                 <div class="product-detail-info">
-                    <h1 id="product-name-detail" data-testid="product-title">${product.name || 'N/A'}</h1>
+                    <h1 id="product-name-detail" data-testid="product-title">${product.name || 'N/A'}${product.is_protected ? ' <span class="protected-indicator" title="This item is protected for core demo stability. Destructive actions are limited.">🛡️ Protected</span>' : ''}</h1>
                     <div class="product-meta">
                         <span class="product-category">${product.category || 'Uncategorized'}</span>
                         <div class="product-status-tags">
@@ -2695,6 +2709,25 @@ function populateAddressFormForEdit(addressId, allAddresses) {
     document.getElementById('address-country').value = address.country;
     document.getElementById('address-zip').value = address.zip_code; // HTML ID
     document.getElementById('address-form-submit-btn').textContent = 'Update Address';
+
+    const protectedNote = document.getElementById('address-protected-note');
+    const streetInput = document.getElementById('address-street');
+    const cityInput = document.getElementById('address-city');
+    const countryInput = document.getElementById('address-country');
+    const zipInput = document.getElementById('address-zip');
+    if (address.is_protected) {
+        if (protectedNote) protectedNote.style.display = 'block';
+        if (streetInput) streetInput.disabled = true;
+        if (cityInput) cityInput.disabled = true;
+        if (countryInput) countryInput.disabled = true;
+        if (zipInput) zipInput.disabled = true;
+    } else {
+        if (protectedNote) protectedNote.style.display = 'none';
+        if (streetInput) streetInput.disabled = false;
+        if (cityInput) cityInput.disabled = false;
+        if (countryInput) countryInput.disabled = false;
+        if (zipInput) zipInput.disabled = false;
+    }
     
     const editIndicator = document.getElementById('address-edit-mode-indicator');
     if (editIndicator) {
@@ -2810,16 +2843,21 @@ async function handleAddressFormSubmit(event) {
     }
 }
 
-async function handleDeleteAddress(addressId) {
+async function handleDeleteAddress(addressId, isProtected = false) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
-    if (!confirm(`Are you sure you want to delete this address from ${currentlyViewedUsername}'s profile?`)) return;
+    const confirmMsg = isProtected ?
+        'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
+        `Are you sure you want to delete this address from ${currentlyViewedUsername}'s profile?`;
+    if (!confirm(confirmMsg)) return;
 
     try {
         await apiCall(`/api/users/${userIdForRequest}/addresses/${addressId}`, 'DELETE');
         displayGlobalMessage(`Address deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
-        displayGlobalMessage(`Error deleting address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+        if (!handleProtectedEntityError(error)) {
+            displayGlobalMessage(`Error deleting address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -2837,7 +2875,7 @@ function renderCreditCards(cards, container) {
         <div class="item-card credit-card-card" id="card-item-${card.card_id.substring(0,8)}">
             <div class="item-card-header">
                 <i class="fas fa-credit-card"></i>
-                <h4>${card.cardholder_name}
+                <h4>${card.cardholder_name}${card.is_protected ? ' <span class="protected-indicator" title="This item is protected for core demo stability. Destructive actions are limited.">🛡️ Protected</span>' : ''}
                     ${card.is_default ? '<span class="default-badge">Default</span>' : `<button class="btn-xs set-default-btn" onclick="setDefaultCard('${card.card_id}')">Set Default</button>`}
                 </h4>
             </div>
@@ -2847,18 +2885,18 @@ function renderCreditCards(cards, container) {
                 <p class="text-muted"><small>ID: ${card.card_id.substring(0,8)}...</small></p>
             </div>
             <div class="item-actions">
-                <button class="btn btn-sm btn-secondary edit-card-btn" data-card-id="${card.card_id}"><i class="fas fa-pen"></i> Edit</button>
-                <button class="btn btn-sm btn-danger delete-card-btn" data-card-id="${card.card_id}"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-sm btn-secondary edit-card-btn" data-card-id="${card.card_id}" data-is-protected="${card.is_protected}"><i class="fas fa-pen"></i> Edit</button>
+                <button class="btn btn-sm btn-danger delete-card-btn" data-card-id="${card.card_id}" data-is-protected="${card.is_protected}"><i class="fas fa-trash"></i> Delete</button>
             </div>
         </div>
     `).join('');
     container.innerHTML = html;
 
-    document.querySelectorAll('.edit-card-btn').forEach(btn => 
+    document.querySelectorAll('.edit-card-btn').forEach(btn =>
         btn.addEventListener('click', () => populateCardFormForEdit(btn.dataset.cardId, cards))
     );
-    document.querySelectorAll('.delete-card-btn').forEach(btn => 
-        btn.addEventListener('click', () => handleDeleteCreditCard(btn.dataset.cardId))
+    document.querySelectorAll('.delete-card-btn').forEach(btn =>
+        btn.addEventListener('click', () => handleDeleteCreditCard(btn.dataset.cardId, btn.dataset.isProtected === 'true'))
     );
 }
 
@@ -2877,15 +2915,32 @@ function populateCardFormForEdit(cardId, allCards) {
     const cardNumberInput = document.getElementById('card-number-input');
     const cardCvvInput = document.getElementById('card-cvv-input');
 
+    const cardholderInput = document.getElementById('card-cardholder-name');
+    const expiryMonthInput = document.getElementById('card-expiry-month');
+    const expiryYearInput = document.getElementById('card-expiry-year');
+    const protectedNote = document.getElementById('card-protected-note');
+
     if (cardNumberInput) {
         cardNumberInput.value = '';
         cardNumberInput.placeholder = 'Not updatable';
-        cardNumberInput.disabled = true; 
+        cardNumberInput.disabled = true;
     }
     if (cardCvvInput) {
         cardCvvInput.value = '';
         cardCvvInput.placeholder = 'Not updatable';
-        cardCvvInput.disabled = true; 
+        cardCvvInput.disabled = true;
+    }
+
+    if (card.is_protected) {
+        if (protectedNote) protectedNote.style.display = 'block';
+        if (cardholderInput) cardholderInput.disabled = true;
+        if (expiryMonthInput) expiryMonthInput.disabled = card.card_id !== 'cc000003-0002-0000-0000-000000000002';
+        if (expiryYearInput) expiryYearInput.disabled = false;
+    } else {
+        if (protectedNote) protectedNote.style.display = 'none';
+        if (cardholderInput) cardholderInput.disabled = false;
+        if (expiryMonthInput) expiryMonthInput.disabled = false;
+        if (expiryYearInput) expiryYearInput.disabled = false;
     }
     
     document.getElementById('card-form-submit-btn').textContent = 'Update Card';
@@ -3067,16 +3122,21 @@ async function handleCardFormSubmit(event) {
     }
 }
 
-async function handleDeleteCreditCard(cardId) {
+async function handleDeleteCreditCard(cardId, isProtected = false) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
-    if (!confirm(`Are you sure you want to delete this credit card from ${currentlyViewedUsername}'s profile?`)) return;
+    const confirmMsg = isProtected ?
+        'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
+        `Are you sure you want to delete this credit card from ${currentlyViewedUsername}'s profile?`;
+    if (!confirm(confirmMsg)) return;
 
     try {
         await apiCall(`/api/users/${userIdForRequest}/credit-cards/${cardId}`, 'DELETE');
         displayGlobalMessage(`Credit card deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
-        displayGlobalMessage(`Error deleting credit card: ${error.message}`, 'error');
+        if (!handleProtectedEntityError(error)) {
+            displayGlobalMessage(`Error deleting credit card: ${error.message}`, 'error');
+        }
     }
 }
 
