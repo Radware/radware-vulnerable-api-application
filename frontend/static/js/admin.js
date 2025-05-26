@@ -1,85 +1,18 @@
+let adminEscalationCheckbox;
+let revealInternalCheckbox;
+let vulnerabilityBanner;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Parameter pollution checkboxes
-    const adminEscalationCheckbox = document.getElementById('admin-escalation');
-    const revealInternalCheckbox = document.getElementById('reveal-internal');
+    adminEscalationCheckbox = document.getElementById('admin-escalation');
+    revealInternalCheckbox = document.getElementById('reveal-internal');
+    vulnerabilityBanner = document.getElementById('vulnerability-banner-admin');
 
-    const isRealAdmin = currentUser && currentUser.is_admin;
+    applyAdminPageDisplay();
 
-    // Banner element for BFLA demo
-    const vulnerabilityBanner = document.getElementById('vulnerability-banner-admin');
+    // UI elements are styled according to admin status and demo toggle
+    // by applyAdminPageDisplay()
 
-    // Adjust headings and button styles based on admin status
-    const addHeader = document.getElementById('add-product-header');
-    const addHelper = document.getElementById('add-product-helper');
-    const addSubmit = document.getElementById('add-product-submit');
-    if (isRealAdmin) {
-        if (addHeader) addHeader.textContent = 'Add New Product';
-        if (addHelper) addHelper.textContent = 'Add a new product to the catalog.';
-        if (addSubmit) {
-            addSubmit.classList.remove('btn-warning', 'btn-exploit');
-            addSubmit.classList.add('btn-primary');
-            addSubmit.textContent = 'Add Product';
-        }
-    }
-
-    const updateHeader = document.getElementById('update-stock-header');
-    const updateHelper = document.getElementById('update-stock-helper');
-    const updateSubmit = document.getElementById('update-stock-submit');
-    if (isRealAdmin) {
-        if (updateHeader) updateHeader.textContent = 'Update Product Stock';
-        if (updateHelper) updateHelper.textContent = 'Update stock quantity for a product.';
-        if (updateSubmit) {
-            updateSubmit.classList.remove('btn-warning', 'btn-exploit');
-            updateSubmit.classList.add('btn-primary');
-            updateSubmit.textContent = 'Update Stock';
-        }
-    }
-
-    // Function to update the displayed constructed URL
-    function updateConstructedUrlDisplay() {
-        const urlDisplaySpan = document.getElementById('constructed-url-display');
-        const copyBtn = document.getElementById('copy-constructed-url');
-        if (!urlDisplaySpan || !copyBtn || !adminEscalationCheckbox || !revealInternalCheckbox) return;
-
-        let queryParams = '?role=user'; // Base query
-        if (adminEscalationCheckbox.checked) {
-            queryParams += '&role=admin';
-        }
-        if (revealInternalCheckbox.checked) {
-            queryParams += '&status=internal';
-        }
-        
-        const demoUrl = `/api/products${queryParams}`;
-        urlDisplaySpan.textContent = demoUrl;
-
-        copyBtn.onclick = function() {
-            // Assuming API_BASE_URL is available globally from main.js, or construct full path differently
-            const fullPathToCopy = `${window.location.origin}${demoUrl}`;
-            navigator.clipboard.writeText(fullPathToCopy)
-                .then(() => displayGlobalMessage('Demo URL copied to clipboard!', 'success'))
-                .catch(err => displayGlobalMessage('Failed to copy URL: ' + err.message, 'error'));
-        };
-    }
-    
-    // Update banner based on checkbox states
-    function updateVulnerabilityBanner() {
-        if (!adminEscalationCheckbox || !revealInternalCheckbox || !vulnerabilityBanner) {
-            fetchAdminProducts();
-            updateConstructedUrlDisplay();
-            return;
-        }
-
-        const adminChecked = adminEscalationCheckbox.checked;
-        const internalChecked = revealInternalCheckbox.checked;
-
-        vulnerabilityBanner.style.display = (adminChecked || internalChecked) ? 'block' : 'none';
-
-        // Fetch products with the current checkbox states
-        fetchAdminProducts();
-        updateConstructedUrlDisplay();
-    }
-    
-    // Add event listeners to checkboxes
+    // Event listeners for demo option checkboxes
     if (adminEscalationCheckbox) {
         adminEscalationCheckbox.addEventListener('change', updateVulnerabilityBanner);
     }
@@ -123,7 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(typeof apiCall === 'function') {
                     await apiCall(endpoint, 'POST');
                     if (typeof displaySuccess === 'function') {
-                        const msg = isRealAdmin ? 'Product added successfully!' : 'Product added (BFLA demo).';
+                        const msg = (currentUser && currentUser.is_admin) ?
+                            'Product added successfully!' : 'Product added (BFLA demo).';
                         displaySuccess(msg);
                     }
                     addProductForm.reset();
@@ -148,8 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteUserForm.addEventListener('submit', handleDeleteUserSubmit);
     }
     
-    // Initial fetch and UI setup
-    updateVulnerabilityBanner(); // This will also call fetchAdminProducts and updateConstructedUrlDisplay
+    // Initial fetch and UI setup handled by applyAdminPageDisplay
 });
 
 // Function to fetch products for admin dashboard (moved outside DOMContentLoaded for clarity, but called within)
@@ -262,14 +195,14 @@ async function fetchAdminProducts() {
         document.querySelectorAll('.delete-product-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const productId = this.getAttribute('data-product-id');
-                const confirmMsg = isRealAdmin ?
+                const confirmMsg = (currentUser && currentUser.is_admin) ?
                     `Are you sure you want to delete product ${productId}?` :
                     `BFLA Demo: Delete product ${productId}?`;
                 if (confirm(confirmMsg)) {
                     try {
                         await apiCall(`/api/products/${productId}`, 'DELETE', null, true);
                         if (typeof displaySuccess === 'function') {
-                            const msg = isRealAdmin ?
+                            const msg = (currentUser && currentUser.is_admin) ?
                                 `Product ${productId} deleted successfully.` :
                                 `Product ${productId} deleted via BFLA.`;
                             displaySuccess(msg);
@@ -334,3 +267,127 @@ async function handleDeleteUserSubmit(e) {
         displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
     }
 }
+
+function updateConstructedUrlDisplay() {
+    const urlDisplaySpan = document.getElementById('constructed-url-display');
+    const copyBtn = document.getElementById('copy-constructed-url');
+    if (!urlDisplaySpan || !copyBtn || !adminEscalationCheckbox || !revealInternalCheckbox) return;
+
+    let queryParams = '?role=user';
+    if (uiVulnerabilityFeaturesEnabled && adminEscalationCheckbox.checked) {
+        queryParams += '&role=admin';
+    }
+    if (uiVulnerabilityFeaturesEnabled && revealInternalCheckbox.checked) {
+        queryParams += '&status=internal';
+    }
+
+    const demoUrl = `/api/products${queryParams}`;
+    urlDisplaySpan.textContent = demoUrl;
+
+    copyBtn.onclick = function() {
+        const fullPathToCopy = `${window.location.origin}${demoUrl}`;
+        navigator.clipboard.writeText(fullPathToCopy)
+            .then(() => displayGlobalMessage('Demo URL copied to clipboard!', 'success'))
+            .catch(err => displayGlobalMessage('Failed to copy URL: ' + err.message, 'error'));
+    };
+}
+
+function updateVulnerabilityBanner() {
+    if (!vulnerabilityBanner) {
+        fetchAdminProducts();
+        updateConstructedUrlDisplay();
+        return;
+    }
+
+    if (!uiVulnerabilityFeaturesEnabled) {
+        vulnerabilityBanner.style.display = 'none';
+    } else {
+        const adminChecked = adminEscalationCheckbox?.checked;
+        const internalChecked = revealInternalCheckbox?.checked;
+        vulnerabilityBanner.style.display = (adminChecked || internalChecked) ? 'block' : 'none';
+    }
+
+    fetchAdminProducts();
+    updateConstructedUrlDisplay();
+}
+
+function applyAdminPageDisplay() {
+    const isRealAdmin = currentUser && currentUser.is_admin;
+    const demosOn = uiVulnerabilityFeaturesEnabled;
+
+    const ppSection = document.querySelector('.parameter-pollution-controls');
+    if (ppSection) {
+        if (!demosOn) {
+            if (adminEscalationCheckbox) adminEscalationCheckbox.checked = false;
+            if (revealInternalCheckbox) revealInternalCheckbox.checked = false;
+        }
+        ppSection.style.display = demosOn ? 'block' : 'none';
+    }
+
+    const addHeader = document.getElementById('add-product-header');
+    const addHelper = document.getElementById('add-product-helper');
+    const addSubmit = document.getElementById('add-product-submit');
+    if (isRealAdmin || !demosOn) {
+        if (addHeader) addHeader.textContent = 'Add New Product';
+        if (addHelper) addHelper.textContent = 'Add a new product to the catalog.';
+        if (addSubmit) {
+            addSubmit.classList.remove('btn-warning', 'btn-exploit');
+            addSubmit.classList.add('btn-primary');
+            addSubmit.textContent = 'Add Product';
+        }
+    } else {
+        if (addSubmit) {
+            addSubmit.classList.add('btn-warning', 'btn-exploit');
+            addSubmit.textContent = 'Add Product (Demo Exploit)';
+        }
+    }
+
+    const updateHeader = document.getElementById('update-stock-header');
+    const updateHelper = document.getElementById('update-stock-helper');
+    const updateSubmit = document.getElementById('update-stock-submit');
+    if (isRealAdmin || !demosOn) {
+        if (updateHeader) updateHeader.textContent = 'Update Product Stock';
+        if (updateHelper) updateHelper.textContent = 'Update stock quantity for a product.';
+        if (updateSubmit) {
+            updateSubmit.classList.remove('btn-warning', 'btn-exploit');
+            updateSubmit.classList.add('btn-primary');
+            updateSubmit.textContent = 'Update Stock';
+        }
+    } else {
+        if (updateSubmit) {
+            updateSubmit.classList.add('btn-warning', 'btn-exploit');
+            updateSubmit.textContent = 'Update Stock (Demo Exploit)';
+        }
+    }
+
+    const deleteSection = document.querySelector('.delete-user-section');
+    if (deleteSection) {
+        const delHeader = deleteSection.querySelector('h3');
+        const delHelper = deleteSection.querySelector('.helper-text');
+        const delBtn = deleteSection.querySelector('button');
+
+        if (isRealAdmin) {
+            deleteSection.style.display = 'block';
+            if (delHeader) delHeader.textContent = 'Delete User Account';
+            if (delHelper) delHelper.textContent = 'Permanently remove a user account from the system.';
+            if (delBtn) {
+                delBtn.classList.remove('btn-exploit');
+                delBtn.textContent = 'Delete User';
+            }
+        } else if (demosOn) {
+            deleteSection.style.display = 'block';
+            if (delHeader) delHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Delete User Account';
+            if (delHelper) delHelper.textContent = 'Demonstrates deleting any user. This action should be restricted to administrators.';
+            if (delBtn) {
+                if (!delBtn.classList.contains('btn-exploit')) delBtn.classList.add('btn-exploit');
+                delBtn.textContent = 'Delete User (Demo Exploit)';
+            }
+        } else {
+            deleteSection.style.display = 'none';
+        }
+    }
+
+    updateVulnerabilityBanner();
+}
+
+window.applyAdminPageDisplay = applyAdminPageDisplay;
