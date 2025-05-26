@@ -563,3 +563,197 @@ def test_get_order_not_found(test_client, regular_auth_headers, regular_user_inf
     )
     assert resp.status_code == 404
     assert f"Order with ID {fake_order}" in resp.json()["detail"]
+
+
+# --- New user endpoint tests ---
+
+
+def test_create_user_endpoint_success(test_client):
+    """Creating a new user via /api/users returns 201."""
+    username = f"funcuser_{uuid.uuid4().hex[:8]}"
+    email = f"{username}@example.com"
+    resp = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["username"] == username
+    assert data["email"] == email
+    assert "user_id" in data
+
+
+def test_create_user_endpoint_duplicate_username(test_client):
+    username = f"dupfunc_{uuid.uuid4().hex[:8]}"
+    test_client.post(
+        "/api/users",
+        params={"username": username, "email": f"{username}@example.com", "password": "Pass123!"},
+    )
+    resp = test_client.post(
+        "/api/users",
+        params={"username": username, "email": f"other_{username}@example.com", "password": "Pass123!"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == f"Username '{username}' already registered"
+
+
+def test_create_user_endpoint_duplicate_email(test_client):
+    email = f"dupfunc_{uuid.uuid4().hex[:8]}@example.com"
+    username1 = f"user1_{uuid.uuid4().hex[:8]}"
+    username2 = f"user2_{uuid.uuid4().hex[:8]}"
+    test_client.post(
+        "/api/users",
+        params={"username": username1, "email": email, "password": "Pass123!"},
+    )
+    resp = test_client.post(
+        "/api/users",
+        params={"username": username2, "email": email, "password": "Pass123!"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == f"Email '{email}' already registered"
+
+
+def test_list_users_requires_auth(test_client):
+    """/api/users requires auth and returns 401 when missing."""
+    resp = test_client.get("/api/users")
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Not authenticated"
+
+    # With authentication it should return a list of users
+    login_resp = test_client.post(
+        "/api/auth/login",
+        params={"username": "admin", "password": "AdminPass123!"},
+    )
+    token = login_resp.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    ok_resp = test_client.get("/api/users", headers=headers)
+    assert ok_resp.status_code == 200
+    assert isinstance(ok_resp.json(), list)
+
+
+def test_get_user_by_id_no_auth(test_client, regular_user_info):
+    """Retrieving a user does not require authentication."""
+    user_id = regular_user_info["user_id"]
+    resp = test_client.get(f"/api/users/{user_id}")
+    assert resp.status_code == 200
+    assert resp.json()["user_id"] == user_id
+
+
+def test_get_user_by_id_not_found(test_client):
+    resp = test_client.get(f"/api/users/{uuid.uuid4()}")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "User not found"
+
+
+def test_get_user_by_id_invalid_uuid(test_client):
+    resp = test_client.get("/api/users/not-a-uuid")
+    assert resp.status_code == 422
+
+
+def test_update_non_protected_user(test_client, test_data):
+    """Update username, email and is_admin on a non-protected user."""
+    user = next(u for u in test_data["users"] if not u["is_protected"])
+    user_id = user["user_id"]
+    new_username = f"updated_{uuid.uuid4().hex[:6]}"
+    new_email = f"{new_username}@example.com"
+    resp = test_client.put(
+        f"/api/users/{user_id}",
+        params={"username": new_username, "email": new_email, "is_admin": "true"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["username"] == new_username
+    assert data["email"] == new_email
+    assert data["is_admin"] is True
+
+
+def test_update_protected_user_username_forbidden(test_client, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.put(
+        f"/api/users/{user_id}",
+        params={"username": "hackedname"},
+    )
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_update_protected_user_is_admin_allowed(test_client, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.put(
+        f"/api/users/{user_id}",
+        params={"is_admin": "true"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["is_admin"] is True
+
+
+def test_update_user_duplicate_username_or_email(test_client):
+    username1 = f"dup_a_{uuid.uuid4().hex[:6]}"
+    email1 = f"{username1}@example.com"
+    r1 = test_client.post("/api/users", params={"username": username1, "email": email1, "password": "Pass123!"})
+    uid1 = r1.json()["user_id"]
+    username2 = f"dup_b_{uuid.uuid4().hex[:6]}"
+    email2 = f"{username2}@example.com"
+    r2 = test_client.post("/api/users", params={"username": username2, "email": email2, "password": "Pass123!"})
+    uid2 = r2.json()["user_id"]
+
+    resp_username = test_client.put(f"/api/users/{uid2}", params={"username": username1})
+    assert resp_username.status_code == 400
+    assert resp_username.json()["detail"] == f"Username '{username1}' already in use."
+
+    resp_email = test_client.put(f"/api/users/{uid2}", params={"email": email1})
+    assert resp_email.status_code == 400
+    assert resp_email.json()["detail"] == f"Email '{email1}' already in use."
+
+
+def test_update_user_not_found(test_client):
+    resp = test_client.put(f"/api/users/{uuid.uuid4()}", params={"email": "x@example.com"})
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "User not found"
+
+
+def test_update_user_invalid_uuid(test_client):
+    resp = test_client.put("/api/users/not-a-uuid", params={"email": "a@b.com"})
+    assert resp.status_code == 422
+
+
+def test_update_user_invalid_is_admin_type(test_client, test_data):
+    user = next(u for u in test_data["users"] if not u["is_protected"])
+    resp = test_client.put(
+        f"/api/users/{user['user_id']}",
+        params={"is_admin": "maybe"},
+    )
+    assert resp.status_code == 422
+
+
+def test_delete_protected_user_forbidden(test_client, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.delete(f"/api/users/{user_id}")
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_delete_non_protected_user_success(test_client):
+    username = f"todel_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    create = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    user_id = create.json()["user_id"]
+    delete_resp = test_client.delete(f"/api/users/{user_id}")
+    assert delete_resp.status_code == 204
+    get_resp = test_client.get(f"/api/users/{user_id}")
+    assert get_resp.status_code == 404
+
+
+def test_delete_user_not_found(test_client):
+    resp = test_client.delete(f"/api/users/{uuid.uuid4()}")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "User not found"
+
+
+def test_delete_user_invalid_uuid(test_client):
+    resp = test_client.delete("/api/users/not-a-uuid")
+    assert resp.status_code == 422
+
