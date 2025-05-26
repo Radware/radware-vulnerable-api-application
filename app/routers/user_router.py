@@ -102,6 +102,18 @@ async def update_user(
     if not user_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    if hasattr(user_to_update, "is_protected") and user_to_update.is_protected:
+        username_change = username is not None and username != user_to_update.username
+        email_change = email is not None and email != user_to_update.email
+        if username_change or email_change:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"User '{user_to_update.username}' is protected. "
+                    "Username and email cannot be changed. Other fields might be modifiable for demo purposes."
+                ),
+            )
+
     # BOLA: No check if current_user.user_id matches user_id from path.
     update_data = {}
     if username is not None:
@@ -141,13 +153,24 @@ async def delete_user(
     # current_user: TokenData = Depends(get_current_user) # BFLA: No check initially
 ):
     user_index = -1
+    user_to_delete = None
     for i, u in enumerate(db.db["users"]):
         if u.user_id == user_id:
             user_index = i
+            user_to_delete = u
             break
 
-    if user_index == -1:
+    if user_index == -1 or user_to_delete is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if hasattr(user_to_delete, "is_protected") and user_to_delete.is_protected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"User '{user_to_delete.username}' is protected for demo purposes and cannot be deleted. "
+                "Please try with a non-protected user or one you created."
+            ),
+        )
 
     # BFLA Vulnerability: Any authenticated user can delete any other user.
     # No check if current_user is admin.
