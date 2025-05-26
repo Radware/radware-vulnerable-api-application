@@ -2,14 +2,27 @@ import pytest
 import asyncio
 import json
 import os
-import subprocess
-import time
 from pathlib import Path
-import httpx
+from fastapi.testclient import TestClient
+from app.main import app
+from pydantic import BaseModel
+
+# Provide minimal compatibility with Pydantic v2 API when running on
+# environments that still ship Pydantic v1.
+if not hasattr(BaseModel, "model_validate"):
+    @classmethod
+    def _model_validate(cls, data):
+        return cls.parse_obj(data)
+
+    BaseModel.model_validate = _model_validate  # type: ignore
+
+if not hasattr(BaseModel, "model_dump"):
+    def _model_dump(self, *args, **kwargs):
+        return self.dict(*args, **kwargs)
+
+    BaseModel.model_dump = _model_dump  # type: ignore
 
 # Global variables for test configuration
-BASE_URL = "http://localhost:8000"
-API_PROCESS = None
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -18,68 +31,15 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest.fixture(scope="session", autouse=True)
-def start_api_server():
-    """Start the API server for testing."""
-    # Get the project root directory
-    project_root = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    
-    # Check if the server is already running
-    try:
-        response = httpx.get("http://localhost:8000", timeout=2)
-        if response.status_code == 200:
-            print("API server is already running, using the existing instance")
-            yield
-            return
-    except:
-        pass
-    
-    # Start the server process
-    process = subprocess.Popen(
-        ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"],
-        cwd=project_root,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    
-    # Wait for server to start
-    max_retries = 5
-    retries = 0
-    while retries < max_retries:
-        try:
-            response = httpx.get("http://localhost:8000", timeout=2)
-            if response.status_code == 200:
-                print("API server started for testing")
-                break
-        except:
-            pass
-        retries += 1
-        time.sleep(2)
-    
-    if retries == max_retries:
-        process.terminate()
-        process.wait()
-        raise Exception("Failed to start API server")
-    
-    # Yield control back to the tests
-    yield
-    
-    # Cleanup after tests
-    process.terminate()
-    process.wait()
-    print("API server stopped")
+@pytest.fixture(scope="session")
+def test_client():
+    """Create a FastAPI TestClient for in-memory testing."""
+    return TestClient(app)
 
 @pytest.fixture(scope="session")
-def http_client():
-    """Create a httpx client for testing."""
-    with httpx.Client(base_url=BASE_URL, timeout=10.0) as client:
-        yield client
-
-@pytest.fixture(scope="session")
-def async_client():
-    """Create an async httpx client for testing."""
-    return httpx.AsyncClient(base_url=BASE_URL, timeout=10.0)
+def http_client(test_client):
+    """Backward compatible fixture that yields the TestClient."""
+    return test_client
 
 @pytest.fixture(scope="session")
 def test_data():
@@ -110,19 +70,21 @@ def regular_user_credentials(test_data):
     }
 
 @pytest.fixture
-def admin_token(http_client, admin_credentials):
+def admin_token(test_client, admin_credentials):
     """Get authentication token for the admin user."""
-    response = http_client.post(
-        f"/api/auth/login?username={admin_credentials['username']}&password={admin_credentials['password']}"
+    response = test_client.post(
+        "/api/auth/login",
+        params={"username": admin_credentials["username"], "password": admin_credentials["password"]},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
 
 @pytest.fixture
-def regular_token(http_client, regular_user_credentials):
+def regular_token(test_client, regular_user_credentials):
     """Get authentication token for a regular user."""
-    response = http_client.post(
-        f"/api/auth/login?username={regular_user_credentials['username']}&password={regular_user_credentials['password']}"
+    response = test_client.post(
+        "/api/auth/login",
+        params={"username": regular_user_credentials["username"], "password": regular_user_credentials["password"]},
     )
     assert response.status_code == 200
     return response.json()["access_token"]
