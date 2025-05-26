@@ -25,14 +25,14 @@
         <h2><i class="fas fa-filter-circle-dollar"></i> Parameter Pollution Demo Options</h2>
         <p>These options demonstrate API parameter pollution vulnerabilities by adding extra query parameters to the product list request. Observe the "Demo URL" to see the effect.</p>
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="admin-escalation" name="admin_escalation">
             <label class="form-check-label" for="admin-escalation">
+                <input class="form-check-input" type="checkbox" id="admin-escalation" name="admin_escalation">
                 <strong>Escalate to Admin Privileges</strong> - Adds a second <code>role=admin</code> parameter to bypass authorization checks (simulating BFLA).
             </label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="reveal-internal" name="reveal_internal">
             <label class="form-check-label" for="reveal-internal">
+                <input class="form-check-input" type="checkbox" id="reveal-internal" name="reveal_internal">
                 <strong>Show Internal Products</strong> - Adds a <code>status=internal</code> parameter to view products not normally visible to regular users.
             </label>
         </div>

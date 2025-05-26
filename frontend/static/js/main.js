@@ -346,23 +346,11 @@ function updateUIVulnerabilityFeaturesDisplay() {
 
     // --- Admin Page (`admin_products.html`) ---
     if (document.querySelector('.admin-section h1')?.textContent === 'Admin Dashboard') {
-        const isRealAdmin = currentUser && currentUser.is_admin;
         const ppSection = document.querySelector('.parameter-pollution-controls');
-        if (ppSection) ppSection.style.display = 'block';
-        toggleVisibilityBySelector('.add-product-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
-        toggleVisibilityBySelector('.update-stock-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
-        toggleVisibilityBySelector('.delete-user-section', isRealAdmin || uiVulnerabilityFeaturesEnabled);
+        if (ppSection) ppSection.style.display = uiVulnerabilityFeaturesEnabled ? 'block' : 'none';
 
-        const adminVulnerabilityBanner = document.getElementById('vulnerability-banner-admin');
-        if (adminVulnerabilityBanner) {
-            const adminEscalationCheckbox = document.getElementById('admin-escalation');
-            const revealInternalCheckbox = document.getElementById('reveal-internal');
-            const adminChecked = adminEscalationCheckbox ? adminEscalationCheckbox.checked : false;
-            const internalChecked = revealInternalCheckbox ? revealInternalCheckbox.checked : false;
-            adminVulnerabilityBanner.style.display = (adminChecked || internalChecked) ? 'block' : 'none';
-        }
-        if (typeof fetchAdminProducts === "function") {
-            fetchAdminProducts();
+        if (typeof applyAdminPageDisplay === 'function') {
+            applyAdminPageDisplay();
         }
     }
 
