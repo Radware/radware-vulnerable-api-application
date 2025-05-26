@@ -229,10 +229,11 @@ function hidePageLoader() {
     if (loader) loader.style.display = 'none';
 }
 
+// Full unabridged function with the specified changes, maintaining original structure for Profile Page logic.
 function updateUIVulnerabilityFeaturesDisplay() {
     console.log(`UI Vulnerability Demos are now: ${uiVulnerabilityFeaturesEnabled ? 'ENABLED' : 'DISABLED'}`);
     const displayStyleForBlock = uiVulnerabilityFeaturesEnabled ? 'block' : 'none';
-    const displayStyleForFlex = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none';
+    const displayStyleForFlex = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none'; // Keep this if used elsewhere
 
     const toggleVisibilityBySelector = (selector, show, defaultDisplay = 'block') => {
         document.querySelectorAll(selector).forEach(el => {
@@ -249,37 +250,98 @@ function updateUIVulnerabilityFeaturesDisplay() {
 
     // --- Profile Page (`profile.html`) ---
     if (document.getElementById('profile-page-title')) {
+        // Visibility of BOLA Demo Sections (User Discovery, Update Profile for BOLA)
         const profileBolaDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section'))
             .find(section => section.querySelector('#discover-users-btn'));
         if (profileBolaDemoSection) profileBolaDemoSection.style.display = displayStyleForBlock;
-
-        const adminEscalationDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
-            .find(h4 => h4.textContent.includes('Parameter Pollution Demo: Admin Escalation'))?.closest('.vulnerability-demo-section');
-        if (adminEscalationDemoSection) adminEscalationDemoSection.style.display = displayStyleForBlock;
-
+        
         const bolaUpdateProfileDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
             .find(h4 => h4.textContent.includes('BOLA Demo: Update Profile'))?.closest('.vulnerability-demo-section');
         if (bolaUpdateProfileDemoSection) bolaUpdateProfileDemoSection.style.display = displayStyleForBlock;
 
-        if (!uiVulnerabilityFeaturesEnabled) {
-            toggleVisibilityById('discovered-users-container', false);
-            toggleVisibilityById('return-to-my-profile-btn', false);
-            toggleVisibilityById('bola-demo-active-banner', false, 'flex');
+        // Visibility of Parameter Pollution Demo Section
+        const adminEscalationDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
+            .find(h4 => h4.textContent.includes('Parameter Pollution Demo: Admin Escalation'))?.closest('.vulnerability-demo-section');
+        if (adminEscalationDemoSection) adminEscalationDemoSection.style.display = displayStyleForBlock;
 
-            const currentViewingIdEl = document.getElementById('currently-viewed-user-id');
-            if (currentUser && currentViewingIdEl && currentViewingIdEl.value && currentViewingIdEl.value !== currentUser.user_id) {
-                if (typeof fetchAndDisplayFullProfile === "function") {
-                    currentlyViewedUserId = currentUser.user_id;
-                    currentlyViewedUsername = currentUser.username;
-                    currentViewingIdEl.value = currentUser.user_id;
-                    fetchAndDisplayFullProfile(currentUser.user_id);
-                    displayGlobalMessage('UI Demos disabled. Reverted to viewing your own profile.', 'info');
+        // Control visibility of "Currently viewing" indicator
+        const profileViewIndicator = document.getElementById('profile-view-indicator');
+        if (profileViewIndicator) {
+            if (uiVulnerabilityFeaturesEnabled) {
+                // Text content is updated by fetchAndDisplayFullProfile based on currentlyViewedUserId/Username
+                // This ensures if BOLA state is active, the text is correct and the indicator is shown.
+                const currentViewingUsernameSpan = document.getElementById('current-viewing-username-span');
+                if (currentViewingUsernameSpan && typeof currentlyViewedUsername !== 'undefined' && currentlyViewedUsername) { // Check if currentlyViewedUsername is set
+                     currentViewingUsernameSpan.textContent = `${currentlyViewedUsername}'s Profile`;
+                } else if (currentViewingUsernameSpan && currentUser) { // Fallback if BOLA state vars not fully set yet
+                     currentViewingUsernameSpan.textContent = `${currentUser.username}'s Profile`; // Default to own profile text
                 }
-                toggleVisibilityById('discover-users-btn', true, 'inline-block');
+                profileViewIndicator.style.display = 'block';
+            } else {
+                profileViewIndicator.style.display = 'none';
+            }
+        }
+        
+        // BOLA Active Banner (Warns when viewing another user's profile with demos ON)
+        const bolaDemoActiveBanner = document.getElementById('bola-demo-active-banner');
+        if (bolaDemoActiveBanner && currentUser) { // Ensure currentUser is available
+             // Show banner only if UI Demos are ON AND viewing another user's profile
+            bolaDemoActiveBanner.style.display = (uiVulnerabilityFeaturesEnabled && typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId !== currentUser.user_id) ? 'block' : 'none';
+        } else if (bolaDemoActiveBanner) {
+            bolaDemoActiveBanner.style.display = 'none'; // Hide if currentUser isn't defined
+        }
+
+        // Logic for "Discover Users" and "Return to My Profile" buttons
+        const discoverBtn = document.getElementById('discover-users-btn');
+        const returnBtn = document.getElementById('return-to-my-profile-btn');
+        const discoveredUsersContainer = document.getElementById('discovered-users-container');
+        const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
+
+        if (!uiVulnerabilityFeaturesEnabled) {
+            // UI Demos are OFF
+            if (discoveredUsersContainer) discoveredUsersContainer.style.display = 'none';
+            if (returnBtn) returnBtn.style.display = 'none'; 
+            // The discoverBtn's parent section will be hidden, so discoverBtn will also be hidden.
+            if (profileBolaDemoSection && profileBolaDemoSection.style.display === 'none') {
+                 if (discoverBtn) discoverBtn.style.display = 'none';
+            } else if (discoverBtn) { 
+                 discoverBtn.style.display = 'none';
+            }
+
+            // If demos are turned OFF while viewing another user's BOLA profile, revert view to own profile.
+            if (currentUser && hiddenUserIdInput && hiddenUserIdInput.value && hiddenUserIdInput.value !== currentUser.user_id) {
+                if (typeof fetchAndDisplayFullProfile === "function") {
+                    // The click on returnBtn will handle resetting currentlyViewedUserId and fetching profile
+                    if (returnBtn) returnBtn.click(); 
+                    else { // Fallback if button somehow removed
+                        currentlyViewedUserId = currentUser.user_id;
+                        currentlyViewedUsername = currentUser.username;
+                        hiddenUserIdInput.value = currentUser.user_id;
+                        fetchAndDisplayFullProfile(currentUser.user_id); 
+                        displayGlobalMessage('UI Demos disabled. Reverted to viewing your own profile.', 'info');
+                    }
+                }
             }
         } else {
-             toggleVisibilityById('discover-users-btn', true, 'inline-block');
+            // UI Demos are ON
+            if (discoverBtn && returnBtn) { 
+                if (currentUser && hiddenUserIdInput && hiddenUserIdInput.value && hiddenUserIdInput.value !== currentUser.user_id) {
+                    // Viewing another user's profile (BOLA active)
+                    returnBtn.style.display = 'inline-block';
+                    discoverBtn.style.display = 'none';
+                    if (discoveredUsersContainer) discoveredUsersContainer.style.display = 'none'; 
+                } else {
+                    // Viewing own profile or not yet selected a victim
+                    returnBtn.style.display = 'none';
+                    discoverBtn.style.display = 'inline-block'; 
+                }
+            }
         }
+        // Re-fetch profile to ensure all text (like escalation demo) and indicators are correct after toggle.
+        if (typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId && typeof fetchAndDisplayFullProfile === "function") {
+            fetchAndDisplayFullProfile(currentlyViewedUserId);
+        }
+
     }
 
     // --- Admin Page (`admin_products.html`) ---
@@ -298,22 +360,28 @@ function updateUIVulnerabilityFeaturesDisplay() {
             const internalChecked = revealInternalCheckbox ? revealInternalCheckbox.checked : false;
             adminVulnerabilityBanner.style.display = (uiVulnerabilityFeaturesEnabled && (adminChecked || internalChecked)) ? 'block' : 'none';
         }
+        if (typeof fetchAdminProducts === "function") {
+            fetchAdminProducts();
+        }
     }
 
     // --- Product Detail Page (`product_detail.html`) ---
     if (document.getElementById('product-detail-page-body')) {
-        const productPollutionDemo = document.querySelector('#product-detail-page-body .vulnerability-demo-section');
-        if (productPollutionDemo) productPollutionDemo.style.display = displayStyleForBlock;
+        const productPollutionDemoSection = document.querySelector('#product-detail-page-body .vulnerability-demo-section');
+        if (productPollutionDemoSection) {
+            productPollutionDemoSection.style.display = displayStyleForBlock;
+        }
 
-        const internalStatusInfoDiv = document.querySelector('.internal-status');
-        if (internalStatusInfoDiv && !uiVulnerabilityFeaturesEnabled) {
-            internalStatusInfoDiv.style.display = 'none';
+        const internalStatusInfoDiv = document.querySelector('.internal-status-badge'); 
+        if (internalStatusInfoDiv) {
+            internalStatusInfoDiv.style.display = uiVulnerabilityFeaturesEnabled ? 'inline-block' : 'none';
         }
     }
 
     // --- Checkout Page (`checkout.html`) ---
     if (document.getElementById('checkout-container')) {
-        toggleVisibilityById('bola-demo-section', uiVulnerabilityFeaturesEnabled);
+        const bolaDemoSectionOnCheckout = document.getElementById('bola-demo-section'); 
+        if (bolaDemoSectionOnCheckout) bolaDemoSectionOnCheckout.style.display = displayStyleForBlock;
 
         const bolaCheckbox = document.getElementById('order-for-other-user');
         const bolaCheckboxLabelContainer = bolaCheckbox?.closest('.form-group');
@@ -324,33 +392,51 @@ function updateUIVulnerabilityFeaturesDisplay() {
              bolaCheckboxLabelContainer.style.display = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none';
         }
         if (!uiVulnerabilityFeaturesEnabled) {
-            if (bolaCheckbox) bolaCheckbox.checked = false;
-            if (bolaFields) bolaFields.style.display = 'none';
-            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none';
+            if (bolaCheckbox) bolaCheckbox.checked = false; 
+            if (bolaFields) bolaFields.style.display = 'none'; 
+            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none'; 
         } else {
-            if(bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
-            if(bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
+             if(bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
+             if(bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
         }
     }
 
     // --- Orders Page (`orders.html`) ---
     if (document.getElementById('orders-container')) {
-         toggleVisibilityBySelector('.vulnerability-demo-section', uiVulnerabilityFeaturesEnabled);
+         toggleVisibilityBySelector('.vulnerability-demo-section', uiVulnerabilityFeaturesEnabled); 
 
+        const currentViewingDivOrders = document.getElementById('current-viewing'); 
         if (!uiVulnerabilityFeaturesEnabled) {
-            toggleVisibilityById('current-viewing', false, 'flex');
+            if (currentViewingDivOrders) currentViewingDivOrders.style.display = 'none';
             const targetUserIdInputInForm = document.querySelector('#view-orders-form #target-user-id');
-            if (targetUserIdInputInForm) targetUserIdInputInForm.value = '';
+            if (targetUserIdInputInForm) targetUserIdInputInForm.value = ''; 
 
-            const viewingUserIdHiddenInput = document.getElementById('viewing-user-id-orders');
-            if (typeof fetchAndDisplayOrders === "function" && viewingUserIdHiddenInput && currentUser && viewingUserIdHiddenInput.value !== currentUser.user_id) {
-                viewingUserIdHiddenInput.value = currentUser.user_id;
-                fetchAndDisplayOrders();
-                displayGlobalMessage('UI Demos disabled. Reverted to viewing your own orders.', 'info');
+            const viewingUserIdHiddenInputOrders = document.getElementById('viewing-user-id-orders');
+            if (typeof fetchAndDisplayOrders === "function" && viewingUserIdHiddenInputOrders && currentUser && viewingUserIdHiddenInputOrders.value !== currentUser.user_id) {
+                // Click the "Return to Your Orders" button if it exists and demos are off
+                const returnToOwnOrdersBtn = document.getElementById('return-to-own-orders');
+                if (returnToOwnOrdersBtn) {
+                    returnToOwnOrdersBtn.click();
+                } else { // Fallback if button not found
+                    viewingUserIdHiddenInputOrders.value = currentUser.user_id;
+                    fetchAndDisplayOrders(); 
+                    displayGlobalMessage('UI Demos disabled. Reverted to viewing your own orders.', 'info');
+                }
+            }
+        } else {
+            // UI Demos are ON
+            // If currently viewing another user's orders (BOLA state), ensure the "current-viewing" banner is visible.
+            const viewingUserIdHiddenInputOrders = document.getElementById('viewing-user-id-orders');
+            if (currentViewingDivOrders && viewingUserIdHiddenInputOrders && currentUser && viewingUserIdHiddenInputOrders.value !== currentUser.user_id) {
+                currentViewingDivOrders.style.display = 'flex'; // Ensure it's flex if BOLA active and demos ON
+                // The text content of this banner is handled by fetchAndDisplayOrders
+            } else if (currentViewingDivOrders) {
+                currentViewingDivOrders.style.display = 'none'; // Hide if viewing own orders
             }
         }
     }
 }
+
 
 // Helper function to get product image filename
 function getProductImageFilename(product) {
@@ -658,6 +744,7 @@ async function listAvailableVictims() {
 }
 
 
+// Full unabridged function with the specified changes
 async function fetchAndDisplayFullProfile(userId) {
     // Close any open forms when switching profiles
     cancelItemForm('address');
@@ -673,13 +760,13 @@ async function fetchAndDisplayFullProfile(userId) {
     const cardListContainer = document.getElementById('card-list-container');
     const profilePageTitle = document.getElementById('profile-page-title');
     const userInfoHeader = document.getElementById('user-info-header');
-    const addressesHeader = document.getElementById('addresses-header');
-    const creditCardsHeader = document.getElementById('credit-cards-header');
-    const profileViewIndicator = document.getElementById('profile-view-indicator');
+    const addressesHeader = document.getElementById('addresses-header'); // Target for "Addresses" header
+    const creditCardsHeader = document.getElementById('credit-cards-header'); // Target for "Credit Cards" header
+    const profileViewIndicator = document.getElementById('profile-view-indicator'); 
     const currentViewingUsernameSpan = document.getElementById('current-viewing-username-span');
     const bolaDemoActiveBanner = document.getElementById('bola-demo-active-banner');
-    const escalationTargetUsernameSpan = document.getElementById('escalation-target-username');
-    const escalationTargetBtnUsernameSpan = document.getElementById('escalation-target-btn-username');
+    const escalationTargetUsernameStrong = document.getElementById('escalation-target-username'); 
+    const escalationTargetBtnUsernameSpan = document.getElementById('escalation-target-btn-username'); 
     const hiddenUserIdInput = document.getElementById('currently-viewed-user-id');
 
 
@@ -695,24 +782,36 @@ async function fetchAndDisplayFullProfile(userId) {
         const userDetails = await apiCall(`/api/users/${userId}`, 'GET');
         currentlyViewedUsername = userDetails.username; 
 
-        const possessiveName = userId === currentUser.user_id ? "Your" : `${userDetails.username}'s`;
-        const displayName = userId === currentUser.user_id ? "Your" : userDetails.username;
+        const possessiveName = `${userDetails.username}'s`; 
+        const displayNameForUserInfoHeader = userDetails.username; // Keep this for the "User Information" header
 
         if (profilePageTitle) profilePageTitle.textContent = `${possessiveName} Profile`;
-        if (userInfoHeader) userInfoHeader.textContent = `${displayName} Information`;
-        if (addressesHeader) addressesHeader.innerHTML = `<i class="fas fa-map-marker-alt address-icon"></i> ${displayName} Addresses`;
-        if (creditCardsHeader) creditCardsHeader.innerHTML = `<i class="fas fa-credit-card card-icon"></i> ${displayName} Credit Cards`;
-        
-        if(escalationTargetUsernameSpan) escalationTargetUsernameSpan.textContent = displayName;
-        if(escalationTargetBtnUsernameSpan) escalationTargetBtnUsernameSpan.textContent = displayName;
+        if (userInfoHeader) userInfoHeader.textContent = `${displayNameForUserInfoHeader}'s Information`; // User specific for main info header
 
+        // --- Change Applied Here ---
+        // Make "Addresses" and "Credit Cards" headers static
+        if (addressesHeader) addressesHeader.innerHTML = `<i class="fas fa-map-marker-alt address-icon"></i> Addresses`;
+        if (creditCardsHeader) creditCardsHeader.innerHTML = `<i class="fas fa-credit-card card-icon"></i> Credit Cards`;
+        // --- End of Change ---
+        
         if(profileViewIndicator && currentViewingUsernameSpan) {
-            currentViewingUsernameSpan.textContent = userId === currentUser.user_id ? "Your Profile" : `${userDetails.username}'s Profile`;
-            profileViewIndicator.style.display = 'block';
+            currentViewingUsernameSpan.textContent = `${userDetails.username}'s Profile`; 
+            if (uiVulnerabilityFeaturesEnabled) {
+                profileViewIndicator.style.display = 'block';
+            } else {
+                profileViewIndicator.style.display = 'none';
+            }
         }
+
         if(bolaDemoActiveBanner) {
-            bolaDemoActiveBanner.style.display = userId === currentUser.user_id ? 'none' : 'block';
+            bolaDemoActiveBanner.style.display = (uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id) ? 'block' : 'none';
         }
+        
+        if (escalationTargetUsernameStrong && escalationTargetBtnUsernameSpan) {
+            escalationTargetUsernameStrong.textContent = `${userDetails.username}'s profile`;
+            escalationTargetBtnUsernameSpan.textContent = userDetails.username;
+        }
+
 
         if (profileInfoContent) {
             profileInfoContent.innerHTML = `
@@ -736,10 +835,12 @@ async function fetchAndDisplayFullProfile(userId) {
         if (addressListContainer) addressListContainer.innerHTML = '<p class="text-danger">Could not load addresses.</p>';
         if (cardListContainer) cardListContainer.innerHTML = '<p class="text-danger">Could not load credit cards.</p>';
         
-        if (userId !== currentUser.user_id) {
-            displayGlobalMessage("Failed to load victim's profile. Returning to your profile.", "error");
+        if (currentUser && userId !== currentUser.user_id) {
+            displayGlobalMessage("Failed to load target user's profile. Returning to your profile.", "error");
             const returnBtn = document.getElementById('return-to-my-profile-btn');
-            if(returnBtn) returnBtn.click();
+            if(returnBtn) returnBtn.click(); 
+        } else if (!currentUser && userId) { 
+             console.error("Trying to load profile without a logged-in user context and failed.");
         }
     } finally {
         const victimEls = [
@@ -748,7 +849,7 @@ async function fetchAndDisplayFullProfile(userId) {
             document.getElementById('address-list-container'),
             document.getElementById('card-list-container')
         ];
-        if (userId !== currentUser.user_id) {
+        if (uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id) {
             victimEls.forEach(el => el && el.classList.add('victim-data-active'));
         } else {
             victimEls.forEach(el => el && el.classList.remove('victim-data-active'));
@@ -756,6 +857,7 @@ async function fetchAndDisplayFullProfile(userId) {
         hidePageLoader();
     }
 }
+
 // --- Email Edit Functions ---
 function toggleEditEmailForm() {
     const form = document.getElementById('edit-email-form');
@@ -849,6 +951,7 @@ async function handleUpdateProfileSubmit(event) {
     }
 }
 // --- Parameter Pollution: Admin Escalation ---
+// Full unabridged function with the specified changes
 async function attemptAdminEscalation() {
     const userIdToEscalate = document.getElementById('currently-viewed-user-id').value;
     if (!userIdToEscalate) {
@@ -856,16 +959,42 @@ async function attemptAdminEscalation() {
         return;
     }
 
-    const userToEscalateName = currentlyViewedUsername || "the selected user";
+    // Determine the name for confirmation message - uses currentlyViewedUsername which is updated by fetchAndDisplayFullProfile
+    const userToEscalateName = (typeof currentlyViewedUsername !== 'undefined' && currentlyViewedUsername) ? currentlyViewedUsername : "the selected user";
+    
     if (!confirm(`Attempt to make ${userToEscalateName} an admin? This demonstrates Parameter Pollution.`)) return;
 
     const endpoint = `/api/users/${userIdToEscalate}?is_admin=true`;
 
     try {
-        showPageLoader('Escalating...');
-        await apiCall(endpoint, 'PUT', null, true);
-        displayGlobalMessage(`Admin escalation attempt sent for ${userToEscalateName}. Refreshing profile to see effect...`, 'success');
-        await fetchAndDisplayFullProfile(userIdToEscalate);
+        showPageLoader('Attempting admin escalation...');
+        const updatedUserObject = await apiCall(endpoint, 'PUT', null, true); // Capture the returned updated user
+
+        if (updatedUserObject) {
+            displayGlobalMessage(`Admin escalation attempt successful for ${userToEscalateName}. Refreshing profile...`, 'success');
+
+            // Check if the escalated user is the currently logged-in user
+            if (currentUser && updatedUserObject.user_id === currentUser.user_id) {
+                // Update the global currentUser object and localStorage
+                currentUser = updatedUserObject; // Update with the full new user object
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                // Immediately update the navbar
+                updateNavbar();
+                
+                displayGlobalMessage(`Your privileges have been updated to ${currentUser.is_admin ? 'Admin' : 'User'}. Navbar updated.`, 'success', 7000);
+            }
+            
+            // Refresh the profile view to show the admin badge (or lack thereof)
+            // and ensure all other profile details are current.
+            // fetchAndDisplayFullProfile will also use the latest currentlyViewedUsername.
+            await fetchAndDisplayFullProfile(userIdToEscalate);
+        } else {
+            // This case should ideally not happen if the API always returns the updated user on success.
+            displayGlobalMessage(`Admin escalation attempt sent for ${userToEscalateName}. Refreshing profile (API did not return updated user)...`, 'warning');
+            await fetchAndDisplayFullProfile(userIdToEscalate);
+        }
+
     } catch (error) {
         displayGlobalMessage(`Admin escalation attempt failed for ${userToEscalateName}: ${error.message}`, 'error');
     } finally {
