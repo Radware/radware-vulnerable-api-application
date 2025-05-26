@@ -1,12 +1,11 @@
 import pytest
-import json
 import uuid
 
 # Test for BOLA (Broken Object Level Authorization) vulnerabilities
 
 
 def test_bola_user_details_access(
-    http_client, regular_auth_headers, another_regular_user_info
+    test_client, regular_auth_headers, another_regular_user_info
 ):
     """
     Test BOLA vulnerability: accessing another user's details
@@ -15,7 +14,7 @@ def test_bola_user_details_access(
     victim_user_id = another_regular_user_info["user_id"]
 
     # Try to access another user's details
-    response = http_client.get(
+    response = test_client.get(
         f"/api/users/{victim_user_id}", headers=regular_auth_headers
     )
 
@@ -28,7 +27,7 @@ def test_bola_user_details_access(
 
 
 def test_bola_user_addresses_access(
-    http_client, regular_auth_headers, another_regular_user_info
+    test_client, regular_auth_headers, another_regular_user_info
 ):
     """
     Test BOLA vulnerability: accessing another user's addresses
@@ -37,7 +36,7 @@ def test_bola_user_addresses_access(
     victim_user_id = another_regular_user_info["user_id"]
 
     # Try to access another user's addresses
-    response = http_client.get(
+    response = test_client.get(
         f"/api/users/{victim_user_id}/addresses", headers=regular_auth_headers
     )
 
@@ -50,7 +49,7 @@ def test_bola_user_addresses_access(
 
 
 def test_bola_user_credit_cards_access(
-    http_client, regular_auth_headers, another_regular_user_info
+    test_client, regular_auth_headers, another_regular_user_info
 ):
     """
     Test BOLA vulnerability: accessing another user's credit cards
@@ -59,7 +58,7 @@ def test_bola_user_credit_cards_access(
     victim_user_id = another_regular_user_info["user_id"]
 
     # Try to access another user's credit cards
-    response = http_client.get(
+    response = test_client.get(
         f"/api/users/{victim_user_id}/credit-cards", headers=regular_auth_headers
     )
 
@@ -72,7 +71,7 @@ def test_bola_user_credit_cards_access(
 
 
 def test_bola_user_orders_access(
-    http_client, regular_auth_headers, another_regular_user_info
+    test_client, regular_auth_headers, another_regular_user_info
 ):
     """
     Test BOLA vulnerability: accessing another user's orders
@@ -81,7 +80,7 @@ def test_bola_user_orders_access(
     victim_user_id = another_regular_user_info["user_id"]
 
     # Try to access another user's orders
-    response = http_client.get(
+    response = test_client.get(
         f"/api/users/{victim_user_id}/orders", headers=regular_auth_headers
     )
 
@@ -91,7 +90,7 @@ def test_bola_user_orders_access(
 
 
 def test_bola_create_address_for_another_user(
-    http_client, regular_auth_headers, another_regular_user_info
+    test_client, regular_auth_headers, another_regular_user_info
 ):
     """
     Test BOLA vulnerability: creating an address for another user
@@ -100,8 +99,15 @@ def test_bola_create_address_for_another_user(
     victim_user_id = another_regular_user_info["user_id"]
 
     # Try to create an address for another user
-    response = http_client.post(
-        f"/api/users/{victim_user_id}/addresses?street=Hacked%20Street&city=Exploit%20City&country=Vulnerabilia&zip_code=31337&is_default=false",
+    response = test_client.post(
+        f"/api/users/{victim_user_id}/addresses",
+        params={
+            "street": "Hacked Street",
+            "city": "Exploit City",
+            "country": "Vulnerabilia",
+            "zip_code": "31337",
+            "is_default": False,
+        },
         headers=regular_auth_headers,
     )
 
@@ -111,14 +117,14 @@ def test_bola_create_address_for_another_user(
     assert new_address["user_id"] == victim_user_id
 
     # Clean up the created address
-    http_client.delete(
+    test_client.delete(
         f"/api/users/{victim_user_id}/addresses/{new_address['address_id']}",
         headers=regular_auth_headers,
     )
 
 
 def test_bola_cross_user_order_creation(
-    http_client, regular_auth_headers, another_regular_user_info, test_data
+    test_client, regular_auth_headers, another_regular_user_info, test_data
 ):
     """
     Test BOLA vulnerability: creating an order for another user
@@ -130,7 +136,7 @@ def test_bola_cross_user_order_creation(
     product = test_data["products"][0]
 
     # Try to create an order for another user
-    response = http_client.post(
+    response = test_client.post(
         f"/api/users/{victim_user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={victim_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
         headers=regular_auth_headers,
     )
@@ -144,7 +150,7 @@ def test_bola_cross_user_order_creation(
 
 
 def test_bola_using_another_users_address_for_order(
-    http_client,
+    test_client,
     regular_auth_headers,
     regular_user_info,
     another_regular_user_info,
@@ -160,7 +166,7 @@ def test_bola_using_another_users_address_for_order(
     product = test_data["products"][0]
 
     # Try to create an order with another user's address
-    response = http_client.post(
+    response = test_client.post(
         f"/api/users/{user_id}/orders?address_id={victim_address['address_id']}&credit_card_id={user_card['card_id']}&product_id_1={product['product_id']}&quantity_1=1",
         headers=regular_auth_headers,
     )
@@ -171,6 +177,168 @@ def test_bola_using_another_users_address_for_order(
     assert new_order["user_id"] == user_id
     assert new_order["address_id"] == victim_address["address_id"]
 
+
+# --- Additional BOLA address & credit card modification tests ---
+
+def test_bola_update_protected_address_forbidden(
+    test_client, regular_auth_headers, another_regular_user_info
+):
+    """Attacker cannot modify a protected address belonging to another user."""
+    victim_user_id = another_regular_user_info["user_id"]
+    addr_id = another_regular_user_info["addresses"][0]["address_id"]
+    resp = test_client.put(
+        f"/api/users/{victim_user_id}/addresses/{addr_id}",
+        params={"street": "Hacked"},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_bola_update_address_for_another_user(
+    test_client, regular_auth_headers, non_protected_user_info
+):
+    """Attacker can modify an address of a non-protected user."""
+    victim_user_id = non_protected_user_info["user_id"]
+    address = non_protected_user_info["addresses"][0]
+    original = address["street"]
+    resp = test_client.put(
+        f"/api/users/{victim_user_id}/addresses/{address['address_id']}",
+        params={
+            "street": "Evil Street",
+            "city": address["city"],
+            "country": address["country"],
+            "zip_code": address["zip_code"],
+            "is_default": address["is_default"],
+        },
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["street"] == "Evil Street"
+
+    # revert for cleanliness
+    test_client.put(
+        f"/api/users/{victim_user_id}/addresses/{address['address_id']}",
+        params={
+            "street": original,
+            "city": address["city"],
+            "country": address["country"],
+            "zip_code": address["zip_code"],
+            "is_default": address["is_default"],
+        },
+        headers=regular_auth_headers,
+    )
+
+
+def test_bola_delete_protected_address_forbidden(
+    test_client, regular_auth_headers, another_regular_user_info
+):
+    """Attempting to delete a protected address should be blocked."""
+    victim_user_id = another_regular_user_info["user_id"]
+    addr_id = another_regular_user_info["addresses"][0]["address_id"]
+    resp = test_client.delete(
+        f"/api/users/{victim_user_id}/addresses/{addr_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_bola_delete_address_for_another_user(
+    test_client, regular_auth_headers, non_protected_user_info
+):
+    """Attacker can delete a non-protected user's address."""
+    victim_user_id = non_protected_user_info["user_id"]
+    create = test_client.post(
+        f"/api/users/{victim_user_id}/addresses",
+        params={
+            "street": "Temp",
+            "city": "Tmp",
+            "country": "Nowhere",
+            "zip_code": "00000",
+        },
+        headers=regular_auth_headers,
+    )
+    assert create.status_code == 201
+    addr_id = create.json()["address_id"]
+    resp = test_client.delete(
+        f"/api/users/{victim_user_id}/addresses/{addr_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 204
+
+
+def test_bola_update_protected_credit_card_forbidden(
+    test_client, regular_auth_headers, another_regular_user_info
+):
+    """Modifying a protected credit card should return 403."""
+    victim_user_id = another_regular_user_info["user_id"]
+    card_id = another_regular_user_info["credit_cards"][0]["card_id"]
+    resp = test_client.put(
+        f"/api/users/{victim_user_id}/credit-cards/{card_id}",
+        params={"cardholder_name": "Hacker"},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+    assert "protected" in resp.json()["detail"]
+
+
+def test_bola_update_credit_card_for_another_user(
+    test_client, regular_auth_headers, non_protected_user_info
+):
+    """Attacker can modify another user's non-protected credit card."""
+    victim_user_id = non_protected_user_info["user_id"]
+    card = non_protected_user_info["credit_cards"][0]
+    original = card["cardholder_name"]
+    resp = test_client.put(
+        f"/api/users/{victim_user_id}/credit-cards/{card['card_id']}",
+        params={"cardholder_name": "Evil"},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["cardholder_name"] == "Evil"
+
+    # revert
+    test_client.put(
+        f"/api/users/{victim_user_id}/credit-cards/{card['card_id']}",
+        params={"cardholder_name": original},
+        headers=regular_auth_headers,
+    )
+
+
+def test_bola_delete_protected_credit_card_forbidden(
+    test_client, regular_auth_headers, another_regular_user_info
+):
+    victim_user_id = another_regular_user_info["user_id"]
+    card_id = another_regular_user_info["credit_cards"][0]["card_id"]
+    resp = test_client.delete(
+        f"/api/users/{victim_user_id}/credit-cards/{card_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_bola_delete_credit_card_for_another_user(
+    test_client, regular_auth_headers, non_protected_user_info
+):
+    victim_user_id = non_protected_user_info["user_id"]
+    create = test_client.post(
+        f"/api/users/{victim_user_id}/credit-cards",
+        params={
+            "cardholder_name": "Temp",
+            "card_number": "4111111111111111",
+            "expiry_month": "12",
+            "expiry_year": "2029",
+            "cvv": "999",
+        },
+        headers=regular_auth_headers,
+    )
+    assert create.status_code == 201
+    card_id = create.json()["card_id"]
+    resp = test_client.delete(
+        f"/api/users/{victim_user_id}/credit-cards/{card_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 204
 
 # Test for BFLA (Broken Function Level Authorization) vulnerabilities
 
