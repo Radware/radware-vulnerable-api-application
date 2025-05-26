@@ -492,7 +492,7 @@ def test_bfla_protected_user_deletion_forbidden(test_client, regular_auth_header
 
 
 def test_parameter_pollution_admin_escalation(
-    http_client, regular_auth_headers, regular_user_info
+    test_client, regular_auth_headers, regular_user_info
 ):
     """
     Test Parameter Pollution vulnerability: regular user escalating to admin
@@ -500,42 +500,54 @@ def test_parameter_pollution_admin_escalation(
     """
     user_id = regular_user_info["user_id"]
 
-    # Try to update user with is_admin parameter
-    response = http_client.put(
-        f"/api/users/{user_id}?email={regular_user_info['email']}&is_admin=true",
+    # Attacker escalates privileges using query parameter pollution
+    response = test_client.put(
+        f"/api/users/{user_id}",
+        params={"is_admin": True},
         headers=regular_auth_headers,
     )
 
-    # Vulnerability test passes if the update succeeds
     assert response.status_code == 200
     updated_user = response.json()
-    assert updated_user["is_admin"] == True
+    assert updated_user["is_admin"] is True
 
-    # Reset the user to non-admin
-    http_client.put(
-        f"/api/users/{user_id}?email={regular_user_info['email']}&is_admin=false",
+    # Revert for cleanliness
+    revert = test_client.put(
+        f"/api/users/{user_id}",
+        params={"is_admin": False},
         headers=regular_auth_headers,
     )
+    assert revert.status_code == 200
+    assert revert.json()["is_admin"] is False
 
 
 def test_parameter_pollution_product_internal_status(
-    http_client, regular_auth_headers, test_data
+    test_client, regular_auth_headers, test_data
 ):
     """
     Test Parameter Pollution vulnerability: setting internal product status
     A regular user should be able to set a product's internal_status
     """
-    product_id = test_data["products"][0]["product_id"]
-
-    # Try to update product with internal_status parameter
-    response = http_client.put(
-        f"/api/products/{product_id}?name=Same%20Name&internal_status=hacked",
+    # -- Non-protected product should accept internal_status parameter --
+    non_protected = next(p for p in test_data["products"] if not p["is_protected"])
+    prod_id = non_protected["product_id"]
+    resp = test_client.put(
+        f"/api/products/{prod_id}",
+        params={"internal_status": "hacked_value"},
         headers=regular_auth_headers,
     )
+    assert resp.status_code == 200
+    assert resp.json()["internal_status"] == "hacked_value"
 
-    # Protected products should return a 403
-    assert response.status_code == 403
-    assert "protected for demo purposes" in response.json()["detail"]
+    # -- Protected product should reject the same update --
+    protected = next(p for p in test_data["products"] if p["is_protected"])
+    resp_prot = test_client.put(
+        f"/api/products/{protected['product_id']}",
+        params={"internal_status": "hacked_value"},
+        headers=regular_auth_headers,
+    )
+    assert resp_prot.status_code == 403
+    assert "protected for demo purposes" in resp_prot.json()["detail"]
 
 
 def test_protected_product_deletion_forbidden(test_client, regular_auth_headers, test_data):
@@ -574,14 +586,17 @@ def test_protected_product_stock_minimum_enforced(test_client, regular_auth_head
 # Test for Injection vulnerabilities
 
 
-def test_sql_injection_in_product_search(http_client):
+def test_sql_injection_in_product_search(test_client):
     """
     Test for potential SQL Injection: manipulating the product search
     Using special characters in the search might cause unexpected behavior
     """
     # Try a search with SQL injection characters
     injection_string = "' OR '1'='1"
-    response = http_client.get(f"/api/products/search/?name={injection_string}")
+    response = test_client.get(
+        "/api/products/search",
+        params={"name": injection_string},
+    )
 
     # The vulnerability is present if the search doesn't error out and potentially returns unexpected results
     assert response.status_code == 200
