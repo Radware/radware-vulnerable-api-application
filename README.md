@@ -104,7 +104,7 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 *   **Affected Endpoints & Exploitation:**
     *   `POST /api/products/`: Any authenticated user can create new products (typically an admin function).
     *   `DELETE /api/products/{product_id}`: Any authenticated user can delete products.
-    *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels.
+    *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels. If the product is protected, the action is logged but still allowed.
     *   `DELETE /api/users/{user_id}`: Any authenticated user can delete *any* other user if they know their `user_id`. This is a combination of BFLA (no admin check for delete function) and BOLA (can target any user).
 *   **How to Test:**
     1.  Authenticate as a regular (non-admin) user.

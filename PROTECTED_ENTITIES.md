@@ -66,6 +66,8 @@ The following products are **NOT protected** and can be fully manipulated/delete
 *   `Projector Mini HD`
 *   `Desk Lamp LED`
 
+Updating the stock quantity of a protected product is permitted. The system will log the action (e.g., "Updating stock for protected product {product_id}") but does not block it. This keeps demo scenarios functional while noting that a protected item was changed.
+
 ## Testing Vulnerabilities
 
 When testing vulnerabilities that involve deleting or making critical modifications:
