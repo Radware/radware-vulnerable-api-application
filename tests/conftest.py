@@ -117,3 +117,29 @@ def another_regular_user_info(test_data):
         return regular_users[1]
     else:
         pytest.skip("Not enough regular users in test data")
+
+
+@pytest.fixture
+def non_protected_user_info(test_data):
+    """Return a user that is not marked as protected."""
+    return next(user for user in test_data["users"] if not user["is_protected"])
+
+
+@pytest.fixture
+def non_protected_token(test_client, non_protected_user_info):
+    """Authentication token for a non-protected user."""
+    response = test_client.post(
+        "/api/auth/login",
+        params={
+            "username": non_protected_user_info["username"],
+            "password": non_protected_user_info["password_plain"],
+        },
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def non_protected_auth_headers(non_protected_token):
+    """Return auth headers for a non-protected user."""
+    return {"Authorization": f"Bearer {non_protected_token}"}
