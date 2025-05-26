@@ -1532,9 +1532,23 @@ function initOrdersPage() {
 
     viewingUserIdInput.value = bolaTargetUserIdFromStorage || currentUser.user_id;
     
-    const targetUserIdFieldOnPage = document.getElementById('target-user-id'); 
+    const targetUserIdFieldOnPage = document.getElementById('target-user-id');
+    const detailUserIdInput = document.getElementById('detail-user-id');
+    const selectedViewSpan = document.getElementById('selected-target-view-orders');
+    const selectedDetailSpan = document.getElementById('selected-target-order-detail');
     if (targetUserIdFieldOnPage && bolaTargetUserIdFromStorage) {
-        targetUserIdFieldOnPage.value = bolaTargetUserIdFromStorage; 
+        targetUserIdFieldOnPage.value = bolaTargetUserIdFromStorage;
+        if (selectedViewSpan) {
+            const dName = bolaTargetUsernameFromStorage || bolaTargetUserIdFromStorage.substring(0,8)+"...";
+            selectedViewSpan.textContent = `(Selected: ${dName})`;
+        }
+    }
+    if (detailUserIdInput && bolaTargetUserIdFromStorage) {
+        detailUserIdInput.value = bolaTargetUserIdFromStorage;
+        if (selectedDetailSpan) {
+            const dName = bolaTargetUsernameFromStorage || bolaTargetUserIdFromStorage.substring(0,8)+"...";
+            selectedDetailSpan.textContent = `(Selected: ${dName})`;
+        }
     }
 
     fetchAndDisplayOrders(); 
@@ -1573,6 +1587,39 @@ function initOrdersPage() {
             displayGlobalMessage('Returned to viewing your own orders.', 'info');
         });
     }
+
+    // Delegated listener for selecting a user from the list
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.select-user-for-orders-bola-btn');
+        if (!btn) return;
+        const selectedUserId = btn.dataset.userId;
+        const selectedUsername = btn.dataset.username;
+        if (targetUserIdFieldOnPage) targetUserIdFieldOnPage.value = selectedUserId;
+        if (detailUserIdInput) detailUserIdInput.value = selectedUserId;
+        if (selectedViewSpan) selectedViewSpan.textContent = `(Selected: ${selectedUsername})`;
+        if (selectedDetailSpan) selectedDetailSpan.textContent = `(Selected: ${selectedUsername})`;
+        const usersList = document.getElementById('users-list');
+        if (usersList) {
+            usersList.querySelectorAll('.selected-victim-item').forEach(item => item.classList.remove('selected-victim-item'));
+            const li = btn.closest('li');
+            if (li) li.classList.add('selected-victim-item');
+        }
+        displayGlobalMessage(`Target for BOLA order demos set to: ${selectedUsername} (ID: ${selectedUserId.substring(0,8)}...)`, 'info');
+    });
+
+    targetUserIdFieldOnPage?.addEventListener('input', function() {
+        if (!this.value.trim() && selectedViewSpan) {
+            selectedViewSpan.textContent = '';
+            const usersList = document.getElementById('users-list');
+            if (usersList) usersList.querySelectorAll('.selected-victim-item').forEach(item => item.classList.remove('selected-victim-item'));
+        }
+    });
+
+    detailUserIdInput?.addEventListener('input', function() {
+        if (!this.value.trim() && selectedDetailSpan) {
+            selectedDetailSpan.textContent = '';
+        }
+    });
 
     document.getElementById('list-users-btn')?.addEventListener('click', listUsersForOrders);
     document.getElementById('order-detail-form')?.addEventListener('submit', fetchOrderDetail);
@@ -2392,8 +2439,16 @@ async function listUsersForOrders() {
         listEl.innerHTML = '';
         users.forEach(u => {
             const li = document.createElement('li');
-            li.className = 'list-group-item';
-            li.textContent = `${u.username} (${u.user_id.substring(0,8)}...)`;
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `<span>${u.username} (ID: <code>${u.user_id}</code>)</span>`;
+            if (!currentUser || u.user_id !== currentUser.user_id) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-sm btn-outline-primary select-user-for-orders-bola-btn';
+                btn.dataset.userId = u.user_id;
+                btn.dataset.username = u.username;
+                btn.textContent = 'Select';
+                li.appendChild(btn);
+            }
             listEl.appendChild(li);
         });
     } catch (error) {

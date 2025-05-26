@@ -19,8 +19,8 @@
         <form id="view-orders-form">
              <input type="hidden" id="viewing-user-id-orders" value=""> <!-- Added hidden input for orders BOLA state -->
             <div class="form-group">
-                <label for="target-user-id">Enter User ID to View Orders:</label>
-                <input type="text" id="target-user-id" name="target-user-id" placeholder="Enter another user's ID" class="form-control vulnerability-input">
+                <label for="target-user-id">Enter User ID to View Orders: <span id="selected-target-view-orders" class="text-muted small" style="font-style: italic; margin-left: 5px;"></span></label>
+                <input type="text" id="target-user-id" name="target-user-id" placeholder="Enter another user's ID or select from list below" class="form-control vulnerability-input">
                 <small class="helper-text">Try user IDs from `prepopulated_data.json`.</small>
             </div>
             <button type="submit" class="btn-exploit">View Another User's Orders</button>
@@ -44,8 +44,8 @@
         <p>Retrieve a specific order for any user.</p>
         <form id="order-detail-form">
             <div class="form-group">
-                <label for="detail-user-id">Target User ID:</label>
-                <input type="text" id="detail-user-id" class="form-control vulnerability-input" placeholder="User ID">
+                <label for="detail-user-id">Target User ID: <span id="selected-target-order-detail" class="text-muted small" style="font-style: italic; margin-left: 5px;"></span></label>
+                <input type="text" id="detail-user-id" class="form-control vulnerability-input" placeholder="User ID (auto-fills from selection)">
             </div>
             <div class="form-group">
                 <label for="detail-order-id">Order ID:</label>

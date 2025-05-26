@@ -4997,4 +4997,10 @@ nav.breadcrumb .current-page {
     margin-top: 5px;
 }
 
+/* Highlight selected victim in user lists */
+.selected-victim-item {
+    background-color: var(--warning-bg);
+    border-color: var(--warning-color);
+}
+
 /* ...existing code... */
