@@ -6,47 +6,53 @@
       "description": "High-performance laptop for professionals.",
       "price": 1499.99,
       "category": "Electronics",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
       "name": "Wireless Mouse",
       "description": "Ergonomic wireless mouse.",
-      "price": 25.50,
+      "price": 25.5,
       "category": "Accessories",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "b2c3d4e5-f6a7-8901-2345-678901bcdef0",
       "name": "Mechanical Keyboard",
       "description": "RGB Mechanical Keyboard with blue switches.",
-      "price": 75.00,
+      "price": 75.0,
       "category": "Accessories",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "c3d4e5f6-a7b8-9012-3456-789012cdef01",
       "name": "4K Monitor 27 inch",
       "description": "Ultra HD 27 inch monitor.",
-      "price": 320.00,
+      "price": 320.0,
       "category": "Electronics",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "d4e5f6a7-b8c9-0123-4567-890123def012",
       "name": "Gaming Headset",
       "description": "Comfortable headset with surround sound.",
-      "price": 99.90,
+      "price": 99.9,
       "category": "Audio",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "e5f6a7b8-c9d0-1234-5678-901234ef0123",
       "name": "Smartwatch Series X",
       "description": "Latest generation smartwatch with health tracking.",
-      "price": 199.00,
+      "price": 199.0,
       "category": "Wearables",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "f6a7b8c9-d0e1-2345-6789-012345f01234",
@@ -54,39 +60,44 @@
       "description": "Portable and waterproof Bluetooth speaker.",
       "price": 45.75,
       "category": "Audio",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "07b8c9d0-e1f2-3456-7890-123456012345",
       "name": "Webcam HD 1080p",
       "description": "Full HD webcam for video conferencing.",
-      "price": 35.00,
+      "price": 35.0,
       "category": "Accessories",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "18c9d0e1-f2a3-4567-8901-234567123456",
       "name": "External SSD 1TB",
       "description": "Fast and reliable 1TB external SSD.",
-      "price": 120.00,
+      "price": 120.0,
       "category": "Storage",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "29d0e1f2-a3b4-5678-9012-345678234567",
       "name": "Graphics Tablet",
       "description": "Professional graphics tablet for digital artists.",
-      "price": 250.00,
+      "price": 250.0,
       "category": "Creative Tools",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "30e1f2a3-b4c5-6789-0123-456789345678",
       "name": "Office Chair Ergonomic",
       "description": "Comfortable ergonomic office chair.",
-      "price": 180.50,
+      "price": 180.5,
       "category": "Furniture",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "41f2a3b4-c5d6-7890-1234-567890456789",
@@ -94,15 +105,17 @@
       "description": "Premium noise cancelling over-ear headphones.",
       "price": 299.99,
       "category": "Audio",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "52a3b4c5-d6e7-8901-2345-678901567890",
       "name": "Smartphone Model Z",
       "description": "Flagship smartphone with advanced camera.",
-      "price": 799.00,
+      "price": 799.0,
       "category": "Electronics",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "63b4c5d6-e7f8-9012-3456-789012678901",
@@ -110,7 +123,8 @@
       "description": "Lightweight e-reader with paper-like display.",
       "price": 110.25,
       "category": "Electronics",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "74c5d6e7-f8a9-0123-4567-890123789012",
@@ -118,7 +132,8 @@
       "description": "Track your daily activity and sleep.",
       "price": 49.99,
       "category": "Wearables",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": true
     },
     {
       "product_id": "85d6e7f8-a9b0-1234-5678-901234890123",
@@ -126,39 +141,44 @@
       "description": "High-capacity power bank for multiple charges.",
       "price": 39.95,
       "category": "Accessories",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": false
     },
     {
       "product_id": "96e7f8a9-b0c1-2345-6789-012345901234",
       "name": "VR Headset Advanced",
       "description": "Immersive virtual reality experience.",
-      "price": 399.00,
+      "price": 399.0,
       "category": "Gaming",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": false
     },
     {
       "product_id": "a7f8a9b0-c1d2-3456-7890-123456a12345",
       "name": "Digital Camera DSLR",
       "description": "Entry-level DSLR camera with kit lens.",
-      "price": 450.00,
+      "price": 450.0,
       "category": "Photography",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": false
     },
     {
       "product_id": "b8a9b0c1-d2e3-4567-8901-234567b23456",
       "name": "Projector Mini HD",
       "description": "Compact HD projector for home entertainment.",
-      "price": 150.00,
+      "price": 150.0,
       "category": "Electronics",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": false
     },
     {
       "product_id": "c9b0c1d2-e3f4-5678-9012-345678c34567",
       "name": "Desk Lamp LED",
       "description": "Adjustable LED desk lamp with multiple brightness levels.",
-      "price": 22.00,
+      "price": 22.0,
       "category": "Furniture",
-      "stock_quantity": 10000000
+      "stock_quantity": 10000000,
+      "is_protected": false
     }
   ],
   "users": [
@@ -176,7 +196,8 @@
           "city": "AdminCity",
           "country": "AdminCountry",
           "zip_code": "00001",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -188,9 +209,11 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4000000000000001",
-          "cvv_plain": "123"
+          "cvv_plain": "123",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000002-0000-0000-0000-000000000002",
@@ -206,7 +229,8 @@
           "city": "Springfield",
           "country": "USA",
           "zip_code": "12345",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         },
         {
           "address_id": "ad000002-0002-0000-0000-000000000002",
@@ -215,7 +239,8 @@
           "city": "Shelbyville",
           "country": "USA",
           "zip_code": "67890",
-          "is_default": false
+          "is_default": false,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -227,9 +252,11 @@
           "expiry_year": "2027",
           "is_default": true,
           "card_number_plain": "4111111111111111",
-          "cvv_plain": "234"
+          "cvv_plain": "234",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000003-0000-0000-0000-000000000003",
@@ -245,7 +272,8 @@
           "city": "Capital City",
           "country": "USA",
           "zip_code": "23456",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -257,7 +285,8 @@
           "expiry_year": "2026",
           "is_default": true,
           "card_number_plain": "4222222222222222",
-          "cvv_plain": "345"
+          "cvv_plain": "345",
+          "is_protected": true
         },
         {
           "card_id": "cc000003-0002-0000-0000-000000000002",
@@ -267,9 +296,11 @@
           "expiry_year": "2029",
           "is_default": false,
           "card_number_plain": "4333333333333333",
-          "cvv_plain": "456"
+          "cvv_plain": "456",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000004-0000-0000-0000-000000000004",
@@ -285,7 +316,8 @@
           "city": "Metroburg",
           "country": "USA",
           "zip_code": "34567",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -297,9 +329,11 @@
           "expiry_year": "2025",
           "is_default": true,
           "card_number_plain": "4444444444444444",
-          "cvv_plain": "567"
+          "cvv_plain": "567",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000005-0000-0000-0000-000000000005",
@@ -315,7 +349,8 @@
           "city": "Gotham",
           "country": "USA",
           "zip_code": "45678",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         },
         {
           "address_id": "ad000005-0002-0000-0000-000000000002",
@@ -324,7 +359,8 @@
           "city": "Star City",
           "country": "USA",
           "zip_code": "56789",
-          "is_default": false
+          "is_default": false,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -336,9 +372,11 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4555555555555555",
-          "cvv_plain": "678"
+          "cvv_plain": "678",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000006-0000-0000-0000-000000000006",
@@ -354,7 +392,8 @@
           "city": "Smallville",
           "country": "USA",
           "zip_code": "54321",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -366,9 +405,11 @@
           "expiry_year": "2026",
           "is_default": true,
           "card_number_plain": "4666666666666666",
-          "cvv_plain": "789"
+          "cvv_plain": "789",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000007-0000-0000-0000-000000000007",
@@ -384,7 +425,8 @@
           "city": "Central City",
           "country": "USA",
           "zip_code": "65432",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -396,7 +438,8 @@
           "expiry_year": "2027",
           "is_default": true,
           "card_number_plain": "4777777777777777",
-          "cvv_plain": "890"
+          "cvv_plain": "890",
+          "is_protected": true
         },
         {
           "card_id": "cc000007-0002-0000-0000-000000000002",
@@ -406,9 +449,11 @@
           "expiry_year": "2029",
           "is_default": false,
           "card_number_plain": "4888888888888888",
-          "cvv_plain": "901"
+          "cvv_plain": "901",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     },
     {
       "user_id": "00000008-0000-0000-0000-000000000008",
@@ -424,7 +469,8 @@
           "city": "Coast City",
           "country": "USA",
           "zip_code": "76543",
-          "is_default": true
+          "is_default": true,
+          "is_protected": false
         }
       ],
       "credit_cards": [
@@ -436,9 +482,11 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4999999999999999",
-          "cvv_plain": "012"
+          "cvv_plain": "012",
+          "is_protected": false
         }
-      ]
+      ],
+      "is_protected": false
     },
     {
       "user_id": "00000009-0000-0000-0000-000000000009",
@@ -454,7 +502,8 @@
           "city": "Keystone City",
           "country": "USA",
           "zip_code": "87654",
-          "is_default": true
+          "is_default": true,
+          "is_protected": false
         },
         {
           "address_id": "ad000009-0002-0000-0000-000000000002",
@@ -463,7 +512,8 @@
           "city": "Fawcett City",
           "country": "USA",
           "zip_code": "98765",
-          "is_default": false
+          "is_default": false,
+          "is_protected": false
         }
       ],
       "credit_cards": [
@@ -475,9 +525,11 @@
           "expiry_year": "2025",
           "is_default": true,
           "card_number_plain": "4012345678901234",
-          "cvv_plain": "112"
+          "cvv_plain": "112",
+          "is_protected": false
         }
-      ]
+      ],
+      "is_protected": false
     },
     {
       "user_id": "00000010-0000-0000-0000-000000000010",
@@ -493,7 +545,8 @@
           "city": "Opal City",
           "country": "USA",
           "zip_code": "97531",
-          "is_default": true
+          "is_default": true,
+          "is_protected": true
         }
       ],
       "credit_cards": [
@@ -505,9 +558,11 @@
           "expiry_year": "2029",
           "is_default": true,
           "card_number_plain": "4123456789012345",
-          "cvv_plain": "213"
+          "cvv_plain": "213",
+          "is_protected": true
         }
-      ]
+      ],
+      "is_protected": true
     }
   ]
 }
