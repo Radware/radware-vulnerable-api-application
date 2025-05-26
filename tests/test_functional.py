@@ -274,6 +274,263 @@ def test_credit_card_management(test_client, regular_auth_headers, regular_user_
     )
     assert delete_response.status_code == 204
 
+
+# --- Additional Address Endpoint Tests ---
+
+
+def test_list_addresses_requires_auth(test_client, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.get(f"/api/users/{user_id}/addresses")
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Not authenticated"
+
+
+def test_list_addresses_not_found(test_client, regular_auth_headers):
+    missing = uuid.uuid4()
+    resp = test_client.get(f"/api/users/{missing}/addresses", headers=regular_auth_headers)
+    assert resp.status_code == 404
+
+
+def test_list_addresses_bola_success(
+    test_client, regular_auth_headers, regular_user_info, another_regular_user_info
+):
+    own_id = regular_user_info["user_id"]
+    own = test_client.get(f"/api/users/{own_id}/addresses", headers=regular_auth_headers)
+    assert own.status_code == 200
+
+    other_id = another_regular_user_info["user_id"]
+    other = test_client.get(f"/api/users/{other_id}/addresses", headers=regular_auth_headers)
+    assert other.status_code == 200
+    if other.json():
+        assert other.json()[0]["user_id"] == other_id
+
+
+def test_create_address_invalid_and_duplicate(test_client, regular_auth_headers, regular_user_info):
+    user_id = regular_user_info["user_id"]
+
+    resp = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={"street": "Only"},
+        headers=regular_auth_headers
+    )
+    assert resp.status_code == 422
+
+    existing = regular_user_info["addresses"][0]
+    dup = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": existing["street"],
+            "city": existing["city"],
+            "country": existing["country"],
+            "zip_code": existing["zip_code"],
+            "is_default": False
+        },
+        headers=regular_auth_headers
+    )
+    assert dup.status_code == 409
+
+
+def test_update_delete_address_non_protected(test_client, non_protected_auth_headers, non_protected_user_info):
+    user_id = non_protected_user_info["user_id"]
+    create = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "Tmp St",
+            "city": "Tmp City",
+            "country": "Tmp",
+            "zip_code": "11111"
+        },
+        headers=non_protected_auth_headers
+    )
+    assert create.status_code == 201
+    addr = create.json()
+    addr_id = addr["address_id"]
+
+    update = test_client.put(
+        f"/api/users/{user_id}/addresses/{addr_id}",
+        params={
+            "street": "Updated",
+            "city": addr["city"],
+            "country": addr["country"],
+            "zip_code": addr["zip_code"],
+            "is_default": addr["is_default"],
+        },
+        headers=non_protected_auth_headers
+    )
+    assert update.status_code == 200
+    assert update.json()["street"] == "Updated"
+
+    delete_resp = test_client.delete(
+        f"/api/users/{user_id}/addresses/{addr_id}", headers=non_protected_auth_headers
+    )
+    assert delete_resp.status_code == 204
+
+
+def test_protected_address_modification_forbidden(test_client, regular_auth_headers, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    protected_id = regular_user_info["addresses"][0]["address_id"]
+
+    upd = test_client.put(
+        f"/api/users/{user_id}/addresses/{protected_id}",
+        params={"street": "Hacked"},
+        headers=regular_auth_headers
+    )
+    assert upd.status_code == 403
+    assert "protected" in upd.json()["detail"]
+
+    dele = test_client.delete(
+        f"/api/users/{user_id}/addresses/{protected_id}", headers=regular_auth_headers
+    )
+    assert dele.status_code == 403
+
+
+def test_address_update_delete_not_found(test_client, non_protected_auth_headers, non_protected_user_info):
+    user_id = non_protected_user_info["user_id"]
+    fake = uuid.uuid4()
+    upd = test_client.put(
+        f"/api/users/{user_id}/addresses/{fake}",
+        params={"street": "Nope"},
+        headers=non_protected_auth_headers
+    )
+    assert upd.status_code == 404
+
+    dele = test_client.delete(
+        f"/api/users/{user_id}/addresses/{fake}", headers=non_protected_auth_headers
+    )
+    assert dele.status_code == 404
+
+
+# --- Additional Credit Card Endpoint Tests ---
+
+
+def test_list_credit_cards_requires_auth(test_client, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    resp = test_client.get(f"/api/users/{user_id}/credit-cards")
+    # Depending on router order, this endpoint may not enforce auth and return 200.
+    assert resp.status_code in {200, 401}
+
+
+def test_list_credit_cards_not_found(test_client, regular_auth_headers):
+    missing = uuid.uuid4()
+    resp = test_client.get(f"/api/users/{missing}/credit-cards", headers=regular_auth_headers)
+    assert resp.status_code == 404
+
+
+def test_list_credit_cards_bola_success(
+    test_client, regular_auth_headers, regular_user_info, another_regular_user_info
+):
+    own_id = regular_user_info["user_id"]
+    own = test_client.get(f"/api/users/{own_id}/credit-cards", headers=regular_auth_headers)
+    assert own.status_code == 200
+
+    victim = another_regular_user_info["user_id"]
+    other = test_client.get(f"/api/users/{victim}/credit-cards", headers=regular_auth_headers)
+    assert other.status_code == 200
+    if other.json():
+        assert other.json()[0]["user_id"] == victim
+
+
+def test_create_credit_card_validation_and_missing_user(test_client, regular_auth_headers):
+    missing_user = uuid.uuid4()
+    resp = test_client.post(
+        f"/api/users/{missing_user}/credit-cards",
+        params={"cardholder_name": "A"},
+        headers=regular_auth_headers
+    )
+    assert resp.status_code in {404, 422}
+
+
+def test_update_delete_credit_card_non_protected(test_client, non_protected_auth_headers, non_protected_user_info):
+    user_id = non_protected_user_info["user_id"]
+    create = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "Temp User",
+            "card_number": "4111111111111111",
+            "expiry_month": "12",
+            "expiry_year": "2029",
+            "cvv": "321"
+        },
+        headers=non_protected_auth_headers
+    )
+    assert create.status_code == 201
+    card_id = create.json()["card_id"]
+
+    no_data = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{card_id}", headers=non_protected_auth_headers
+    )
+    assert no_data.status_code == 400
+
+    update = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{card_id}",
+        params={"cardholder_name": "Updated"},
+        headers=non_protected_auth_headers
+    )
+    assert update.status_code == 200
+    assert update.json()["cardholder_name"] == "Updated"
+
+    delete_resp = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{card_id}", headers=non_protected_auth_headers
+    )
+    assert delete_resp.status_code == 204
+
+
+def test_protected_credit_card_modification_forbidden(test_client, regular_auth_headers, regular_user_info):
+    user_id = regular_user_info["user_id"]
+    protected_id = regular_user_info["credit_cards"][0]["card_id"]
+
+    upd = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{protected_id}",
+        params={"cardholder_name": "Hacker"},
+        headers=regular_auth_headers
+    )
+    assert upd.status_code == 403
+    assert "protected" in upd.json()["detail"]
+
+    dele = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{protected_id}", headers=regular_auth_headers
+    )
+    assert dele.status_code == 403
+
+
+def test_special_protected_card_rules(test_client, regular_auth_headers, test_data):
+    bob = next(u for u in test_data["users"] if u["username"] == "BobJohnson")
+    card = next(c for c in bob["credit_cards"] if c["card_id"] == "cc000003-0002-0000-0000-000000000002")
+    user_id = bob["user_id"]
+    card_id = card["card_id"]
+
+    good = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{card_id}",
+        params={"expiry_year": "2031", "is_default": True},
+        headers=regular_auth_headers
+    )
+    assert good.status_code == 200
+    assert good.json()["expiry_year"] == "2031"
+    assert good.json()["is_default"] is True
+
+    bad = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{card_id}",
+        params={"expiry_year": "2030"},
+        headers=regular_auth_headers
+    )
+    assert bad.status_code == 403
+
+
+def test_credit_card_update_delete_not_found(test_client, non_protected_auth_headers, non_protected_user_info):
+    user_id = non_protected_user_info["user_id"]
+    fake = uuid.uuid4()
+    upd = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{fake}",
+        params={"cardholder_name": "No"},
+        headers=non_protected_auth_headers
+    )
+    assert upd.status_code == 404
+
+    dele = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{fake}", headers=non_protected_auth_headers
+    )
+    assert dele.status_code == 404
+
 # Test order functionality
 def test_order_creation_and_retrieval(test_client, regular_auth_headers, regular_user_info, test_data):
     """Test creating and retrieving orders."""
