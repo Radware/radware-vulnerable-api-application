@@ -5,7 +5,21 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from .routers import auth_router, user_router, product_router, user_profile_router, order_router
 import logging
 import json
-import time # For response time logging
+import time  # For response time logging
+from pydantic import BaseModel
+
+# Provide compatibility with Pydantic v1 by aliasing model_validate
+if not hasattr(BaseModel, "model_validate"):
+    def _model_validate(cls, obj):
+        if isinstance(obj, cls):
+            return obj
+        if hasattr(obj, "dict"):
+            obj = obj.dict()
+        elif hasattr(obj, "__dict__"):
+            obj = obj.__dict__
+        return cls.parse_obj(obj)
+
+    BaseModel.model_validate = classmethod(_model_validate)
 
 # --- REMOVE CustomAccessJsonFormatter and formatter_debug_logger from here ---
 # They are no longer needed as we're using a middleware to capture data.
