@@ -1,25 +1,28 @@
-# Testing and Quality Assurance Documentation
+# Testing and Quality Assurance Guide
 
-This document provides comprehensive information about the testing suite, traffic generation capabilities, and stability enhancements for the Radware Vulnerable API.
-For details on the `is_protected` flag and how tests should handle protected records, see [docs/PROTECTED_ENTITIES_GUIDE.md](docs/PROTECTED_ENTITIES_GUIDE.md).
-
+This document describes the backend and frontend testing strategy for the Radware Vulnerable API.  It also explains how the traffic generator and health monitor help keep the demo environment stable.
+Protected demo records are documented in [PROTECTED_ENTITIES.MD](PROTECTED_ENTITIES.MD) and in the
+[docs/PROTECTED_ENTITIES_GUIDE.md](docs/PROTECTED_ENTITIES_GUIDE.md).
 
 ## Table of Contents
-1. [Testing Framework](#1-testing-framework)
+1. [Backend Testing Framework](#1-backend-testing-framework)
 2. [Test Suite Structure](#2-test-suite-structure)
-3. [Running Tests](#3-running-tests)
-4. [Traffic Generation](#4-traffic-generation)
-5. [Application Stability](#5-application-stability)
-6. [Vulnerability Verification](#6-vulnerability-verification)
+3. [Running Backend Tests](#3-running-backend-tests)
+4. [Frontend End‑to‑End Tests](#4-frontend-end-to-end-tests)
+5. [Traffic Generation](#5-traffic-generation)
+6. [Application Stability](#6-application-stability)
+7. [Vulnerability Verification](#7-vulnerability-verification)
 
 ## 1. Testing Framework
 
 The testing framework uses:
 - **pytest**: For test organization and execution
-- **httpx**: For HTTP requests
-- **pytest-asyncio**: For asynchronous test support
+- **httpx**: For HTTP requests (legacy compatibility)
+- **pytest-asyncio**: For asynchronous helpers
 
-The tests verify both the functional correctness of the API and confirm that all intentional vulnerabilities are properly exploitable.
+Backend tests run entirely in-memory using FastAPI's `TestClient` fixture defined in `tests/conftest.py`. The suite verifies normal API behaviour and enforces the `is_protected` rules. Destructive actions on protected records must return **HTTP 403 Forbidden**, while the same actions against non‑protected data succeed to demonstrate vulnerabilities.
+
+Protected entities ensure core demo data stays intact. Tests should expect certain actions against these records to be rejected while still allowing non‑destructive exploits (like viewing them through BOLA).
 
 ## 2. Test Suite Structure
 
@@ -28,17 +31,17 @@ The test suite is organized as follows:
 ```
 tests/
 ├── __init__.py
-├── conftest.py             # Common fixtures and setup
-├── test_functional.py      # Basic API functionality tests 
-└── test_vulnerabilities.py # Tests for exploiting intentional vulnerabilities
+├── conftest.py             # TestClient and shared fixtures
+├── test_functional.py      # Core API behaviour and 403 checks on protected entities
+└── test_vulnerabilities.py # Demonstrates vulnerabilities and expected 403s
 ```
 
 Key components:
-- **conftest.py**: Provides fixtures for starting the API server, user authentication, and test data access
-- **test_functional.py**: Verifies basic e-commerce functionality (users, products, orders, etc.)
-- **test_vulnerabilities.py**: Confirms all security vulnerabilities are exploitable
+- **conftest.py** – defines the `TestClient` fixture and common helpers.
+- **test_functional.py** – verifies core API logic and asserts `HTTP 403` when destructive actions target protected entities.
+- **test_vulnerabilities.py** – demonstrates vulnerabilities on non‑protected data, allows non‑destructive exploits on protected data, and checks that destructive attempts on protected entities return `HTTP 403`.
 
-## 3. Running Tests
+## 3. Running Backend Tests
 
 ### Prerequisites
 - Python 3.9+
@@ -57,24 +60,30 @@ pip install -r requirements.txt pytest httpx pytest-asyncio
 
 ### Running the Test Suite
 
-Run all tests:
+Change to the project root before executing any commands:
+
 ```sh
-python -m pytest tests/
+cd /workspace/radware-vulnerable-api-application/
+```
+
+Run all backend tests:
+```sh
+pytest tests/
 ```
 
 Run only functional tests:
 ```sh
-python -m pytest tests/test_functional.py
+pytest tests/test_functional.py
 ```
 
 Run only vulnerability tests:
 ```sh
-python -m pytest tests/test_vulnerabilities.py
+pytest tests/test_vulnerabilities.py
 ```
 
 Run with verbose output:
 ```sh
-python -m pytest tests/ -v
+pytest tests/ -v
 ```
 
 ### Automated Verification
@@ -92,7 +101,24 @@ This script:
 4. Runs the traffic generator briefly
 5. Shuts down the server
 
-## 4. Traffic Generation
+## 4. Frontend End‑to‑End Tests
+
+Frontend E2E tests reside in `frontend/e2e-tests/` and use **Playwright**.  Each test run starts both the backend and frontend servers, executes the Playwright suite, then stops the servers.  The recommended sequence (also shown in `AGENTS.md` §3.2) is:
+
+```sh
+echo "Starting backend API..."
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/log_conf.json > /tmp/backend_uvicorn.log 2>&1 & APP_PID=$!
+echo "Starting frontend server..."
+python frontend/main.py > /tmp/frontend_flask.log 2>&1 & FRONTEND_PID=$!
+sleep 10  # wait for health
+npx playwright test frontend/e2e-tests/
+kill $APP_PID
+kill $FRONTEND_PID
+```
+
+Some UI demos are gated behind a toggle.  Set `localStorage['uiVulnerabilityFeaturesEnabled']` to `'true'` to activate the vulnerability demo interfaces.
+
+## 5. Traffic Generation
 
 The traffic generator simulates legitimate user interactions with the API, useful for load testing and stability verification.
 
@@ -114,7 +140,7 @@ The generator simulates:
 - Profile management (addresses, credit cards)
 - Order creation and viewing
 
-## 5. Application Stability
+## 6. Application Stability
 
 The system includes a health monitor to ensure continuous operation, particularly useful for demonstrations and extended testing.
 
@@ -148,7 +174,7 @@ python health_monitor.py
 python traffic_generator.py --rps 3
 ```
 
-## 6. Vulnerability Verification
+## 7. Vulnerability Verification
 
 The test suite confirms the following vulnerabilities are present and exploitable:
 
