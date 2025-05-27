@@ -1,145 +1,159 @@
 import { test, expect } from '@playwright/test';
 
+async function clearCart(page) {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+}
+
+async function addProduct(page, priceLimit = Infinity) {
+  await page.goto('/');
+  await expect(page.locator('#loading-indicator')).toBeHidden({ timeout: 15000 });
+  const products = page.locator('article.product-card');
+  await expect(products.first()).toBeVisible({ timeout: 10000 });
+  const count = await products.count();
+  for (let i = 0; i < count; i++) {
+    const card = products.nth(i);
+    const priceAttr = await card.locator('button.add-to-cart-btn').getAttribute('data-product-price');
+    const price = parseFloat(priceAttr || '0');
+    if (price <= priceLimit) {
+      const name = await card.locator('h3.product-title').innerText();
+      await card.locator('button.add-to-cart-btn').click();
+      await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible({ timeout: 10000 });
+      return { name, price };
+    }
+  }
+  const fallback = products.first();
+  const priceAttr = await fallback.locator('button.add-to-cart-btn').getAttribute('data-product-price');
+  const name = await fallback.locator('h3.product-title').innerText();
+  const price = parseFloat(priceAttr || '0');
+  await fallback.locator('button.add-to-cart-btn').click();
+  await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible({ timeout: 10000 });
+  return { name, price };
+}
+
+async function getMoney(page, selector) {
+  const text = await page.locator(selector).innerText();
+  return parseFloat(text.replace(/[^0-9.]/g, ''));
+}
+
 test.describe('Shopping Cart', () => {
-  test('should allow adding products to cart', async ({ page }) => {
-    // Visit the home page
-    await page.goto('/');
-    
-    // Wait for loading indicator to be hidden
-    await page.waitForSelector('div#loading-indicator', { 
-      state: 'hidden',
-      timeout: 5000 
-    }).catch(() => console.log('Loading indicator did not hide or was not present'));
-    
-    // Wait for products container to be visible
-    await expect(page.locator('div#products-container')).toBeVisible({ timeout: 5000 });
-    
-    // Click "Add to Cart" on the first product
-    const addToCartBtn = page.locator('article.product-card button.add-to-cart-btn').first();
-    
-    // Get the product name for verification
-    const productCard = page.locator('article.product-card').first();
-    const productNameElement = productCard.locator('h3.product-title');
-    const productName = await productNameElement.textContent() || '';
-    
-    await addToCartBtn.click();
-    
-    // Check for success message with correct selector
-    await expect(page.locator('#global-messages-container .global-message.success-message')).toBeVisible({ timeout: 10000 });
-    
-    // Verify cart count in navbar increased
-    await expect(page.locator('#cart-item-count')).toContainText('1', { timeout: 10000 });
-    
-    // Navigate to cart page
-    await page.goto('/cart');
-    
-    // Verify product is in cart - use more specific targeting 
-    await page.waitForSelector('#cart-table', { timeout: 10000 });
-    // Try a few different selectors where the product name might appear
-    const cartSelector = '.cart-product-details h4, .cart-item-name, #cart-table';
-    await expect(page.locator(cartSelector)).toContainText(productName, { timeout: 10000 });
+  test.beforeEach(async ({ page }) => {
+    await clearCart(page);
   });
-  
-  test('should allow updating and removing items from cart', async ({ page }) => {
-    // First add an item to the cart
-    await page.goto('/');
-    
-    // Wait for loading indicator to be hidden
-    await page.waitForSelector('div#loading-indicator', { 
-      state: 'hidden',
-      timeout: 5000 
-    }).catch(() => console.log('Loading indicator did not hide or was not present'));
-    
-    // Wait for products container to be visible
-    await expect(page.locator('div#products-container')).toBeVisible({ timeout: 5000 });
-    
-    // Click add to cart on first product
-    await page.locator('article.product-card button.add-to-cart-btn').first().click();
-    
-    // Go to cart page
+
+  test('should display empty cart state correctly', async ({ page }) => {
     await page.goto('/cart');
-    await page.waitForSelector('.cart-quantity', { timeout: 10000 });
-    
-    // Update quantity
-    await page.locator('.cart-quantity').fill('2');
-    await page.locator('.cart-quantity').blur(); // Trigger change event
-    
-    // Wait for cart to update
-    await page.waitForTimeout(1000);
-    
-    // Verify cart count updated
-    await expect(page.locator('#cart-item-count')).toContainText('2', { timeout: 5000 });
-    
-    // Remove item from cart - use the correct selector for the remove button
-    await page.locator('[data-testid="remove-item"], .remove-item-btn').first().click();
-    
-    // Wait for cart to update after removal
-    await page.waitForTimeout(1000);
-    
-    // Clear cart if it has items
-    try {
-      const hasItems = await page.locator('.cart-item, [data-testid="cart-item"]').count() > 0;
-      if (hasItems) {
-        await page.evaluate(() => {
-          localStorage.removeItem('cart');
-          localStorage.setItem('cart', '[]');
-          window.location.reload();
-        });
-        await page.waitForTimeout(1000);
-      }
-    } catch (e) {
-      console.log('Error clearing cart:', e);
-    }
-    
-    // Check for empty cart - make sure we wait for items to disappear first
-    await page.waitForTimeout(1000);
-    
-    // Check either if the message is there or if the cart items are gone
-    const itemCount = await page.locator('.cart-item, [data-testid="cart-item"]').count();
-    if (itemCount === 0) {
-      // Verify there are no cart items
-      expect(itemCount).toBe(0);
-    } else {
-      // Look for an explicit empty message
-      await expect(page.getByText(/your cart is empty|no items/i)).toBeVisible({ timeout: 5000 });
-    }
-    
-    // Verify cart count is 0
-    await expect(page.locator('#cart-item-count')).toContainText('0', { timeout: 5000 });
+    await expect(page.locator('#cart-items-container')).toContainText('Your cart is empty');
+    await expect(page.getByRole('link', { name: /start shopping/i })).toBeVisible();
+    await expect(page.locator('#cart-subtotal')).toHaveText('$0.00');
+    await expect(page.locator('#cart-shipping')).toHaveText('$0.00');
+    await expect(page.locator('#cart-total')).toHaveText('$0.00');
+    await expect(page.locator('#checkout-btn')).toHaveClass(/disabled/);
   });
-  
-  test('should require login for checkout', async ({ page }) => {
-    // Add product to cart
-    await page.goto('/');
-    
-    // Wait for loading indicator to be hidden
-    await page.waitForSelector('div#loading-indicator', { 
-      state: 'hidden',
-      timeout: 5000 
-    }).catch(() => console.log('Loading indicator did not hide or was not present'));
-    
-    // Wait for products container to be visible
-    await expect(page.locator('div#products-container')).toBeVisible({ timeout: 5000 });
-    
-    // Add first product to cart
-    await page.locator('article.product-card button.add-to-cart-btn').first().click();
-    
-    // Go to cart
+
+  test('should add product, update quantity, and reflect totals', async ({ page }) => {
+    const { name, price } = await addProduct(page);
+    await expect(page.locator('#cart-item-count')).toHaveText('1');
+
     await page.goto('/cart');
-    await page.waitForSelector('#checkout-btn', { timeout: 10000 });
-    
-    // Try to proceed to checkout (without being logged in)
+    await expect(page.locator('#cart-table')).toBeVisible();
+    const row = page.locator('.cart-item').first();
+    await expect(row).toContainText(name);
+
+    let subtotal = await getMoney(page, '#cart-subtotal');
+    let shipping = await getMoney(page, '#cart-shipping');
+    let total = await getMoney(page, '#cart-total');
+    expect(subtotal).toBeCloseTo(price, 2);
+    expect(total).toBeCloseTo(subtotal + shipping, 2);
+
+    await row.locator('[data-testid="increase-quantity"]').click();
+    await expect(page.locator('#cart-item-count')).toHaveText('2');
+    await expect(page.locator('#cart-subtotal')).toHaveText(`$${(price * 2).toFixed(2)}`);
+
+    subtotal = await getMoney(page, '#cart-subtotal');
+    shipping = await getMoney(page, '#cart-shipping');
+    total = await getMoney(page, '#cart-total');
+    expect(subtotal).toBeCloseTo(price * 2, 2);
+    expect(total).toBeCloseTo(subtotal + shipping, 2);
+
+    const qtyInput = row.locator('input.cart-quantity');
+    await qtyInput.fill('3');
+    await qtyInput.blur();
+    await expect(page.locator('#cart-item-count')).toHaveText('3');
+    await expect(page.locator('#cart-subtotal')).toHaveText(`$${(price * 3).toFixed(2)}`);
+
+    subtotal = await getMoney(page, '#cart-subtotal');
+    shipping = await getMoney(page, '#cart-shipping');
+    total = await getMoney(page, '#cart-total');
+    expect(subtotal).toBeCloseTo(price * 3, 2);
+    expect(total).toBeCloseTo(subtotal + shipping, 2);
+  });
+
+  test('should remove item from cart', async ({ page }) => {
+    await addProduct(page);
+    await page.goto('/cart');
+    await expect(page.locator('.cart-item')).toHaveCount(1);
+    page.once('dialog', d => d.accept());
+    await page.locator('.remove-item-btn').click();
+    await expect(page.locator('#cart-items-container')).toContainText('Your cart is empty');
+    await expect(page.locator('#cart-item-count')).toHaveText('0');
+  });
+
+  test('should apply valid promo code (UI interaction)', async ({ page }) => {
+    await addProduct(page);
+    await page.goto('/cart');
+    await expect(page.locator('#cart-total')).not.toHaveText('$0.00');
+    const initialTotal = await getMoney(page, '#cart-total');
+    await page.fill('#promo-code', 'TESTCODE');
+    await page.locator('#promo-form button[type="submit"]').click();
+    await expect(page.locator('#success-message-container .success-message')).toBeVisible();
+    await expect(page.locator('.summary-line.discount')).toBeVisible();
+    const finalTotal = await getMoney(page, '#cart-total');
+    expect(finalTotal).toBeLessThan(initialTotal);
+  });
+
+  test('should handle free shipping threshold', async ({ page }) => {
+    const { price } = await addProduct(page, 49.99);
+    await page.goto('/cart');
+    const row = page.locator('.cart-item').first();
+    await expect(page.locator('#cart-shipping')).toHaveText('$5.00');
+    let quantity = 1;
+    while (price * quantity <= 50) {
+      await row.locator('[data-testid="increase-quantity"]').click();
+      quantity++;
+    }
+    await expect(page.locator('#cart-shipping')).toHaveText('$0.00');
+  });
+
+  test('should persist cart contents across navigation', async ({ page }) => {
+    const { name } = await addProduct(page);
+    await expect(page.locator('#cart-item-count')).toHaveText('1');
+    await page.goto('/products/f47ac10b-58cc-4372-a567-0e02b2c3d479');
+    await expect(page.locator('#cart-item-count')).toHaveText('1');
+    await page.goto('/cart');
+    await expect(page.locator('.cart-item')).toContainText(name);
+  });
+
+  test('should clear cart upon logout', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('#username', 'AliceSmith');
+    await page.fill('#password', 'AlicePass1!');
+    await page.locator('#login-form button[type="submit"]').click();
+    await expect(page.locator('#logout-link')).toBeVisible({ timeout: 15000 });
+    await addProduct(page);
+    await expect(page.locator('#cart-item-count')).not.toHaveText('0');
+    await page.locator('#logout-link').click();
+    await expect(page.locator('#dynamic-nav-links a[href="/login"]')).toBeVisible({ timeout: 15000 });
+    await page.goto('/cart');
+    await expect(page.locator('#cart-items-container')).toContainText('Your cart is empty');
+    await expect(page.locator('#cart-item-count')).toHaveText('0');
+  });
+
+  test('should require login to proceed to checkout', async ({ page }) => {
+    await addProduct(page);
+    await page.goto('/cart');
     await page.locator('#checkout-btn').click();
-    
-    // Should show error message or redirect to login
-    try {
-      // Either shows error message
-      await expect(page.locator('#global-messages-container .global-message.error-message')).toBeVisible({ timeout: 5000 });
-      await expect(page.locator('#global-messages-container .global-message.error-message')).toContainText(/login|sign in/i);
-    } catch (e) {
-      // Or redirects directly to login
-      await page.waitForURL('/login', { timeout: 5000 });
-      await expect(page).toHaveURL(/login/);
-    }
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/login/);
   });
 });
