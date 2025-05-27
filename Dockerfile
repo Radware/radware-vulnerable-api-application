@@ -12,7 +12,7 @@ COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install Flask Jinja2 requests
+RUN pip install Flask Jinja2 requests "Werkzeug<2.3" python-json-logger
 
 # Copy the backend and frontend code
 COPY ./app /app/app
@@ -33,6 +33,8 @@ EXPOSE 80
 
 # Define environment variable
 ENV PYTHONPATH=/app
+# Default worker count can be overridden at runtime
+ENV UVICORN_WORKERS=4
 
 # Command to run supervisor, which will manage both services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

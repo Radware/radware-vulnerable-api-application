@@ -3,7 +3,7 @@
   "name": "BOLA: Attacker Recon Victim Data, Then Uses Victim's Card/Address for Own Order",
   "description": "Attacker (GraceWilson) logs in, views victim's (HenryMoore) addresses and cards, extracts IDs, then places orders for herself using the victim's card ID or address ID.",
   "staticVars": {
-    "baseUrl": "http://localhost:8000",
+    "baseUrl": "http://vampi.bowz.fr",
     "attackerUserId": "00000008-0000-0000-0000-000000000008",
     "attackerUsername": "GraceWilson",
     "attackerPassword": "GracePass7&",

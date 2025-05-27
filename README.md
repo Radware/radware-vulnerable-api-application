@@ -1,11 +1,14 @@
 # Vulnerable E-commerce API
 
+*Version: v1.1.0*
+
 ## 1. Introduction
 
 **Purpose:** This project is a deliberately vulnerable API-based e-commerce application built using Python and FastAPI. Its primary goal is to demonstrate common API security vulnerabilities, with a strong focus on Broken Object Level Authorization (BOLA), Broken Function Level Authorization (BFLA), and Mass Assignment/Parameter Pollution. The API is designed to primarily use path and query parameters for interactions, minimizing the use of request bodies for vulnerable endpoints to simulate specific attack vectors.
 
 **Design:**
-*   **Pure API-based:** No frontend is provided; interaction is expected via API clients (e.g., Postman, curl, custom scripts).
+*   **Pure API-focused:** A minimal Flask-based demo UI is included under `frontend/`,
+    but the primary interaction is via API clients (e.g., Postman, curl, custom scripts).
 *   **Framework:** FastAPI (Python) for its modern features, speed, and automatic OpenAPI documentation.
 *   **Database:** A simple in-memory Python dictionary acts as the database to keep the setup lightweight and focus on API logic rather than database intricacies. Data is ephemeral and resets on application restart.
 *   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`).
@@ -59,6 +62,7 @@ This application intentionally includes the following vulnerabilities:
 ### API1:2023 - Broken Object Level Authorization (BOLA)
 
 *   **Description:** Users can access or modify data objects belonging to other users by manipulating object IDs in the request (typically in path parameters or query parameters). The application fails to verify if the authenticated user has the right to perform the requested action on the specific object.
+*   **Note:** Destructive operations on protected demo entities will return HTTP 403, but viewing remains possible to illustrate BOLA.
 *   **Affected Endpoints & Exploitation:**
     *   **User Details:**
         *   `GET /api/users/{user_id}`: Any authenticated user can view another user's details by providing their `user_id`.
@@ -102,9 +106,10 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 *   **Description:** Regular users can access administrative functions or functionalities reserved for privileged users because the application does not adequately check the user's role or permissions before granting access to these functions.
 *   **Affected Endpoints & Exploitation:**
+    *   **Note:** Deleting or modifying protected demo entities returns HTTP 403 with a "protected for demo" message.
     *   `POST /api/products/`: Any authenticated user can create new products (typically an admin function).
     *   `DELETE /api/products/{product_id}`: Any authenticated user can delete products.
-    *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels.
+    *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels. If the product is protected, the action is logged but still allowed.
     *   `DELETE /api/users/{user_id}`: Any authenticated user can delete *any* other user if they know their `user_id`. This is a combination of BFLA (no admin check for delete function) and BOLA (can target any user).
 *   **How to Test:**
     1.  Authenticate as a regular (non-admin) user.
@@ -147,9 +152,15 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 2.  **Run the Docker container:**
     ```sh
-    docker run -d -p 8000:8000 --name radware-vuln-api vulnerable-ecommerce-api
+    docker run -d -p 8000:80 --name radware-vuln-api vulnerable-ecommerce-api
     ```
     The API will be accessible at `http://localhost:8000`.
+
+    Set `UVICORN_WORKERS` to control the number of worker processes:
+    ```sh
+    docker run -d -p 8000:80 -e UVICORN_WORKERS=4 \
+      --name radware-vuln-api vulnerable-ecommerce-api
+    ```
 
 #### Running Locally (Alternative)
 
@@ -177,6 +188,7 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ```
     The `--reload` flag enables auto-reloading on code changes, useful for development.
+    To run both the API and the demo UI together, use the provided `run_dev.sh` script instead.
 
 ### Accessing the API
 
@@ -200,11 +212,11 @@ This table summarizes the intentionally implemented vulnerabilities and their ex
 
 | Vulnerability Type (OWASP API 2023) | Brief Description | Example Exploitable Endpoint(s) | Exploitation Method Summary |
 |-------------------------------------|-------------------|-------------------------------|----------------------------|
-| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). No check if the authenticated user owns the object. | `GET /api/users/{user_id}`<br>`PUT /api/users/{user_id}`<br>`GET /api/users/{user_id}/addresses`<br>`POST /api/users/{user_id}/addresses`<br>`GET /api/users/{user_id}/credit-cards`<br>`POST /api/users/{user_id}/credit-cards`<br>`GET /api/users/{user_id}/orders`<br>`POST /api/users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
-| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. | `PUT /api/users/{user_id}?is_admin=true`<br>`PUT /api/products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
-| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /api/products`<br>`DELETE /api/products/{product_id}`<br>`PUT /api/stock/{product_id}`<br>`DELETE /api/users/{user_id}` | Call admin endpoints as a regular user (no admin check) |
+| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). Protected demo entities block destructive changes with HTTP 403 (and the UI shows an "Action Blocked" warning), but non-protected objects remain fully exploitable. | `GET /api/users/{user_id}`<br>`PUT /api/users/{user_id}`<br>`GET /api/users/{user_id}/addresses`<br>`POST /api/users/{user_id}/addresses`<br>`GET /api/users/{user_id}/credit-cards`<br>`POST /api/users/{user_id}/credit-cards`<br>`PUT /api/users/{user_id}/credit-cards/{card_id}`<br>`DELETE /api/users/{user_id}/credit-cards/{card_id}`<br>`GET /api/users/{user_id}/orders`<br>`POST /api/users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access, create, update, or delete resources for other users |
+| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. Protected fields like username or email on protected users are immutable, but attributes like `is_admin` remain modifiable for demo purposes. | `PUT /api/users/{user_id}?is_admin=true`<br>`PUT /api/products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
+| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /api/products`<br>`DELETE /api/products/{product_id}`<br>`PUT /api/stock/{product_id}`<br>`DELETE /api/users/{user_id}` | Call admin endpoints as a regular user (no admin check; attempts against protected demo entities return 403 but succeed on others) |
 | **API8:2023 - Security Misconfiguration** | Hardcoded secrets, verbose errors, and intentional misconfiguration for demonstration. | `app/security.py`<br>Application config | Hardcoded JWT secret, potential for verbose error output |
-| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /api/products/search?name=<query>` | Pass special characters or payloads in `name` parameter |
+| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /api/products/search?name=<query>` | Pass special characters or payloads in `name` parameter (see `homepage.spec.ts`) |
 
 ---
 

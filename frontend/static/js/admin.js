@@ -1,77 +1,18 @@
+let adminEscalationCheckbox;
+let revealInternalCheckbox;
+let vulnerabilityBanner;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Parameter pollution checkboxes
-    const adminEscalationCheckbox = document.getElementById('admin-escalation');
-    const revealInternalCheckbox = document.getElementById('reveal-internal');
-    
-    // Banner elements
-    const vulnerabilityBanner = document.getElementById('vulnerability-banner');
-    const vulnerabilityType = document.getElementById('vulnerability-type');
-    const vulnerabilityDescription = document.getElementById('vulnerability-description');
+    adminEscalationCheckbox = document.getElementById('admin-escalation');
+    revealInternalCheckbox = document.getElementById('reveal-internal');
+    vulnerabilityBanner = document.getElementById('vulnerability-banner-admin');
 
-    // Function to update the displayed constructed URL
-    function updateConstructedUrlDisplay() {
-        const urlDisplaySpan = document.getElementById('constructed-url-display');
-        const copyBtn = document.getElementById('copy-constructed-url');
-        if (!urlDisplaySpan || !copyBtn || !adminEscalationCheckbox || !revealInternalCheckbox) return;
+    applyAdminPageDisplay();
 
-        let queryParams = '?role=user'; // Base query
-        if (adminEscalationCheckbox.checked) {
-            queryParams += '&role=admin';
-        }
-        if (revealInternalCheckbox.checked) {
-            queryParams += '&status=internal';
-        }
-        
-        const demoUrl = `/api/products${queryParams}`;
-        urlDisplaySpan.textContent = demoUrl;
+    // UI elements are styled according to admin status and demo toggle
+    // by applyAdminPageDisplay()
 
-        copyBtn.onclick = function() {
-            // Assuming API_BASE_URL is available globally from main.js, or construct full path differently
-            const fullPathToCopy = `${window.location.origin}${demoUrl}`;
-            navigator.clipboard.writeText(fullPathToCopy)
-                .then(() => displayGlobalMessage('Demo URL copied to clipboard!', 'success'))
-                .catch(err => displayGlobalMessage('Failed to copy URL: ' + err.message, 'error'));
-        };
-    }
-    
-    // Update banner based on checkbox states
-    function updateVulnerabilityBanner() {
-        if (!adminEscalationCheckbox || !revealInternalCheckbox || !vulnerabilityBanner || !vulnerabilityType || !vulnerabilityDescription) {
-            // If elements are missing, try to fetch products without banner update
-            fetchAdminProducts();
-            updateConstructedUrlDisplay(); // Also update URL display
-            return;
-        }
-
-        const adminChecked = adminEscalationCheckbox.checked;
-        const internalChecked = revealInternalCheckbox.checked;
-        
-        if (adminChecked || internalChecked) {
-            vulnerabilityBanner.style.display = 'block';
-            
-            if (adminChecked && internalChecked) {
-                vulnerabilityType.textContent = 'Multiple Parameter Pollution (BFLA)';
-                vulnerabilityDescription.textContent = 
-                    'You are exploiting parameter pollution to bypass role-based access control AND view internal products.';
-            } else if (adminChecked) {
-                vulnerabilityType.textContent = 'Parameter Pollution (BFLA)';
-                vulnerabilityDescription.textContent = 
-                    'You are exploiting parameter pollution to bypass role-based access control.';
-            } else { // internalChecked must be true
-                vulnerabilityType.textContent = 'Parameter Pollution';
-                vulnerabilityDescription.textContent = 
-                    'You are exploiting parameter pollution to view internal products.';
-            }
-        } else {
-            vulnerabilityBanner.style.display = 'none';
-        }
-        
-        // Fetch products with the current checkbox states
-        fetchAdminProducts();
-        updateConstructedUrlDisplay(); // Update URL display whenever banner/products are updated
-    }
-    
-    // Add event listeners to checkboxes
+    // Event listeners for demo option checkboxes
     if (adminEscalationCheckbox) {
         adminEscalationCheckbox.addEventListener('change', updateVulnerabilityBanner);
     }
@@ -79,15 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
         revealInternalCheckbox.addEventListener('change', updateVulnerabilityBanner);
     }
     
-    // Toggle internal status field for adding products
-    const internalStatusCheckbox = document.getElementById('set-internal-status');
-    const internalStatusField = document.getElementById('internal-status-field');
-    
-    if (internalStatusCheckbox && internalStatusField) {
-        internalStatusCheckbox.addEventListener('change', function() {
-            internalStatusField.style.display = this.checked ? 'block' : 'none';
-        });
-    }
+
     
     // Add product form submission
     const addProductForm = document.getElementById('add-product-form');
@@ -95,10 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
         addProductForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const name = document.getElementById('name').value;
-            const price = document.getElementById('price').value;
-            const description = document.getElementById('description').value;
-            const category = document.getElementById('category').value;
+            const name = document.getElementById('new-product-name').value;
+            const price = document.getElementById('new-product-price').value;
+            const description = document.getElementById('new-product-description').value;
+            const category = document.getElementById('new-product-category').value;
             
             // Construct endpoint using URLSearchParams for robustness
             const params = new URLSearchParams();
@@ -108,13 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (category) params.append('category', category);
 
             // Parameter pollution for internal_status
-            const setInternalStatusCheckbox = document.getElementById('set-internal-status');
-            if (setInternalStatusCheckbox && setInternalStatusCheckbox.checked) {
-                const internalStatusValue = document.getElementById('internal-status').value;
-                if (internalStatusValue) {
-                    params.append('internal_status', internalStatusValue);
-                    // displaySuccess is a global function from main.js
-                    if(typeof displaySuccess === 'function') displaySuccess("Parameter Pollution Demo: Adding internal_status parameter to the request!");
+            const internalStatusValue = document.getElementById('new-product-internal-status').value;
+            if (internalStatusValue) {
+                params.append('internal_status', internalStatusValue);
+                if (typeof displaySuccess === 'function') {
+                    displaySuccess("Parameter Pollution Demo: Adding internal_status parameter to the request!");
                 }
             }
             
@@ -123,11 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 // apiCall is a global function from main.js
                 if(typeof apiCall === 'function') {
-                    await apiCall(endpoint, 'POST'); // Body is not needed as per current backend spec for POST /products
-                    if(typeof displaySuccess === 'function') displaySuccess("Product added successfully!");
+                    await apiCall(endpoint, 'POST');
+                    if (typeof displaySuccess === 'function') {
+                      const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled)
+                          ? 'Product added (BFLA demo).'
+                          : 'Product added successfully!';
+                        displaySuccess(msg);
+                    }
                     addProductForm.reset();
-                    if (internalStatusField) internalStatusField.style.display = 'none'; // Hide field after reset
-                    if (setInternalStatusCheckbox) setInternalStatusCheckbox.checked = false;
                     fetchAdminProducts(); // Refresh the products table
                 } else {
                     console.error('apiCall function is not defined.');
@@ -138,9 +72,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const updateStockForm = document.getElementById('update-stock-form');
+    if (updateStockForm) {
+        updateStockForm.addEventListener('submit', handleUpdateStockSubmit);
+    }
+
+    const deleteUserForm = document.getElementById('delete-user-form');
+    if (deleteUserForm) {
+        deleteUserForm.addEventListener('submit', handleDeleteUserSubmit);
+    }
     
-    // Initial fetch and UI setup
-    updateVulnerabilityBanner(); // This will also call fetchAdminProducts and updateConstructedUrlDisplay
+    // Initial fetch and UI setup handled by applyAdminPageDisplay
 });
 
 // Function to fetch products for admin dashboard (moved outside DOMContentLoaded for clarity, but called within)
@@ -148,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function fetchAdminProducts() {
     const productsContainer = document.getElementById('admin-products-container');
     const loadingIndicator = document.getElementById('products-loading');
+    const isRealAdmin = currentUser && currentUser.is_admin;
     
     if (!productsContainer || !loadingIndicator) {
         console.error('Required DOM elements for admin products not found');
@@ -219,14 +163,14 @@ async function fetchAdminProducts() {
             tableHTML += `
                 <tr>
                     <td>${product.product_id.substring(0, 8)}...</td>
-                    <td>${product.name}</td>
+                    <td>${product.name}${product.is_protected ? ' <span class="protected-indicator" title="This item is protected for core demo stability. Destructive actions are limited.">🛡️ Protected</span>' : ''}</td>
                     <td>$${parseFloat(product.price).toFixed(2)}</td>
                     <td>${product.category || 'N/A'}</td>
                     <td>${product.internal_status || 'N/A'}</td>
                     <td class="text-center">${stockQuantity}</td>
                     <td>
                         <button class="btn btn-sm btn-primary edit-product-btn" data-product-id="${product.product_id}" disabled title="Edit (Not Implemented)">Edit</button>
-                        <button class="btn btn-sm btn-danger delete-product-btn" data-product-id="${product.product_id}">Delete</button>
+                        <button class="btn btn-sm btn-danger ${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? '' : 'btn-exploit '}delete-product-btn" data-product-id="${product.product_id}" data-is-protected="${product.is_protected}">${isRealAdmin || !uiVulnerabilityFeaturesEnabled ? 'Delete' : 'Delete (BFLA Exploit)'}</button>
                     </td>
                 </tr>
             `;
@@ -252,17 +196,34 @@ async function fetchAdminProducts() {
         document.querySelectorAll('.delete-product-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const productId = this.getAttribute('data-product-id');
-                if (confirm(`Are you sure you want to delete product ${productId}? This action might be exploiting BFLA if you are not a true admin.`)) {
+                const isProtected = this.getAttribute('data-is-protected') === 'true';
+                const confirmMsg = isProtected ?
+                    'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
+                    ((!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+                        `BFLA Demo: Delete product ${productId}?` :
+                        `Are you sure you want to delete product ${productId}?`);
+
+                if (confirm(confirmMsg)) {
                     try {
-                        await apiCall(`/api/products/${productId}`, 'DELETE', null, true); // Requires auth
-                        if(typeof displaySuccess === 'function') displaySuccess(`Product ${productId} deleted successfully.`);
-                        fetchAdminProducts(); // Refresh list
+                        await apiCall(`/api/products/${productId}`, 'DELETE', null, true);
+                        if (typeof displaySuccess === 'function') {
+                            const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+                                `Product ${productId} deleted via BFLA.` :
+                                `Product ${productId} deleted successfully.`;
+                            displaySuccess(msg);
+                        }
+                        fetchAdminProducts(); // Refresh table
                     } catch (error) {
-                        if(typeof displayError === 'function') displayError(`Failed to delete product ${productId}: ${error.message}`);
+                        if (!handleProtectedEntityError(error)) {
+                            if (typeof displayError === 'function') {
+                                displayError(`Failed to delete product ${productId}: ${error.message}`);
+                            }
+                        }
                     }
                 }
             });
         });
+
             
     } catch (error) {
         if(typeof displayError === 'function') displayError(`Failed to load admin products: ${error.message}`);
@@ -271,3 +232,176 @@ async function fetchAdminProducts() {
         loadingIndicator.style.display = 'none';
     }
 }
+
+async function handleUpdateStockSubmit(e) {
+    e.preventDefault();
+    const productId = document.getElementById('stock-product-id')?.value.trim();
+    const qty = document.getElementById('new-stock-qty')?.value.trim();
+    if (!productId || qty === '') {
+        displayGlobalMessage('Product ID and quantity required.', 'error');
+        return;
+    }
+    const endpoint = `/api/products/${productId}/stock?quantity=${encodeURIComponent(qty)}`;
+    try {
+        await apiCall(endpoint, 'PUT');
+        const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+            `Stock for ${productId} set to ${qty} (BFLA demo).` :
+            `Stock for ${productId} set to ${qty}.`;
+        displayGlobalMessage(msg, 'success');
+        fetchAdminProducts();
+    } catch (err) {
+        displayGlobalMessage(`Failed to update stock: ${err.message}`, 'error');
+    }
+}
+
+async function handleDeleteUserSubmit(e) {
+    e.preventDefault();
+    const userId = document.getElementById('delete-user-id')?.value.trim();
+    if (!userId) {
+        displayGlobalMessage('User ID required.', 'error');
+        return;
+    }
+    const confirmMsg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+        `BFLA Demo: Delete user ${userId}?` :
+        `Delete user ${userId}?`;
+    if (!confirm(confirmMsg)) return;
+    try {
+        await apiCall(`/api/users/${userId}`, 'DELETE');
+        const msg = (!currentUser?.is_admin && uiVulnerabilityFeaturesEnabled) ?
+            `User ${userId} deleted via BFLA demo.` :
+            `User ${userId} deleted.`;
+        displayGlobalMessage(msg, 'success');
+    } catch (err) {
+        if (!handleProtectedEntityError(err)) {
+            displayGlobalMessage(`Failed to delete user: ${err.message}`, 'error');
+        }
+    }
+}
+
+function updateConstructedUrlDisplay() {
+    const urlDisplaySpan = document.getElementById('constructed-url-display');
+    const copyBtn = document.getElementById('copy-constructed-url');
+    if (!urlDisplaySpan || !copyBtn || !adminEscalationCheckbox || !revealInternalCheckbox) return;
+
+    let queryParams = '?role=user';
+    if (uiVulnerabilityFeaturesEnabled && adminEscalationCheckbox.checked) {
+        queryParams += '&role=admin';
+    }
+    if (uiVulnerabilityFeaturesEnabled && revealInternalCheckbox.checked) {
+        queryParams += '&status=internal';
+    }
+
+    const demoUrl = `/api/products${queryParams}`;
+    urlDisplaySpan.textContent = demoUrl;
+
+    copyBtn.onclick = function() {
+        const fullPathToCopy = `${window.location.origin}${demoUrl}`;
+        navigator.clipboard.writeText(fullPathToCopy)
+            .then(() => displayGlobalMessage('Demo URL copied to clipboard!', 'success'))
+            .catch(err => displayGlobalMessage('Failed to copy URL: ' + err.message, 'error'));
+    };
+}
+
+function updateVulnerabilityBanner() {
+    if (!vulnerabilityBanner) {
+        fetchAdminProducts();
+        updateConstructedUrlDisplay();
+        return;
+    }
+
+    if (!uiVulnerabilityFeaturesEnabled) {
+        vulnerabilityBanner.style.display = 'none';
+    } else {
+        const adminChecked = adminEscalationCheckbox?.checked;
+        const internalChecked = revealInternalCheckbox?.checked;
+        vulnerabilityBanner.style.display = (adminChecked || internalChecked) ? 'block' : 'none';
+    }
+
+    fetchAdminProducts();
+    updateConstructedUrlDisplay();
+}
+
+function applyAdminPageDisplay() {
+    const isRealAdmin = currentUser && currentUser.is_admin;
+    const demosOn = uiVulnerabilityFeaturesEnabled;
+
+    const ppSection = document.querySelector('.parameter-pollution-controls');
+    if (ppSection) {
+        if (!demosOn) {
+            if (adminEscalationCheckbox) adminEscalationCheckbox.checked = false;
+            if (revealInternalCheckbox) revealInternalCheckbox.checked = false;
+        }
+        ppSection.style.display = demosOn ? 'block' : 'none';
+    }
+
+    const addHeader = document.getElementById('add-product-header');
+    const addHelper = document.getElementById('add-product-helper');
+    const addSubmit = document.getElementById('add-product-submit');
+    if (isRealAdmin || !demosOn) {
+        if (addHeader) addHeader.textContent = 'Add New Product';
+        if (addHelper) addHelper.textContent = 'Add a new product to the catalog.';
+        if (addSubmit) {
+            addSubmit.classList.remove('btn-warning', 'btn-exploit');
+            addSubmit.classList.add('btn-primary');
+            addSubmit.textContent = 'Add Product';
+        }
+    } else {
+        if (addHeader) addHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Add New Product';
+        if (addHelper) addHelper.textContent = 'This form demonstrates adding a product as a non-admin. If successful, it indicates a BFLA vulnerability.';
+        if (addSubmit) {
+            addSubmit.classList.add('btn-warning', 'btn-exploit');
+            addSubmit.textContent = 'Add Product (Demo Exploit)';
+        }
+    }
+
+    const updateHeader = document.getElementById('update-stock-header');
+    const updateHelper = document.getElementById('update-stock-helper');
+    const updateSubmit = document.getElementById('update-stock-submit');
+    if (isRealAdmin || !demosOn) {
+        if (updateHeader) updateHeader.textContent = 'Update Product Stock';
+        if (updateHelper) updateHelper.textContent = 'Update stock quantity for a product.';
+        if (updateSubmit) {
+            updateSubmit.classList.remove('btn-warning', 'btn-exploit');
+            updateSubmit.classList.add('btn-primary');
+            updateSubmit.textContent = 'Update Stock';
+        }
+    } else {
+        if (updateHeader) updateHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Update Product Stock';
+        if (updateHelper) updateHelper.textContent = 'Any user can modify stock quantities without authorization.';
+        if (updateSubmit) {
+            updateSubmit.classList.add('btn-warning', 'btn-exploit');
+            updateSubmit.textContent = 'Update Stock (Demo Exploit)';
+        }
+    }
+
+    const deleteSection = document.querySelector('.delete-user-section');
+    if (deleteSection) {
+        const delHeader = deleteSection.querySelector('h3');
+        const delHelper = deleteSection.querySelector('.helper-text');
+        const delBtn = deleteSection.querySelector('button');
+
+        if (isRealAdmin) {
+            deleteSection.style.display = 'block';
+            if (delHeader) delHeader.textContent = 'Delete User Account';
+            if (delHelper) delHelper.textContent = 'Permanently remove a user account from the system.';
+            if (delBtn) {
+                delBtn.classList.remove('btn-exploit');
+                delBtn.textContent = 'Delete User';
+            }
+        } else if (demosOn) {
+            deleteSection.style.display = 'block';
+            if (delHeader) delHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Delete User Account';
+            if (delHelper) delHelper.textContent = 'Demonstrates deleting any user. This action should be restricted to administrators.';
+            if (delBtn) {
+                if (!delBtn.classList.contains('btn-exploit')) delBtn.classList.add('btn-exploit');
+                delBtn.textContent = 'Delete User (Demo Exploit)';
+            }
+        } else {
+            deleteSection.style.display = 'none';
+        }
+    }
+
+    updateVulnerabilityBanner();
+}
+
+window.applyAdminPageDisplay = applyAdminPageDisplay;

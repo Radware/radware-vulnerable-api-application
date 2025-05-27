@@ -1,10 +1,9 @@
 openapi: 3.0.3
 info:
   title: Radware Vulnerable E-commerce API
-  version: 1.0.0
-  description: >
-    An intentionally vulnerable e-commerce API designed to demonstrate
-    business logic attacks, focusing on path and query parameters.
+  version: 1.1.0
+  description: |
+    An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities.
 tags:
   - name: Users
     description: Operations related to users
@@ -26,7 +25,8 @@ paths:
       tags:
         - Users
       summary: Create a new user
-      operationId: createUser
+      description: Creates a new user. This endpoint is distinct from /api/auth/register and might have different handling or intended use in a larger system, but here it functions similarly. It does not require authentication.
+      operationId: createUserFromRootPath
       parameters:
         - name: username
           in: query
@@ -56,12 +56,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
         '400':
-          description: Invalid input
+          description: Invalid input (e.g., username/email already exists)
+    get:
+      tags:
+        - Users
+      summary: List all users
+      description: Retrieve a list of all users in the system. This endpoint demonstrates a BOLA/BFLA vulnerability by allowing any authenticated user to list all users.
+      operationId: listAllUsers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - Bearer token is missing or invalid
   /api/users/{userId}:
     get:
       tags:
         - Users
-      summary: Get user by user ID
+      summary: Get user by user ID (BOLA Target)
+      description: 'Retrieves user details. BOLA vulnerability: Any user (even unauthenticated for this specific endpoint as implemented in user_router) can view any other user''s details if the user_id is known.'
       operationId: getUserByUserId
       parameters:
         - name: userId
@@ -83,7 +103,8 @@ paths:
     put:
       tags:
         - Users
-      summary: Update user by user ID
+      summary: Update user by user ID (BOLA & Parameter Pollution Target)
+      description: 'Updates user details. BOLA: Any user can attempt to update another user. Parameter Pollution: `is_admin` can be passed to escalate privileges. Protected users have restrictions on username/email changes.'
       operationId: updateUserByUserId
       parameters:
         - name: userId
@@ -93,6 +114,12 @@ paths:
             type: string
             format: uuid
           description: ID of the user to update
+        - name: username
+          in: query
+          required: false
+          schema:
+            type: string
+          description: New username for the user
         - name: email
           in: query
           required: false
@@ -100,12 +127,12 @@ paths:
             type: string
             format: email
           description: New email for the user
-        - name: is_admin # For parameter pollution vulnerability
+        - name: is_admin
           in: query
           required: false
           schema:
             type: boolean
-          description: Set user as admin (vulnerability)
+          description: Set user as admin (Parameter Pollution vulnerability)
       responses:
         '200':
           description: User updated successfully
@@ -115,6 +142,29 @@ paths:
                 $ref: '#/components/schemas/User'
         '400':
           description: Invalid input
+        '403':
+          description: 'Action Forbidden: The user is protected for demo purposes (e.g., trying to change username/email of a protected user).'
+        '404':
+          description: User not found
+    delete:
+      tags:
+        - Users
+      summary: Delete user by user ID (BFLA/BOLA Target)
+      description: 'Deletes a user. BFLA: No admin check is performed. BOLA: Any user can attempt to delete any other user. Protected users cannot be deleted.'
+      operationId: deleteUserByUserId
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user to delete
+      responses:
+        '204':
+          description: User deleted successfully
+        '403':
+          description: 'Action Forbidden: The user is protected for demo purposes and cannot be deleted.'
         '404':
           description: User not found
   /api/products:
@@ -132,10 +182,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Product'
-    post: # Intended for BFLA vulnerability
+    post:
       tags:
         - Products
-      summary: Create a new product (Admin Only - BFLA Target)
+      summary: Create a new product (BFLA Target)
+      description: 'Creates a new product. BFLA: Any user can create products, not just admins.'
       operationId: createProduct
       parameters:
         - name: name
@@ -172,7 +223,6 @@ paths:
                 $ref: '#/components/schemas/Product'
         '400':
           description: Invalid input
-
   /api/products/{productId}:
     get:
       tags:
@@ -196,10 +246,11 @@ paths:
                 $ref: '#/components/schemas/Product'
         '404':
           description: Product not found
-    put: # Intended for Parameter Pollution vulnerability
+    put:
       tags:
         - Products
-      summary: Update product by product ID (Parameter Pollution Target)
+      summary: Update product by product ID (Parameter Pollution & BFLA Target)
+      description: 'Updates a product. Parameter Pollution: `internal_status` can be set. BFLA: Any user can update products. Protected products cannot be modified.'
       operationId: updateProductById
       parameters:
         - name: productId
@@ -234,12 +285,13 @@ paths:
           schema:
             type: string
           description: New category for the product
-        - name: internal_status # For parameter pollution vulnerability
+        - name: internal_status
           in: query
           required: false
           schema:
             type: string
-          description: Internal status (vulnerability)
+            nullable: true
+          description: Internal status (Parameter Pollution vulnerability)
       responses:
         '200':
           description: Product updated successfully
@@ -249,12 +301,15 @@ paths:
                 $ref: '#/components/schemas/Product'
         '400':
           description: Invalid input
+        '403':
+          description: 'Action Forbidden: The product is protected for demo purposes and cannot be modified.'
         '404':
           description: Product not found
-    delete: # Intended for BFLA vulnerability
+    delete:
       tags:
         - Products
-      summary: Delete product by product ID (Admin Only - BFLA Target)
+      summary: Delete product by product ID (BFLA Target)
+      description: 'Deletes a product. BFLA: Any user can delete products. Protected products cannot be deleted.'
       operationId: deleteProductById
       parameters:
         - name: productId
@@ -268,15 +323,15 @@ paths:
         '204':
           description: Product deleted successfully
         '403':
-          description: Forbidden (if BFLA is fixed)
+          description: 'Action Forbidden: Product is protected for demo purposes and cannot be deleted.'
         '404':
           description: Product not found
-
-  /api/products/search: # Intended for Injection vulnerability
+  /api/products/search:
     get:
       tags:
         - Products
       summary: Search for products by name (Injection Target)
+      description: Searches for products. The `name` parameter is a potential injection vector if not handled safely by the backend.
       operationId: searchProducts
       parameters:
         - name: name
@@ -295,8 +350,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Product'
         '400':
-          description: Invalid input
-
+          description: Invalid input (e.g., missing name parameter)
   /api/products/{productId}/stock:
     get:
       tags:
@@ -319,11 +373,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Stock'
         '404':
-          description: Product not found
-    put: # Intended for BFLA vulnerability
+          description: Product not found or stock information not available
+    put:
       tags:
         - Stock
-      summary: Update stock quantity for a product (Admin or Owner - BFLA Target)
+      summary: Update stock quantity for a product (BFLA Target)
+      description: 'Updates product stock. BFLA: Any user can update stock. Protected products have minimum stock level restrictions for direct updates.'
       operationId: updateProductStock
       parameters:
         - name: productId
@@ -338,6 +393,7 @@ paths:
           required: true
           schema:
             type: integer
+            minimum: 0
           description: New stock quantity
       responses:
         '200':
@@ -347,18 +403,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Stock'
         '400':
-          description: Invalid input
+          description: Invalid input (e.g., negative quantity)
         '403':
-          description: Forbidden (if BFLA is fixed)
+          description: 'Action Forbidden: Product is protected and stock cannot be reduced below minimum, or insufficient privileges.'
         '404':
           description: Product not found
-
-  /api/users/{userId}/addresses: # BOLA Target
+  /api/users/{userId}/addresses:
     get:
       tags:
         - Addresses
-      summary: List all addresses for a user
+      summary: List all addresses for a user (BOLA Target)
+      description: 'Lists addresses. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.'
       operationId: listUserAddresses
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -378,15 +436,16 @@ paths:
                   $ref: '#/components/schemas/Address'
         '401':
           description: Unauthorized (Not authenticated)
-        '403':
-          description: Forbidden (Authenticated but not authorized - BOLA if not checked)
         '404':
           description: User not found
-    post: # BOLA Target, data via query parameters
+    post:
       tags:
         - Addresses
-      summary: Create a new address for a user
+      summary: Create a new address for a user (BOLA Target)
+      description: 'Creates an address. BOLA: No check if current_user.user_id matches path user_id.'
       operationId: createUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -432,17 +491,19 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
-        '403':
-          description: Forbidden (BOLA if not checked)
         '404':
           description: User not found
-
-  /api/users/{userId}/addresses/{addressId}: # BOLA Target
-    put: # Data via query parameters
+        '409':
+          description: Address already exists for this user
+  /api/users/{userId}/addresses/{addressId}:
+    put:
       tags:
         - Addresses
-      summary: Update an address for a user
+      summary: Update an address for a user (BOLA Target)
+      description: 'Updates an address. BOLA: No check if current_user.user_id matches path user_id. Protected addresses cannot be modified.'
       operationId: updateUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -491,18 +552,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Address'
         '400':
-          description: Invalid input
+          description: Invalid input or no update data provided
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden (BOLA if not checked)
+          description: 'Action Forbidden: Address is protected and cannot be modified.'
         '404':
           description: User or Address not found
     delete:
       tags:
         - Addresses
-      summary: Delete an address for a user
+      summary: Delete an address for a user (BOLA Target)
+      description: 'Deletes an address. BOLA: No check if current_user.user_id matches path user_id. Protected addresses cannot be deleted.'
       operationId: deleteUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -524,15 +588,15 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden (BOLA if not checked)
+          description: 'Action Forbidden: Address is protected and cannot be deleted.'
         '404':
           description: User or Address not found
-
-  /api/users/{userId}/credit-cards: # BOLA Target
+  /api/users/{userId}/credit-cards:
     get:
       tags:
         - CreditCards
-      summary: List all credit cards for a user
+      summary: List all credit cards for a user (BOLA Target)
+      description: 'Lists credit cards. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can list cards for any user_id.'
       operationId: listUserCreditCards
       parameters:
         - name: userId
@@ -551,16 +615,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CreditCard'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden (BOLA if not checked)
         '404':
           description: User not found
-    post: # BOLA Target, data via query parameters
+    post:
       tags:
         - CreditCards
-      summary: Create a new credit card for a user
+      summary: Create a new credit card for a user (BOLA Target)
+      description: 'Creates a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can create a card for any user_id.'
       operationId: createUserCreditCard
       parameters:
         - name: userId
@@ -575,18 +636,38 @@ paths:
           required: true
           schema:
             type: string
+          description: Name of the cardholder
+        - name: card_number
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 13
+            maxLength: 19
+          description: Full credit card number
         - name: expiry_month
           in: query
           required: true
           schema:
             type: string
-            pattern: '^0[1-9]|1[0-2]$' # MM
+            pattern: ^0[1-9]|1[0-2]$
+          description: Expiry month (MM)
         - name: expiry_year
           in: query
           required: true
           schema:
             type: string
-            pattern: '^20[2-9][0-9]$' # YYYY (e.g., 2023-2099)
+            pattern: ^20[2-9][0-9]$
+          description: Expiry year (YYYY)
+        - name: cvv
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 4
+            nullable: true
+          description: Card Verification Value (optional)
         - name: is_default
           in: query
           required: false
@@ -602,18 +683,46 @@ paths:
                 $ref: '#/components/schemas/CreditCard'
         '400':
           description: Invalid input
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden (BOLA if not checked)
         '404':
           description: User not found
-
-  /api/users/{userId}/credit-cards/{cardId}: # BOLA Target
-    put: # Data via query parameters
+        '422':
+          description: Validation error
+  /api/users/{userId}/credit-cards/{cardId}:
+    get:
       tags:
         - CreditCards
-      summary: Update a credit card for a user
+      summary: Get a credit card for a user (BOLA Target)
+      description: 'Retrieves a specific credit card. BOLA: No ownership check; any user (even unauthenticated) can get card details if IDs are known.'
+      operationId: getUserCreditCard
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the credit card to retrieve
+      responses:
+        '200':
+          description: Credit card retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditCard'
+        '404':
+          description: User or CreditCard not found
+    put:
+      tags:
+        - CreditCards
+      summary: Update a credit card for a user (BOLA Target)
+      description: 'Updates a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can update any card. Protected cards have restrictions.'
       operationId: updateUserCreditCard
       parameters:
         - name: userId
@@ -640,13 +749,13 @@ paths:
           required: false
           schema:
             type: string
-            pattern: '^0[1-9]|1[0-2]$'
+            pattern: ^0[1-9]|1[0-2]$
         - name: expiry_year
           in: query
           required: false
           schema:
             type: string
-            pattern: '^20[2-9][0-9]$'
+            pattern: ^20[2-9][0-9]$
         - name: is_default
           in: query
           required: false
@@ -660,17 +769,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreditCard'
         '400':
-          description: Invalid input
-        '401':
-          description: Unauthorized
+          description: Invalid input or no update data provided
         '403':
-          description: Forbidden (BOLA if not checked)
+          description: 'Action Forbidden: Credit Card is protected and cannot be modified (or only specific fields for demo).'
         '404':
           description: User or CreditCard not found
     delete:
       tags:
         - CreditCards
-      summary: Delete a credit card for a user
+      summary: Delete a credit card for a user (BOLA Target)
+      description: 'Deletes a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can delete any card. Protected cards cannot be deleted.'
       operationId: deleteUserCreditCard
       parameters:
         - name: userId
@@ -690,18 +798,16 @@ paths:
       responses:
         '204':
           description: Credit card deleted successfully
-        '401':
-          description: Unauthorized
         '403':
-          description: Forbidden (BOLA if not checked)
+          description: 'Action Forbidden: Credit Card is protected and cannot be deleted.'
         '404':
           description: User or CreditCard not found
-
-  /api/users/{userId}/orders: # BOLA Target
+  /api/users/{userId}/orders:
     get:
       tags:
         - Orders
-      summary: List all orders for a specific user
+      summary: List all orders for a specific user (BOLA Target)
+      description: 'Lists orders. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.'
       operationId: listUserOrders
       security:
         - bearerAuth: []
@@ -712,7 +818,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: ID of the user whose orders to retrieve (BOLA: can be changed to another user's ID)
+          description: 'ID of the user whose orders to retrieve (BOLA: can be changed to another user''s ID)'
       responses:
         '200':
           description: A list of orders with their items
@@ -721,29 +827,17 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object # Representing Order with items inline for simplicity here
-                  properties:
-                    order_details:
-                      $ref: '#/components/schemas/Order'
-                    items:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/OrderItem'
+                  $ref: '#/components/schemas/Order'
         '401':
           description: Unauthorized (Not authenticated)
-        '403':
-          description: Forbidden (Authenticated but not authorized for this user's orders - BOLA if not checked)
         '404':
           description: User not found
-    post: # BOLA Target for userId in path, and for address_id/credit_card_id in query
+    post:
       tags:
         - Orders
-      summary: Create a new order for a user
-      description: >
-        Creates an order. Products and quantities are specified as dynamic query parameters:
-        `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc.
-        Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id`
-        in query can also belong to another user.
+      summary: Create a new order for a user (BOLA Target)
+      description: |
+        Creates an order. Products and quantities are specified as dynamic query parameters: `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc. Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id` in query can also belong to another user.
       operationId: createUserOrder
       security:
         - bearerAuth: []
@@ -754,52 +848,40 @@ paths:
           schema:
             type: string
             format: uuid
-          description: ID of the user placing the order (BOLA: can be changed)
-        - name: address_id # BOLA target
+          description: 'ID of the user placing the order (BOLA: can be changed)'
+        - name: address_id
           in: query
           required: true
           schema:
             type: string
             format: uuid
-          description: Address ID for shipping (Vulnerability: can be another user's address)
-        - name: credit_card_id # BOLA target
+          description: 'Address ID for shipping (Vulnerability: can be another user''s address)'
+        - name: credit_card_id
           in: query
           required: true
           schema:
             type: string
             format: uuid
-          description: Credit Card ID for payment (Vulnerability: can be another user's card)
-        # Dynamic parameters like product_id_1, quantity_1 will be processed by the application
-        # These are not explicitly defined here due to OpenAPI limitations for truly dynamic params,
-        # but their expected pattern is product_id_N and quantity_N.
+          description: 'Credit Card ID for payment (Vulnerability: can be another user''s card)'
       responses:
         '201':
           description: Order created successfully
           content:
             application/json:
               schema:
-                type: object # Representing Order with items inline
-                properties:
-                  order_details:
-                    $ref: '#/components/schemas/Order'
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/OrderItem'
+                $ref: '#/components/schemas/Order'
         '400':
           description: Invalid input (e.g., product not found, insufficient stock, invalid parameters)
         '401':
           description: Unauthorized
-        '403':
-          description: Forbidden (BOLA if not checked properly)
         '404':
           description: User, Address, or CreditCard not found
-
-  /api/users/{userId}/orders/{orderId}: # BOLA Target
+  /api/users/{userId}/orders/{orderId}:
     get:
       tags:
         - Orders
-      summary: Get a specific order for a user
+      summary: Get a specific order for a user (BOLA Target)
+      description: 'Gets order details. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.'
       operationId: getUserOrderById
       security:
         - bearerAuth: []
@@ -810,7 +892,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: ID of the user (BOLA: can be changed)
+          description: 'ID of the user (BOLA: can be changed)'
         - name: orderId
           in: path
           required: true
@@ -824,21 +906,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object # Representing Order with items inline
-                properties:
-                  order_details:
-                    $ref: '#/components/schemas/Order'
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/OrderItem'
+                $ref: '#/components/schemas/Order'
         '401':
           description: Unauthorized
-        '403':
-          description: Forbidden (BOLA if not checked)
         '404':
           description: User or Order not found
-
   /api/auth/register:
     post:
       tags:
@@ -873,10 +945,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User' # Return the created user object (excluding password_hash ideally)
+                $ref: '#/components/schemas/User'
         '400':
           description: Invalid input (e.g., username/email already exists, weak password)
-
   /api/auth/login:
     post:
       tags:
@@ -905,29 +976,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Token'
-        '400':
-          description: Invalid credentials (username or password)
         '401':
           description: Authentication failed
-  /users:
-    get:
-      tags:
-        - Users
-      summary: List all users
-      description: Retrieve a list of all users in the system. This endpoint demonstrates a BOLA vulnerability by allowing any authenticated user to list all users.
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: A list of users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-        '401':
-          description: Unauthorized - Bearer token is missing or invalid
 components:
   schemas:
     User:
@@ -949,7 +999,7 @@ components:
           type: string
           format: email
           description: Email address of the user (unique)
-        password_hash: # Not directly exposed in GET, not updatable via this PUT
+        password_hash:
           type: string
           description: Hashed password of the user
           readOnly: true
@@ -967,6 +1017,10 @@ components:
           format: date-time
           description: Timestamp of last user update
           readOnly: true
+        is_protected:
+          type: boolean
+          description: Indicates if this user is protected from deletion or certain updates
+          default: false
     Product:
       type: object
       required:
@@ -984,6 +1038,7 @@ components:
           description: Name of the product
         description:
           type: string
+          nullable: true
           description: Description of the product
         price:
           type: number
@@ -991,7 +1046,12 @@ components:
           description: Price of the product
         category:
           type: string
+          nullable: true
           description: Category of the product
+        internal_status:
+          type: string
+          nullable: true
+          description: Internal status of the product (demonstrates parameter pollution)
         created_at:
           type: string
           format: date-time
@@ -1002,7 +1062,10 @@ components:
           format: date-time
           description: Timestamp of last product update
           readOnly: true
-
+        is_protected:
+          type: boolean
+          description: Indicates if this product is protected from deletion or certain updates
+          default: false
     Stock:
       type: object
       required:
@@ -1040,7 +1103,7 @@ components:
           type: string
           format: uuid
           description: Foreign key to User
-          readOnly: true # Should be set based on the path
+          readOnly: true
         street:
           type: string
           description: Street address
@@ -1057,7 +1120,20 @@ components:
           type: boolean
           default: false
           description: Whether this is the default address for the user
-
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp of address creation
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of last address update
+          readOnly: true
+        is_protected:
+          type: boolean
+          description: Indicates if this address is protected from deletion or modification
+          default: false
     CreditCard:
       type: object
       required:
@@ -1066,6 +1142,7 @@ components:
         - cardholder_name
         - expiry_month
         - expiry_year
+        - card_last_four
       properties:
         card_id:
           type: string
@@ -1076,7 +1153,7 @@ components:
           type: string
           format: uuid
           description: Foreign key to User
-          readOnly: true # Should be set based on the path
+          readOnly: true
         cardholder_name:
           type: string
           description: Name of the cardholder
@@ -1090,10 +1167,11 @@ components:
         expiry_year:
           type: string
           description: Expiry year (YYYY)
-        cvv_hash: # For realism, though not usually stored
+        cvv_hash:
           type: string
           description: Hash of the CVV
           readOnly: true
+          nullable: true
         card_last_four:
           type: string
           description: Last four digits of the card number for display purposes
@@ -1102,7 +1180,20 @@ components:
           type: boolean
           default: false
           description: Whether this is the default credit card for the user
-
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp of credit card creation
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of last credit card update
+          readOnly: true
+        is_protected:
+          type: boolean
+          description: Indicates if this credit card is protected from deletion or modification
+          default: false
     Order:
       type: object
       required:
@@ -1122,7 +1213,7 @@ components:
           type: string
           format: uuid
           description: Foreign key to User (owner of the order)
-          readOnly: true # Should be set based on path or JWT
+          readOnly: true
         address_id:
           type: string
           format: uuid
@@ -1150,7 +1241,11 @@ components:
           format: date-time
           description: Timestamp of last order update
           readOnly: true
-
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          default: []
     OrderItem:
       type: object
       required:
@@ -1182,22 +1277,18 @@ components:
           format: float
           description: Price of the product at the time of purchase
           readOnly: true
-
     OrderCreationRequest:
       type: object
       description: Parameters for creating an order, passed via query. Illustrates BOLA potential if address_id/credit_card_id are for another user.
       properties:
-        address_id: # BOLA target
+        address_id:
           type: string
           format: uuid
-          description: ID of the address to use for the order. (Vulnerability: Could be another user's address ID)
-        credit_card_id: # BOLA target
+          description: 'ID of the address to use for the order. (Vulnerability: Could be another user''s address ID)'
+        credit_card_id:
           type: string
           format: uuid
-          description: ID of the credit card to use for the order. (Vulnerability: Could be another user's card ID)
-        # Products and quantities will be handled with dynamic query parameters like product_id_1, quantity_1 etc.
-        # Example: ?address_id=...&credit_card_id=...&product_id_1=...&quantity_1=...&product_id_2=...&quantity_2=...
-
+          description: 'ID of the credit card to use for the order. (Vulnerability: Could be another user''s card ID)'
     Token:
       type: object
       properties:
@@ -1206,8 +1297,7 @@ components:
         token_type:
           type: string
           default: bearer
-
-    UserRegistrationRequest: # Primarily for documentation, actual inputs via query params
+    UserRegistrationRequest:
       type: object
       properties:
         username:
@@ -1218,8 +1308,7 @@ components:
         password:
           type: string
           format: password
-
-    UserLoginRequest: # Primarily for documentation, actual inputs via query params
+    UserLoginRequest:
       type: object
       properties:
         username:
@@ -1227,7 +1316,6 @@ components:
         password:
           type: string
           format: password
-
   securitySchemes:
     bearerAuth:
       type: http

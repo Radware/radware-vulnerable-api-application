@@ -3,7 +3,7 @@
     "name": "BOLA: Attacker Modifies Victim's Data and Places Order for Victim",
     "description": "Attacker (GraceWilson) logs in, creates/updates/deletes an address for victim (HenryMoore), and places an order for the victim using victim's details.",
     "staticVars": {
-      "baseUrl": "http://localhost:8000",
+      "baseUrl": "http://vampi.bowz.fr",
       "attackerUsername": "GraceWilson",
       "attackerPassword": "GracePass7&",
       "victimUserId": "00000009-0000-0000-0000-000000000009",

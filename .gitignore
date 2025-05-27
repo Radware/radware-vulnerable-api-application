@@ -1,4 +1,5 @@
 # Python
+push.sh
 __pycache__/
 *.py[cod]
 *.pyo
@@ -36,7 +37,6 @@ Thumbs.db
 
 # Shell scripts and generated files
 collect.sh
-verify.sh
 
 # Docker
 *.pid

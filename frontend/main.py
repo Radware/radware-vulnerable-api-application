@@ -1,5 +1,11 @@
-from flask import Flask, render_template, send_from_directory
 import os
+import werkzeug.urls
+
+if not hasattr(werkzeug.urls, 'url_quote'):
+    from urllib.parse import quote as _quote
+    werkzeug.urls.url_quote = _quote
+
+from flask import Flask, render_template, send_from_directory
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -48,4 +54,6 @@ def static_files(filename):
     return send_from_directory(app.static_folder, filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    port = int(os.environ.get('FRONTEND_PORT', '5001'))
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
