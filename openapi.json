@@ -37,12 +37,67 @@
   ],
   "paths": {
     "/api/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create a new user",
+        "description": "Creates a new user. This endpoint is distinct from /api/auth/register and might have different handling or intended use in a larger system, but here it functions similarly. It does not require authentication.",
+        "operationId": "createUserFromRootPath",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Username for the new user"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Email for the new user"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "password"
+            },
+            "description": "Password for the new user"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (e.g., username/email already exists)"
+          }
+        }
+      },
       "get": {
         "tags": [
           "Users"
         ],
         "summary": "List all users",
-        "description": "Retrieve a list of all users in the system. This endpoint demonstrates a BOLA vulnerability by allowing any authenticated user to list all users.",
+        "description": "Retrieve a list of all users in the system. This endpoint demonstrates a BOLA/BFLA vulnerability by allowing any authenticated user to list all users.",
+        "operationId": "listAllUsers",
         "security": [
           {
             "bearerAuth": []
@@ -73,7 +128,8 @@
         "tags": [
           "Users"
         ],
-        "summary": "Get user by user ID",
+        "summary": "Get user by user ID (BOLA Target)",
+        "description": "Retrieves user details. BOLA vulnerability: Any user (even unauthenticated for this specific endpoint as implemented in user_router) can view any other user's details if the user_id is known.",
         "operationId": "getUserByUserId",
         "parameters": [
           {
@@ -107,7 +163,8 @@
         "tags": [
           "Users"
         ],
-        "summary": "Update user by user ID",
+        "summary": "Update user by user ID (BOLA & Parameter Pollution Target)",
+        "description": "Updates user details. BOLA: Any user can attempt to update another user. Parameter Pollution: `is_admin` can be passed to escalate privileges. Protected users have restrictions on username/email changes.",
         "operationId": "updateUserByUserId",
         "parameters": [
           {
@@ -146,7 +203,7 @@
             "schema": {
               "type": "boolean"
             },
-            "description": "Set user as admin (vulnerability)"
+            "description": "Set user as admin (Parameter Pollution vulnerability)"
           }
         ],
         "responses": {
@@ -164,7 +221,7 @@
             "description": "Invalid input"
           },
           "403": {
-            "description": "Action Forbidden: The user is protected for demo purposes"
+            "description": "Action Forbidden: The user is protected for demo purposes (e.g., trying to change username/email of a protected user)."
           },
           "404": {
             "description": "User not found"
@@ -175,7 +232,8 @@
         "tags": [
           "Users"
         ],
-        "summary": "Delete user by user ID (BFLA Target)",
+        "summary": "Delete user by user ID (BFLA/BOLA Target)",
+        "description": "Deletes a user. BFLA: No admin check is performed. BOLA: Any user can attempt to delete any other user. Protected users cannot be deleted.",
         "operationId": "deleteUserByUserId",
         "parameters": [
           {
@@ -194,7 +252,7 @@
             "description": "User deleted successfully"
           },
           "403": {
-            "description": "Action Forbidden: The user is protected for demo purposes"
+            "description": "Action Forbidden: The user is protected for demo purposes and cannot be deleted."
           },
           "404": {
             "description": "User not found"
@@ -229,7 +287,8 @@
         "tags": [
           "Products"
         ],
-        "summary": "Create a new product (Admin Only - BFLA Target)",
+        "summary": "Create a new product (BFLA Target)",
+        "description": "Creates a new product. BFLA: Any user can create products, not just admins.",
         "operationId": "createProduct",
         "parameters": [
           {
@@ -326,7 +385,8 @@
         "tags": [
           "Products"
         ],
-        "summary": "Update product by product ID (Parameter Pollution Target)",
+        "summary": "Update product by product ID (Parameter Pollution & BFLA Target)",
+        "description": "Updates a product. Parameter Pollution: `internal_status` can be set. BFLA: Any user can update products. Protected products cannot be modified.",
         "operationId": "updateProductById",
         "parameters": [
           {
@@ -381,9 +441,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "nullable": true
             },
-            "description": "Internal status (vulnerability)"
+            "description": "Internal status (Parameter Pollution vulnerability)"
           }
         ],
         "responses": {
@@ -400,6 +461,9 @@
           "400": {
             "description": "Invalid input"
           },
+          "403": {
+            "description": "Action Forbidden: The product is protected for demo purposes and cannot be modified."
+          },
           "404": {
             "description": "Product not found"
           }
@@ -409,7 +473,8 @@
         "tags": [
           "Products"
         ],
-        "summary": "Delete product by product ID (Admin Only - BFLA Target)",
+        "summary": "Delete product by product ID (BFLA Target)",
+        "description": "Deletes a product. BFLA: Any user can delete products. Protected products cannot be deleted.",
         "operationId": "deleteProductById",
         "parameters": [
           {
@@ -428,7 +493,7 @@
             "description": "Product deleted successfully"
           },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Product is protected for demo purposes and cannot be deleted."
           },
           "404": {
             "description": "Product not found"
@@ -442,6 +507,7 @@
           "Products"
         ],
         "summary": "Search for products by name (Injection Target)",
+        "description": "Searches for products. The `name` parameter is a potential injection vector if not handled safely by the backend.",
         "operationId": "searchProducts",
         "parameters": [
           {
@@ -469,7 +535,7 @@
             }
           },
           "400": {
-            "description": "Invalid input"
+            "description": "Invalid input (e.g., missing name parameter)"
           }
         }
       }
@@ -505,7 +571,7 @@
             }
           },
           "404": {
-            "description": "Product not found"
+            "description": "Product not found or stock information not available"
           }
         }
       },
@@ -513,7 +579,8 @@
         "tags": [
           "Stock"
         ],
-        "summary": "Update stock quantity for a product (Admin or Owner - BFLA Target)",
+        "summary": "Update stock quantity for a product (BFLA Target)",
+        "description": "Updates product stock. BFLA: Any user can update stock. Protected products have minimum stock level restrictions for direct updates.",
         "operationId": "updateProductStock",
         "parameters": [
           {
@@ -531,7 +598,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             },
             "description": "New stock quantity"
           }
@@ -548,10 +616,10 @@
             }
           },
           "400": {
-            "description": "Invalid input"
+            "description": "Invalid input (e.g., negative quantity)"
           },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Product is protected and stock cannot be reduced below minimum, or insufficient privileges."
           },
           "404": {
             "description": "Product not found"
@@ -564,7 +632,8 @@
         "tags": [
           "Addresses"
         ],
-        "summary": "List all addresses for a user",
+        "summary": "List all addresses for a user (BOLA Target)",
+        "description": "Lists addresses. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.",
         "operationId": "listUserAddresses",
         "security": [
           {
@@ -609,7 +678,8 @@
         "tags": [
           "Addresses"
         ],
-        "summary": "Create a new address for a user",
+        "summary": "Create a new address for a user (BOLA Target)",
+        "description": "Creates an address. BOLA: No check if current_user.user_id matches path user_id.",
         "operationId": "createUserAddress",
         "security": [
           {
@@ -688,6 +758,9 @@
           },
           "404": {
             "description": "User not found"
+          },
+          "409": {
+            "description": "Address already exists for this user"
           }
         }
       }
@@ -697,7 +770,8 @@
         "tags": [
           "Addresses"
         ],
-        "summary": "Update an address for a user",
+        "summary": "Update an address for a user (BOLA Target)",
+        "description": "Updates an address. BOLA: No check if current_user.user_id matches path user_id. Protected addresses cannot be modified.",
         "operationId": "updateUserAddress",
         "security": [
           {
@@ -778,13 +852,13 @@
             }
           },
           "400": {
-            "description": "Invalid input"
+            "description": "Invalid input or no update data provided"
           },
           "401": {
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Address is protected and cannot be modified."
           },
           "404": {
             "description": "User or Address not found"
@@ -795,7 +869,8 @@
         "tags": [
           "Addresses"
         ],
-        "summary": "Delete an address for a user",
+        "summary": "Delete an address for a user (BOLA Target)",
+        "description": "Deletes an address. BOLA: No check if current_user.user_id matches path user_id. Protected addresses cannot be deleted.",
         "operationId": "deleteUserAddress",
         "security": [
           {
@@ -832,7 +907,7 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Address is protected and cannot be deleted."
           },
           "404": {
             "description": "User or Address not found"
@@ -845,13 +920,9 @@
         "tags": [
           "CreditCards"
         ],
-        "summary": "List all credit cards for a user",
+        "summary": "List all credit cards for a user (BOLA Target)",
+        "description": "Lists credit cards. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can list cards for any user_id.",
         "operationId": "listUserCreditCards",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "parameters": [
           {
             "name": "userId",
@@ -878,9 +949,6 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "404": {
             "description": "User not found"
           }
@@ -890,13 +958,9 @@
         "tags": [
           "CreditCards"
         ],
-        "summary": "Create a new credit card for a user",
+        "summary": "Create a new credit card for a user (BOLA Target)",
+        "description": "Creates a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can create a card for any user_id.",
         "operationId": "createUserCreditCard",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "parameters": [
           {
             "name": "userId",
@@ -914,7 +978,19 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Name of the cardholder"
+          },
+          {
+            "name": "card_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 13,
+              "maxLength": 19
+            },
+            "description": "Full credit card number"
           },
           {
             "name": "expiry_month",
@@ -923,7 +999,8 @@
             "schema": {
               "type": "string",
               "pattern": "^0[1-9]|1[0-2]$"
-            }
+            },
+            "description": "Expiry month (MM)"
           },
           {
             "name": "expiry_year",
@@ -932,7 +1009,20 @@
             "schema": {
               "type": "string",
               "pattern": "^20[2-9][0-9]$"
-            }
+            },
+            "description": "Expiry year (YYYY)"
+          },
+          {
+            "name": "cvv",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 4,
+              "nullable": true
+            },
+            "description": "Card Verification Value (optional)"
           },
           {
             "name": "is_default",
@@ -958,9 +1048,6 @@
           "400": {
             "description": "Invalid input"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "422": {
             "description": "Validation error"
           },
@@ -975,7 +1062,8 @@
         "tags": [
           "CreditCards"
         ],
-        "summary": "Get a credit card for a user",
+        "summary": "Get a credit card for a user (BOLA Target)",
+        "description": "Retrieves a specific credit card. BOLA: No ownership check; any user (even unauthenticated) can get card details if IDs are known.",
         "operationId": "getUserCreditCard",
         "parameters": [
           {
@@ -1019,13 +1107,9 @@
         "tags": [
           "CreditCards"
         ],
-        "summary": "Update a credit card for a user",
+        "summary": "Update a credit card for a user (BOLA Target)",
+        "description": "Updates a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can update any card. Protected cards have restrictions.",
         "operationId": "updateUserCreditCard",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "parameters": [
           {
             "name": "userId",
@@ -1094,13 +1178,10 @@
             }
           },
           "400": {
-            "description": "Invalid input"
-          },
-          "401": {
-            "description": "Unauthorized"
+            "description": "Invalid input or no update data provided"
           },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Credit Card is protected and cannot be modified (or only specific fields for demo)."
           },
           "404": {
             "description": "User or CreditCard not found"
@@ -1111,13 +1192,9 @@
         "tags": [
           "CreditCards"
         ],
-        "summary": "Delete a credit card for a user",
+        "summary": "Delete a credit card for a user (BOLA Target)",
+        "description": "Deletes a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can delete any card. Protected cards cannot be deleted.",
         "operationId": "deleteUserCreditCard",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "parameters": [
           {
             "name": "userId",
@@ -1144,11 +1221,8 @@
           "204": {
             "description": "Credit card deleted successfully"
           },
-          "401": {
-            "description": "Unauthorized"
-          },
           "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+            "description": "Action Forbidden: Credit Card is protected and cannot be deleted."
           },
           "404": {
             "description": "User or CreditCard not found"
@@ -1161,7 +1235,8 @@
         "tags": [
           "Orders"
         ],
-        "summary": "List all orders for a specific user",
+        "summary": "List all orders for a specific user (BOLA Target)",
+        "description": "Lists orders. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.",
         "operationId": "listUserOrders",
         "security": [
           {
@@ -1188,18 +1263,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "order_details": {
-                        "$ref": "#/components/schemas/Order"
-                      },
-                      "items": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/OrderItem"
-                        }
-                      }
-                    }
+                    "$ref": "#/components/schemas/Order"
                   }
                 }
               }
@@ -1217,7 +1281,7 @@
         "tags": [
           "Orders"
         ],
-        "summary": "Create a new order for a user",
+        "summary": "Create a new order for a user (BOLA Target)",
         "description": "Creates an order. Products and quantities are specified as dynamic query parameters: `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc. Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id` in query can also belong to another user.\n",
         "operationId": "createUserOrder",
         "security": [
@@ -1263,18 +1327,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "order_details": {
-                      "$ref": "#/components/schemas/Order"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/OrderItem"
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/Order"
                 }
               }
             }
@@ -1296,7 +1349,8 @@
         "tags": [
           "Orders"
         ],
-        "summary": "Get a specific order for a user",
+        "summary": "Get a specific order for a user (BOLA Target)",
+        "description": "Gets order details. BOLA: Authenticated, but no check if current_user.user_id matches path user_id.",
         "operationId": "getUserOrderById",
         "security": [
           {
@@ -1331,18 +1385,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "order_details": {
-                      "$ref": "#/components/schemas/Order"
-                    },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/OrderItem"
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/Order"
                 }
               }
             }
@@ -1533,6 +1576,7 @@
           },
           "description": {
             "type": "string",
+            "nullable": true,
             "description": "Description of the product"
           },
           "price": {
@@ -1542,7 +1586,13 @@
           },
           "category": {
             "type": "string",
+            "nullable": true,
             "description": "Category of the product"
+          },
+          "internal_status": {
+            "type": "string",
+            "nullable": true,
+            "description": "Internal status of the product (demonstrates parameter pollution)"
           },
           "created_at": {
             "type": "string",
@@ -1657,7 +1707,8 @@
           "user_id",
           "cardholder_name",
           "expiry_month",
-          "expiry_year"
+          "expiry_year",
+          "card_last_four"
         ],
         "properties": {
           "card_id": {
@@ -1692,11 +1743,12 @@
           "cvv_hash": {
             "type": "string",
             "description": "Hash of the CVV",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "card_last_four": {
             "type": "string",
-            "description": "Last four digits of the card number for display purposes\"",
+            "description": "Last four digits of the card number for display purposes",
             "readOnly": true
           },
           "is_default": {
@@ -1778,6 +1830,13 @@
             "format": "date-time",
             "description": "Timestamp of last order update",
             "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "default": []
           }
         }
       },
