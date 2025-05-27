@@ -8,7 +8,7 @@ import json
 import time  # For response time logging
 from pydantic import BaseModel
 
-# Provide compatibility with Pydantic v1 by aliasing model_validate
+# Provide compatibility with Pydantic v1 by aliasing model_validate and model_dump
 if not hasattr(BaseModel, "model_validate"):
     def _model_validate(cls, obj):
         if isinstance(obj, cls):
@@ -20,6 +20,12 @@ if not hasattr(BaseModel, "model_validate"):
         return cls.parse_obj(obj)
 
     BaseModel.model_validate = classmethod(_model_validate)
+
+if not hasattr(BaseModel, "model_dump"):
+    def _model_dump(self, *args, **kwargs):
+        return self.dict(*args, **kwargs)
+
+    BaseModel.model_dump = _model_dump
 
 # --- REMOVE CustomAccessJsonFormatter and formatter_debug_logger from here ---
 # They are no longer needed as we're using a middleware to capture data.

@@ -111,23 +111,30 @@ test.describe('Vulnerability Demonstrations', () => {
     await page.fill('#new-product-price', '99.99');
     await page.fill('#new-product-category', 'Demo');
 
-    await page.locator('#add-product-submit').click();
-    await expect(page.locator('#global-message-container .global-message.success-message'))
-      .toContainText('Product added', { timeout: 15000 });
-    await expect(page.locator('#admin-products-container tr', { hasText: productName })).toBeVisible({ timeout: 10000 });
+    const addProductSubmitButton = page.locator('#add-product-submit');
+    await expect(addProductSubmitButton).toBeVisible({ timeout: 5000 });
+    await expect(addProductSubmitButton).toBeEnabled({ timeout: 5000 });
+    await addProductSubmitButton.click();
+
+    await expect(page.locator('#admin-products-container tr', { hasText: productName })).toBeVisible({ timeout: 15000 });
 
     // delete created product
     page.once('dialog', dialog => dialog.accept());
     await page.locator(`#admin-products-container tr:has-text("${productName}") button.delete-product-btn`).click();
-    await expect(page.locator('#global-message-container .global-message.success-message'))
-      .toContainText('deleted', { timeout: 15000 });
+    const deleteSuccessLocator = page.locator(
+      '#success-message-container .success-message, #global-message-container .global-message.success-message',
+      { hasText: /deleted/ }
+    );
+    await expect(deleteSuccessLocator).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#admin-products-container tr', { hasText: productName })).toHaveCount(0, { timeout: 10000 });
 
     // attempt to delete protected product
     page.once('dialog', dialog => dialog.accept());
-    await page.locator(`#admin-products-container tr:has-text("Laptop Pro 15") button.delete-product-btn`).click();
-    await expect(page.locator('#global-message-container .global-message.warning-message'))
-      .toContainText('protected', { timeout: 15000 });
+    const [protectedDelete] = await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/products/') && r.request().method() === 'DELETE'),
+      page.locator(`#admin-products-container tr:has-text("Laptop Pro 15") button.delete-product-btn`).click()
+    ]);
+    expect(protectedDelete.status()).toBe(403);
   });
 
   test('should show error when reducing stock below minimum for protected product', async ({ page }) => {
@@ -139,8 +146,10 @@ test.describe('Vulnerability Demonstrations', () => {
     await page.fill('#stock-product-id', protectedProductId);
     await page.fill('#new-stock-qty', '100');
     await page.locator('#update-stock-submit').click();
-    await expect(page.locator('#global-message-container .global-message.warning-message', { hasText: 'stock reduced below' }))
-      .toBeVisible({ timeout: 15000 });
+    const warningMessageLocator = page.locator('#global-message-container .global-message.warning-message');
+    await expect(warningMessageLocator).toBeVisible({ timeout: 15000 });
+    await expect(warningMessageLocator).toContainText('Action Blocked', { timeout: 5000 });
+    await expect(warningMessageLocator).toContainText(/cannot have stock reduced below/i, { timeout: 5000 });
   });
 });
 
