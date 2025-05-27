@@ -59,6 +59,7 @@ This application intentionally includes the following vulnerabilities:
 ### API1:2023 - Broken Object Level Authorization (BOLA)
 
 *   **Description:** Users can access or modify data objects belonging to other users by manipulating object IDs in the request (typically in path parameters or query parameters). The application fails to verify if the authenticated user has the right to perform the requested action on the specific object.
+*   **Note:** Destructive operations on protected demo entities will return HTTP 403, but viewing remains possible to illustrate BOLA.
 *   **Affected Endpoints & Exploitation:**
     *   **User Details:**
         *   `GET /api/users/{user_id}`: Any authenticated user can view another user's details by providing their `user_id`.
@@ -102,6 +103,7 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 *   **Description:** Regular users can access administrative functions or functionalities reserved for privileged users because the application does not adequately check the user's role or permissions before granting access to these functions.
 *   **Affected Endpoints & Exploitation:**
+    *   **Note:** Deleting or modifying protected demo entities returns HTTP 403 with a "protected for demo" message.
     *   `POST /api/products/`: Any authenticated user can create new products (typically an admin function).
     *   `DELETE /api/products/{product_id}`: Any authenticated user can delete products.
     *   `PUT /api/stock/{product_id}`: Any authenticated user can update product stock levels. If the product is protected, the action is logged but still allowed.
@@ -206,11 +208,11 @@ This table summarizes the intentionally implemented vulnerabilities and their ex
 
 | Vulnerability Type (OWASP API 2023) | Brief Description | Example Exploitable Endpoint(s) | Exploitation Method Summary |
 |-------------------------------------|-------------------|-------------------------------|----------------------------|
-| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). No check if the authenticated user owns the object. | `GET /api/users/{user_id}`<br>`PUT /api/users/{user_id}`<br>`GET /api/users/{user_id}/addresses`<br>`POST /api/users/{user_id}/addresses`<br>`GET /api/users/{user_id}/credit-cards`<br>`POST /api/users/{user_id}/credit-cards`<br>`GET /api/users/{user_id}/orders`<br>`POST /api/users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
-| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. | `PUT /api/users/{user_id}?is_admin=true`<br>`PUT /api/products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
-| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /api/products`<br>`DELETE /api/products/{product_id}`<br>`PUT /api/stock/{product_id}`<br>`DELETE /api/users/{user_id}` | Call admin endpoints as a regular user (no admin check) |
+| **API1:2023 - Broken Object Level Authorization (BOLA)** | Users can access or modify data objects belonging to other users by manipulating object IDs in the request (path/query). Protected demo entities block destructive changes with HTTP 403, but non-protected objects remain fully exploitable. | `GET /api/users/{user_id}`<br>`PUT /api/users/{user_id}`<br>`GET /api/users/{user_id}/addresses`<br>`POST /api/users/{user_id}/addresses`<br>`GET /api/users/{user_id}/credit-cards`<br>`POST /api/users/{user_id}/credit-cards`<br>`GET /api/users/{user_id}/orders`<br>`POST /api/users/{user_id}/orders` | Manipulate `user_id` in path or use another user's `address_id`/`credit_card_id` in query to access or create resources for other users |
+| **API3:2023 - Broken Object Property Level Authorization (Parameter Pollution / Mass Assignment)** | Users can modify sensitive object properties (e.g., `is_admin`, `internal_status`) by including them as query parameters, even if not intended. Protected fields like username or email on protected users are immutable, but attributes like `is_admin` remain modifiable for demo purposes. | `PUT /api/users/{user_id}?is_admin=true`<br>`PUT /api/products/{product_id}?internal_status=discontinued` | Add privileged or internal fields as query parameters to escalate privileges or change internal state |
+| **API5:2023 - Broken Function Level Authorization (BFLA)** | Regular users can access admin-only functions (e.g., product management, user deletion) due to missing role checks. | `POST /api/products`<br>`DELETE /api/products/{product_id}`<br>`PUT /api/stock/{product_id}`<br>`DELETE /api/users/{user_id}` | Call admin endpoints as a regular user (no admin check; attempts against protected demo entities return 403 but succeed on others) |
 | **API8:2023 - Security Misconfiguration** | Hardcoded secrets, verbose errors, and intentional misconfiguration for demonstration. | `app/security.py`<br>Application config | Hardcoded JWT secret, potential for verbose error output |
-| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /api/products/search?name=<query>` | Pass special characters or payloads in `name` parameter |
+| **Potential for Injection** | Naive input handling in product search could allow for injection if backed by a real DB. | `GET /api/products/search?name=<query>` | Pass special characters or payloads in `name` parameter (see `homepage.spec.ts`) |
 
 ---
 
