@@ -389,6 +389,8 @@ paths:
         - Addresses
       summary: List all addresses for a user
       operationId: listUserAddresses
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -408,8 +410,6 @@ paths:
                   $ref: '#/components/schemas/Address'
         '401':
           description: Unauthorized (Not authenticated)
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User not found
     post: # BOLA Target, data via query parameters
@@ -417,6 +417,8 @@ paths:
         - Addresses
       summary: Create a new address for a user
       operationId: createUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -462,8 +464,6 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User not found
 
@@ -473,6 +473,8 @@ paths:
         - Addresses
       summary: Update an address for a user
       operationId: updateUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -533,6 +535,8 @@ paths:
         - Addresses
       summary: Delete an address for a user
       operationId: deleteUserAddress
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -564,6 +568,8 @@ paths:
         - CreditCards
       summary: List all credit cards for a user
       operationId: listUserCreditCards
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -583,8 +589,6 @@ paths:
                   $ref: '#/components/schemas/CreditCard'
         '401':
           description: Unauthorized
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User not found
     post: # BOLA Target, data via query parameters
@@ -592,6 +596,8 @@ paths:
         - CreditCards
       summary: Create a new credit card for a user
       operationId: createUserCreditCard
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -634,17 +640,48 @@ paths:
           description: Invalid input
         '401':
           description: Unauthorized
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+        '422':
+          description: Validation error
         '404':
           description: User not found
 
   /api/users/{userId}/credit-cards/{cardId}: # BOLA Target
+    get:
+      tags:
+        - CreditCards
+      summary: Get a credit card for a user
+      operationId: getUserCreditCard
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the credit card to retrieve
+      responses:
+        '200':
+          description: Credit card retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditCard'
+        '404':
+          description: User or CreditCard not found
     put: # Data via query parameters
       tags:
         - CreditCards
       summary: Update a credit card for a user
       operationId: updateUserCreditCard
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -702,6 +739,8 @@ paths:
         - CreditCards
       summary: Delete a credit card for a user
       operationId: deleteUserCreditCard
+      security:
+        - bearerAuth: []
       parameters:
         - name: userId
           in: path
@@ -761,8 +800,6 @@ paths:
                         $ref: '#/components/schemas/OrderItem'
         '401':
           description: Unauthorized (Not authenticated)
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User not found
     post: # BOLA Target for userId in path, and for address_id/credit_card_id in query
@@ -820,8 +857,6 @@ paths:
           description: Invalid input (e.g., product not found, insufficient stock, invalid parameters)
         '401':
           description: Unauthorized
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User, Address, or CreditCard not found
 
@@ -864,8 +899,6 @@ paths:
                       $ref: '#/components/schemas/OrderItem'
         '401':
           description: Unauthorized
-        '403':
-          description: "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
         '404':
           description: User or Order not found
 
@@ -935,8 +968,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Token'
-        '400':
-          description: Invalid credentials (username or password)
         '401':
           description: Authentication failed
   /api/users:

@@ -3,7 +3,7 @@
   "info": {
     "title": "Radware Vulnerable E-commerce API",
     "version": "1.1.0",
-    "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities."
+    "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities.\n"
   },
   "tags": [
     {
@@ -37,56 +37,33 @@
   ],
   "paths": {
     "/api/users": {
-      "post": {
+      "get": {
         "tags": [
           "Users"
         ],
-        "summary": "Create a new user",
-        "operationId": "createUser",
-        "parameters": [
+        "summary": "List all users",
+        "description": "Retrieve a list of all users in the system. This endpoint demonstrates a BOLA vulnerability by allowing any authenticated user to list all users.",
+        "security": [
           {
-            "name": "username",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Username for the new user"
-          },
-          {
-            "name": "email",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "email"
-            },
-            "description": "Email for the new user"
-          },
-          {
-            "name": "password",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "password"
-            },
-            "description": "Password for the new user"
+            "bearerAuth": []
           }
         ],
         "responses": {
-          "201": {
-            "description": "User created successfully",
+          "200": {
+            "description": "A list of users",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid input"
+          "401": {
+            "description": "Unauthorized - Bearer token is missing or invalid"
           }
         }
       }
@@ -134,29 +111,29 @@
         "operationId": "updateUserByUserId",
         "parameters": [
           {
-          "name": "userId",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "format": "uuid"
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user to update"
           },
-          "description": "ID of the user to update"
-        },
-        {
-          "name": "username",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "string"
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "New username for the user"
           },
-          "description": "New username for the user"
-        },
-        {
-          "name": "email",
-          "in": "query",
-          "required": false,
-          "schema": {
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
               "type": "string",
               "format": "email"
             },
@@ -172,27 +149,27 @@
             "description": "Set user as admin (vulnerability)"
           }
         ],
-      "responses": {
-        "200": {
-          "description": "User updated successfully",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
               }
             }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Action Forbidden: The user is protected for demo purposes"
+          },
+          "404": {
+            "description": "User not found"
           }
-        },
-        "400": {
-          "description": "Invalid input"
-        },
-        "403": {
-          "description": "Action Forbidden: The user is protected for demo purposes"
-        },
-        "404": {
-          "description": "User not found"
         }
-      }
       },
       "delete": {
         "tags": [
@@ -213,9 +190,15 @@
           }
         ],
         "responses": {
-          "204": {"description": "User deleted successfully"},
-          "403": {"description": "Action Forbidden: The user is protected for demo purposes"},
-          "404": {"description": "User not found"}
+          "204": {
+            "description": "User deleted successfully"
+          },
+          "403": {
+            "description": "Action Forbidden: The user is protected for demo purposes"
+          },
+          "404": {
+            "description": "User not found"
+          }
         }
       }
     },
@@ -583,6 +566,11 @@
         ],
         "summary": "List all addresses for a user",
         "operationId": "listUserAddresses",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -612,9 +600,6 @@
           "401": {
             "description": "Unauthorized (Not authenticated)"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
-          },
           "404": {
             "description": "User not found"
           }
@@ -626,6 +611,11 @@
         ],
         "summary": "Create a new address for a user",
         "operationId": "createUserAddress",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -696,9 +686,6 @@
           "401": {
             "description": "Unauthorized"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
-          },
           "404": {
             "description": "User not found"
           }
@@ -712,6 +699,11 @@
         ],
         "summary": "Update an address for a user",
         "operationId": "updateUserAddress",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -805,6 +797,11 @@
         ],
         "summary": "Delete an address for a user",
         "operationId": "deleteUserAddress",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -850,6 +847,11 @@
         ],
         "summary": "List all credit cards for a user",
         "operationId": "listUserCreditCards",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -879,9 +881,6 @@
           "401": {
             "description": "Unauthorized"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
-          },
           "404": {
             "description": "User not found"
           }
@@ -893,6 +892,11 @@
         ],
         "summary": "Create a new credit card for a user",
         "operationId": "createUserCreditCard",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -957,8 +961,8 @@
           "401": {
             "description": "Unauthorized"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
+          "422": {
+            "description": "Validation error"
           },
           "404": {
             "description": "User not found"
@@ -967,12 +971,61 @@
       }
     },
     "/api/users/{userId}/credit-cards/{cardId}": {
+      "get": {
+        "tags": [
+          "CreditCards"
+        ],
+        "summary": "Get a credit card for a user",
+        "operationId": "getUserCreditCard",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the user"
+          },
+          {
+            "name": "cardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the credit card to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credit card retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditCard"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User or CreditCard not found"
+          }
+        }
+      },
       "put": {
         "tags": [
           "CreditCards"
         ],
         "summary": "Update a credit card for a user",
         "operationId": "updateUserCreditCard",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -1060,6 +1113,11 @@
         ],
         "summary": "Delete a credit card for a user",
         "operationId": "deleteUserCreditCard",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "userId",
@@ -1150,9 +1208,6 @@
           "401": {
             "description": "Unauthorized (Not authenticated)"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
-          },
           "404": {
             "description": "User not found"
           }
@@ -1163,7 +1218,7 @@
           "Orders"
         ],
         "summary": "Create a new order for a user",
-        "description": "Creates an order. Products and quantities are specified as dynamic query parameters: `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc. Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id` in query can also belong to another user.",
+        "description": "Creates an order. Products and quantities are specified as dynamic query parameters: `product_id_1`, `quantity_1`, `product_id_2`, `quantity_2`, etc. Vulnerability: `userId` in path can be for another user. `address_id` and `credit_card_id` in query can also belong to another user.\n",
         "operationId": "createUserOrder",
         "security": [
           {
@@ -1230,9 +1285,6 @@
           "401": {
             "description": "Unauthorized"
           },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
-          },
           "404": {
             "description": "User, Address, or CreditCard not found"
           }
@@ -1297,9 +1349,6 @@
           },
           "401": {
             "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Action Forbidden: Entity protected for demo purposes or insufficient privileges"
           },
           "404": {
             "description": "User or Order not found"
@@ -1403,43 +1452,8 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid credentials (username or password)"
-          },
           "401": {
             "description": "Authentication failed"
-          }
-        }
-      }
-    },
-    "/api/users": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "List all users",
-        "description": "Retrieve a list of all users in the system. This endpoint demonstrates a BOLA vulnerability by allowing any authenticated user to list all users.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A list of users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/User"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Bearer token is missing or invalid"
           }
         }
       }
@@ -1682,7 +1696,7 @@
           },
           "card_last_four": {
             "type": "string",
-            "description": "Last four digits of the card number for display purposes",
+            "description": "Last four digits of the card number for display purposes\"",
             "readOnly": true
           },
           "is_default": {
