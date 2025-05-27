@@ -92,6 +92,41 @@ test.describe('Checkout Process', () => {
     await expect(page.locator('#bola-warning-container')).toBeVisible();
     await expect(page.locator('#theft-preview')).toBeVisible();
   });
+  test('should handle checkout flow with multiple distinct items and quantities', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('cart', '[]'));
+    await page.goto('/');
+    await expect(page.locator('#loading-indicator')).toBeHidden({ timeout: 15000 });
+    const laptop = page.locator('article.product-card', { hasText: 'Laptop Pro 15' });
+    await laptop.locator('button.add-to-cart-btn').click();
+    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible({ timeout: 10000 });
+    const mouse = page.locator('article.product-card', { hasText: 'Wireless Mouse' });
+    await mouse.locator('button.add-to-cart-btn').click();
+    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible();
+    await mouse.locator('button.add-to-cart-btn').click();
+    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible();
+    await page.goto('/checkout');
+    await page.waitForSelector('#address-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
+    await page.waitForSelector('#credit-card-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
+    const rows = page.locator('#cart-summary tbody tr');
+    await expect(rows).toHaveCount(2);
+    const laptopRow = rows.filter({ hasText: 'Laptop Pro 15' });
+    await expect(laptopRow.nth(0).locator('td').nth(2)).toHaveText('1');
+    const mouseRow = rows.filter({ hasText: 'Wireless Mouse' });
+    await expect(mouseRow.nth(0).locator('td').nth(2)).toHaveText('2');
+    await expect(page.locator('#cart-summary tfoot tr td:last-child')).toHaveText('$1550.99');
+    await page.evaluate(() => {
+      const addr = document.querySelector<HTMLSelectElement>('#address-id');
+      if (addr) addr.selectedIndex = 1;
+      const card = document.querySelector<HTMLSelectElement>('#credit-card-id');
+      if (card) card.selectedIndex = 1;
+    });
+    await page.locator('#place-order-btn').click();
+    await expect(page.locator('#global-message-container .global-message')).toContainText(/Order/);
+    await page.waitForURL(/\/orders/, { timeout: 20000 });
+    const orderRow = page.locator('#orders-container table tbody tr').first();
+    await expect(orderRow).toBeVisible({ timeout: 15000 });
+    await expect(orderRow.locator('td').nth(4)).toHaveText('2');
+  });
 
   test('should handle checkout with empty cart', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('cart', '[]'));
