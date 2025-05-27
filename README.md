@@ -5,7 +5,8 @@
 **Purpose:** This project is a deliberately vulnerable API-based e-commerce application built using Python and FastAPI. Its primary goal is to demonstrate common API security vulnerabilities, with a strong focus on Broken Object Level Authorization (BOLA), Broken Function Level Authorization (BFLA), and Mass Assignment/Parameter Pollution. The API is designed to primarily use path and query parameters for interactions, minimizing the use of request bodies for vulnerable endpoints to simulate specific attack vectors.
 
 **Design:**
-*   **Pure API-based:** No frontend is provided; interaction is expected via API clients (e.g., Postman, curl, custom scripts).
+*   **Pure API-focused:** A minimal Flask-based demo UI is included under `frontend/`,
+    but the primary interaction is via API clients (e.g., Postman, curl, custom scripts).
 *   **Framework:** FastAPI (Python) for its modern features, speed, and automatic OpenAPI documentation.
 *   **Database:** A simple in-memory Python dictionary acts as the database to keep the setup lightweight and focus on API logic rather than database intricacies. Data is ephemeral and resets on application restart.
 *   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`).
@@ -149,13 +150,13 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 
 2.  **Run the Docker container:**
     ```sh
-    docker run -d -p 8000:8000 --name radware-vuln-api vulnerable-ecommerce-api
+    docker run -d -p 8000:80 --name radware-vuln-api vulnerable-ecommerce-api
     ```
     The API will be accessible at `http://localhost:8000`.
 
     Set `UVICORN_WORKERS` to control the number of worker processes:
     ```sh
-    docker run -d -p 8000:8000 -e UVICORN_WORKERS=4 \
+    docker run -d -p 8000:80 -e UVICORN_WORKERS=4 \
       --name radware-vuln-api vulnerable-ecommerce-api
     ```
 
@@ -185,6 +186,7 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ```
     The `--reload` flag enables auto-reloading on code changes, useful for development.
+    To run both the API and the demo UI together, use the provided `run_dev.sh` script instead.
 
 ### Accessing the API
 
