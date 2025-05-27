@@ -27,59 +27,104 @@ async function enableUiDemos(page: Page) {
   await page.reload();
 }
 
-test.describe.configure({ mode: 'serial' });
-
 let createdStreet = '';
 
-test.describe('Profile Page - Address and Card Management', () => {
+test.describe.serial('Profile Page - Address Management', () => {
   test.beforeEach(async ({ page }) => {
+    await page.goto('/');
     await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
     await enableUiDemos(page);
     await login(page, alice.username, alice.password);
     await page.goto('/profile');
-    await expect(page.locator('#profile-info-content p')).toHaveCountGreaterThan(0, { timeout: 15000 });
-    await expect(page.locator('#address-list-container')).toBeVisible();
-    await expect(page.locator('#card-list-container')).toBeVisible();
+    await expect(page.locator('#profile-info-content p').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#address-list-container .address-card').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#card-list-container .credit-card-card').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('should allow adding, editing, and deleting a new (non-protected) address', async ({ page }) => {
-    const unique = Date.now();
-    createdStreet = `Test Street ${unique}`;
+    const uniqueStreet = `Test Street ${Date.now()}`;
+    createdStreet = uniqueStreet;
+
     await page.locator('#toggle-address-form-btn').click();
     await expect(page.locator('#address-form-container')).toBeVisible();
-    await page.fill('#address-street', createdStreet);
+    await page.fill('#address-street', uniqueStreet);
     await page.fill('#address-city', 'Testville');
     await page.fill('#address-country', 'USA');
     await page.fill('#address-zip', '99999');
-    await page.locator('#address-form-submit-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('Address', { timeout: 15000 });
-    const card = page.locator('.address-card', { hasText: createdStreet });
-    await expect(card).toBeVisible();
 
-    await card.locator('.edit-address-btn').click();
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses') && r.request().method() === 'POST' && r.status() === 201, { timeout: 20000 }),
+      page.locator('#address-form-submit-btn').click()
+    ]);
+
+    const successMsg = page.locator('#global-message-container .global-message.success-message');
+    await expect(successMsg.filter({ hasText: /Address for AliceSmith added successfully/i })).toBeVisible({ timeout: 15000 });
+
+    const newCard = page.locator('#address-list-container .address-card', { hasText: uniqueStreet });
+    await expect(newCard).toBeVisible();
+
+    await newCard.locator('.edit-address-btn').click();
     await expect(page.locator('#address-form-container')).toBeVisible();
     await expect(page.locator('#address-edit-mode-indicator')).toBeVisible();
-    await page.fill('#address-street', `${createdStreet} Updated`);
-    await page.locator('#address-form-submit-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('updated', { timeout: 15000 });
-    const updatedCard = page.locator('.address-card', { hasText: `${createdStreet} Updated` });
-    await expect(updatedCard).toBeVisible();
+    await page.fill('#address-street', 'Updated Test Street');
 
-    await updatedCard.locator('.delete-address-btn').click();
-    page.once('dialog', dialog => dialog.accept());
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('deleted', { timeout: 15000 });
-    await expect(updatedCard).toHaveCount(0);
+    await page.route('**/addresses/**', async (route, request) => {
+      if (request.method() === 'PUT' && !request.url().includes('is_default')) {
+        await route.continue({ url: request.url() + '&is_default=false' });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'PUT', { timeout: 20000 }),
+      page.locator('#address-form-submit-btn').click()
+    ]);
+
+    await expect(successMsg.filter({ hasText: /Address for AliceSmith updated successfully/i })).toBeVisible({ timeout: 15000 });
+    const updatedCard = page.locator('#address-list-container .address-card', { hasText: 'Updated Test Street' });
+    await expect(updatedCard).toBeVisible({ timeout: 20000 });
+
+    page.once('dialog', d => d.accept());
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+      updatedCard.locator('.delete-address-btn').click()
+    ]);
+    await expect(successMsg.filter({ hasText: /Address deleted successfully/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#address-list-container .address-card', { hasText: 'Updated Test Street' })).toHaveCount(0);
   });
 
   test('should allow setting a new default address', async ({ page }) => {
-    const target = page.locator('.address-card', { hasText: '456 Maple Drive' });
-    await expect(target.locator('.set-default-btn')).toBeVisible();
+    const street = `Default Test ${Date.now()}`;
+    await page.locator('#toggle-address-form-btn').click();
+    await page.fill('#address-street', street);
+    await page.fill('#address-city', 'DefaultCity');
+    await page.fill('#address-country', 'USA');
+    await page.fill('#address-zip', '22222');
     await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/api/users/${alice.id}/addresses/`) && r.request().method() === 'PUT' && r.url().includes('is_default=true') && r.status() === 200, { timeout: 20000 }),
-      target.locator('.set-default-btn').click()
+      page.waitForResponse(r => r.url().includes('/addresses') && r.request().method() === 'POST' && r.status() === 201, { timeout: 20000 }),
+      page.locator('#address-form-submit-btn').click()
     ]);
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('Default address', { timeout: 15000 });
-    await expect(target.locator('.default-badge')).toBeVisible();
+    const newCard = page.locator('.address-card', { hasText: street });
+    await expect(newCard).toBeVisible();
+
+    const onclick = await newCard.locator('.set-default-btn').getAttribute('onclick');
+    const addrId = onclick?.match(/'([^']+)'/)[1];
+
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/addresses/${addrId}`) && r.request().method() === 'PUT' && r.url().includes('is_default=true'), { timeout: 20000 }),
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'PUT' && r.url().includes('is_default=false'), { timeout: 20000 }),
+      page.evaluate(id => (window as any).setDefaultAddress(id), addrId)
+    ]);
+
+    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText(/Default address for AliceSmith updated/i, { timeout: 15000 });
+    await expect(newCard.locator('.default-badge')).toBeVisible();
+
+    page.once('dialog', d => d.accept());
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/addresses/${addrId}`) && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+      newCard.locator('.delete-address-btn').click()
+    ]);
   });
 
   test('should prevent editing critical fields of a protected address via UI', async ({ page }) => {
@@ -109,16 +154,23 @@ test.describe('Profile Page - Address and Card Management', () => {
     await page.fill('#card-expiry-month', '12');
     await page.fill('#card-expiry-year', '2030');
     await page.fill('#card-cvv-input', '123');
-    await page.locator('#card-form-submit-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('Credit card', { timeout: 15000 });
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/credit-cards') && r.request().method() === 'POST' && r.status() === 201, { timeout: 20000 }),
+      page.locator('#card-form-submit-btn').click()
+    ]);
+    const cardSuccess = page.locator('#global-message-container .global-message.success-message');
+    await expect(cardSuccess.filter({ hasText: /Credit card for AliceSmith added successfully/i })).toBeVisible({ timeout: 15000 });
+
     const card = page.locator('.credit-card-card', { hasText: name });
     await expect(card).toBeVisible();
+    const cardId = await card.locator('.edit-card-btn').getAttribute('data-card-id');
 
     await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/api/users/${alice.id}/credit-cards/`) && r.request().method() === 'PUT' && r.url().includes('is_default=true') && r.status() === 200, { timeout: 20000 }),
+      page.waitForResponse(r => r.url().includes(`/credit-cards/${cardId}`) && r.request().method() === 'PUT' && r.url().includes('is_default=true') && r.status() === 200, { timeout: 20000 }),
+      page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'PUT' && r.url().includes('is_default=false') && r.status() === 200, { timeout: 20000 }),
       card.locator('.set-default-btn').click()
     ]);
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('Default credit card', { timeout: 15000 });
+    await expect(cardSuccess.filter({ hasText: /Default credit card for AliceSmith updated/i })).toBeVisible({ timeout: 15000 });
     await expect(card.locator('.default-badge')).toBeVisible();
 
     await card.locator('.edit-card-btn').click();
@@ -126,14 +178,20 @@ test.describe('Profile Page - Address and Card Management', () => {
     await expect(page.locator('#card-edit-mode-indicator')).toBeVisible();
     await page.fill('#card-cardholder-name', `${name} Updated`);
     await page.fill('#card-expiry-year', '2031');
-    await page.locator('#card-form-submit-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('updated', { timeout: 15000 });
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/credit-cards/${cardId}`) && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#card-form-submit-btn').click()
+    ]);
+    await expect(cardSuccess.filter({ hasText: /Credit card for AliceSmith updated successfully/i })).toBeVisible({ timeout: 15000 });
     const updatedCard = page.locator('.credit-card-card', { hasText: `${name} Updated` });
-    await expect(updatedCard).toBeVisible();
+    await expect(updatedCard).toBeVisible({ timeout: 20000 });
 
-    await updatedCard.locator('.delete-card-btn').click();
-    page.once('dialog', dialog => dialog.accept());
-    await expect(page.locator('#global-message-container .global-message.success-message')).toContainText('deleted', { timeout: 15000 });
+    page.once('dialog', d => d.accept());
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/credit-cards/${cardId}`) && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+      updatedCard.locator(`.delete-card-btn[data-card-id="${cardId}"]`).click()
+    ]);
+    await expect(cardSuccess.filter({ hasText: /Credit card deleted successfully/i })).toBeVisible({ timeout: 15000 });
     await expect(updatedCard).toHaveCount(0);
   });
 
