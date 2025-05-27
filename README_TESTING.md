@@ -36,6 +36,26 @@ tests/
 └── test_vulnerabilities.py # Demonstrates vulnerabilities and expected 403s
 ```
 
+```
+frontend/e2e-tests/
+├── admin-ui.spec.ts
+├── auth.spec.ts
+├── cart.spec.ts
+├── checkout-bola.spec.ts
+├── checkout.spec.ts
+├── global-ui.spec.ts
+├── homepage.spec.ts
+├── orders-ui.spec.ts
+├── product-detail.spec.ts
+├── profile-address-management.spec.ts
+├── profile-bola.spec.ts
+└── vulnerabilities.spec.ts
+```
+
+Notable specs:
+- **profile-address-management.spec.ts** – Focuses on the logged‑in user's profile management (addresses and credit cards). It verifies CRUD operations and asserts that attempts to change protected defaults or critical fields correctly return 403 with UI warnings.
+- **profile-bola.spec.ts** – Exercises BOLA scenarios by manipulating victim profiles and credit cards from another user's account. It covers both protected and non‑protected victims, confirming 403 responses and warning banners for protected data.
+
 Key components:
 - **conftest.py** – defines the `TestClient` fixture and common helpers.
 - **test_functional.py** – verifies core API logic and asserts `HTTP 403` when destructive actions target protected entities.
@@ -103,7 +123,7 @@ This script:
 
 ## 4. Frontend End‑to‑End Tests
 
-Frontend E2E tests reside in `frontend/e2e-tests/` and use **Playwright**.  Each test run starts both the backend and frontend servers, executes the Playwright suite, then stops the servers.  The recommended sequence (also shown in `AGENTS.md` §3.2) is:
+Frontend E2E tests reside in `frontend/e2e-tests/` and use **Playwright**.  Each test run starts both the backend and frontend servers, executes the Playwright suite, then stops the servers.  Recent updates added `profile-bola.spec.ts` and removed the obsolete `vulnerability-demos.spec.ts`. The recommended sequence (also shown in `AGENTS.md` §3.2) is:
 
 ```sh
 echo "Starting backend API..."
@@ -111,7 +131,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/log_c
 echo "Starting frontend server..."
 python frontend/main.py > /tmp/frontend_flask.log 2>&1 & FRONTEND_PID=$!
 sleep 10  # wait for health
-npx playwright test frontend/e2e-tests/
+npx playwright test frontend/e2e-tests/profile-bola.spec.ts
 kill $APP_PID
 kill $FRONTEND_PID
 ```
