@@ -41,25 +41,24 @@ You are an AI programming assistant operating in a containerized Codex WebUI env
 **3.2. Frontend E2E Testing (Playwright):**
     **IMPORTANT:** For any task requiring Playwright tests, you must ensure the backend and frontend servers are running *within the current task's container environment*.
     *   **Sequence for Playwright Tasks:**
-        1.  `echo "Starting backend API..."`
-        2.  `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/log_conf.json > /tmp/backend_uvicorn.log 2>&1 & APP_PID=$!`
-        3.  `echo "Backend PID: $APP_PID"`
-        4.  `echo "Starting frontend server..."`
-        5.  `python frontend/main.py > /tmp/frontend_flask.log 2>&1 & FRONTEND_PID=$!`
-        6.  `echo "Frontend PID: $FRONTEND_PID"`
-        7.  `echo "Waiting for servers to initialize (approx. 8-10 seconds)..."`
-        8.  `sleep 10` (Adjust as needed; a more robust check would be ideal if possible, e.g., curl to health endpoints).
-        9.  `echo "Running Playwright tests..."`
-        10. `npx playwright test frontend/e2e-tests/<specific_spec_file.spec.ts_or_leave_blank_for_all>`
+        1.  `echo "Ensuring ports are free..."`
+        2.  `lsof -ti:8000 | xargs -r kill -9 2>/dev/null`
+        3.  `lsof -ti:5001 | xargs -r kill -9 2>/dev/null`
+        4.  `echo "Starting backend API..."`
+        5.  `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/log_conf.json > /tmp/backend_uvicorn.log 2>&1 & APP_PID=$!`
+        6.  `for i in {1..15}; do curl -s http://localhost:8000/docs >/dev/null && break; sleep 2; done`
+        7.  `echo "Starting frontend server..."`
+        8.  `python frontend/main.py > /tmp/frontend_flask.log 2>&1 & FRONTEND_PID=$!`
+        9.  `for i in {1..15}; do curl -s http://localhost:5001 >/dev/null && break; sleep 2; done`
+        10. `echo "Running Playwright tests..."`
+        11. `npx playwright test frontend/e2e-tests/<specific_spec_file.spec.ts_or_leave_blank_for_all>`
             *   (e.g., `npx playwright test frontend/e2e-tests/auth.spec.ts`)
-        11. `echo "Playwright tests finished. Killing servers..."`
-        12. `if [ ! -z "$APP_PID" ]; then kill $APP_PID || echo 'Backend already stopped or failed to start'; fi`
-        13. `if [ ! -z "$FRONTEND_PID" ]; then kill $FRONTEND_PID || echo 'Frontend already stopped or failed to start'; fi`
-        14. `wait $APP_PID $FRONTEND_PID 2>/dev/null`
-        15. `echo "Servers shut down."`
-        16. If tests failed, `echo "Dumping backend log:" && cat /tmp/backend_uvicorn.log`
-        17. If tests failed, `echo "Dumping frontend log:" && cat /tmp/frontend_flask.log`
-
+        12. `TEST_EXIT=$?`
+        13. `echo "Playwright tests finished. Killing servers..."`
+        14. `kill $APP_PID $FRONTEND_PID || true`
+        15. `wait $APP_PID $FRONTEND_PID 2>/dev/null`
+        16. `echo "Servers shut down."`
+        17. `if [ $TEST_EXIT -ne 0 ]; then echo "Dumping backend log:" && cat /tmp/backend_uvicorn.log; echo "Dumping frontend log:" && cat /tmp/frontend_flask.log; fi`
     *   **Command to Run All E2E Tests:** (Follow the sequence above, using `npx playwright test frontend/e2e-tests/` at step 10).
     *   **Command for Specific E2E File:** (Follow sequence, using `npx playwright test frontend/e2e-tests/your_file.spec.ts` at step 10).
 
