@@ -95,7 +95,7 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('#address-list-container .address-card', { hasText: 'Updated Test Street' })).toHaveCount(0);
   });
 
-  test('should show warning when trying to set a new default address due to protected existing default', async ({ page }) => {
+  test('should allow setting a new default address even when existing default is protected', async ({ page }) => {
     const street = `Default Test ${Date.now()}`;
     await page.locator('#toggle-address-form-btn').click();
     await page.fill('#address-street', street);
@@ -114,18 +114,18 @@ test.describe.serial('Profile Page - Address Management', () => {
 
     await Promise.all([
       page.waitForResponse(r =>
-        r.url().includes(`/api/users/${alice.id}/addresses/`) &&
+        r.url().includes(`/api/users/${alice.id}/addresses/${addrId}`) &&
         r.request().method() === 'PUT' &&
-        r.status() === 403 &&
-        r.url().includes('is_default=false'), { timeout: 20000 }),
+        r.status() === 200 &&
+        r.url().includes('is_default=true'), { timeout: 20000 }),
       page.evaluate(id => (window as any).setDefaultAddress(id), addrId)
     ]);
 
-    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: 'Action Blocked: Address ID' });
-    await expect(warning).toBeVisible({ timeout: 15000 });
+    const success = page.locator('#global-message-container .global-message.success-message').filter({ hasText: 'Default address for AliceSmith updated' });
+    await expect(success).toBeVisible({ timeout: 15000 });
 
-    await expect(newCard.locator('.default-badge')).toHaveCount(0);
-    await expect(page.locator('.address-card', { hasText: '123 Oak Street' }).locator('.default-badge')).toBeVisible();
+    await expect(newCard.locator('.default-badge')).toBeVisible();
+    await expect(page.locator('.address-card', { hasText: '123 Oak Street' }).locator('.default-badge')).toHaveCount(0);
 
     page.once('dialog', d => d.accept());
     await Promise.all([
@@ -134,28 +134,44 @@ test.describe.serial('Profile Page - Address Management', () => {
     ]);
   });
 
-  test('should prevent editing critical fields of a protected address via UI', async ({ page }) => {
+  test('should allow editing a protected address via UI', async ({ page }) => {
     const protectedCard = page.locator('.address-card', { hasText: '123 Oak Street' });
     await protectedCard.locator('.edit-address-btn').click();
     await expect(page.locator('#address-form-container')).toBeVisible();
     await expect(page.locator('#address-protected-note')).toBeVisible();
-    await expect(page.locator('#address-street')).toBeDisabled();
-    await page.locator('#address-form-cancel-btn').click();
+    await expect(page.locator('#address-street')).toBeEnabled();
+    const updatedStreet = `123 Oak Street Updated ${Date.now()}`;
+    await page.fill('#address-street', updatedStreet);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#address-form-submit-btn').click()
+    ]);
+    const successMsg = page.locator('#global-message-container .global-message.success-message');
+    await expect(successMsg.filter({ hasText: /Address for AliceSmith updated/i })).toBeVisible({ timeout: 15000 });
+
+    // revert changes for subsequent tests
+    const editedCard = page.locator('.address-card', { hasText: updatedStreet });
+    await editedCard.locator('.edit-address-btn').click();
+    await page.fill('#address-street', '123 Oak Street');
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#address-form-submit-btn').click()
+    ]);
   });
 
-  test('should prevent deleting a protected address via UI', async ({ page }) => {
+  test('should allow deleting a protected address when another address exists', async ({ page }) => {
     const protectedCard = page.locator('.address-card', { hasText: '123 Oak Street' });
     page.once('dialog', dialog => dialog.accept());
     await Promise.all([
-      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 403, { timeout: 20000 }),
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
       protectedCard.locator('.delete-address-btn').click()
     ]);
-    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: 'protected' }).first();
-    await expect(warning).toBeVisible({ timeout: 15000 });
-    await expect(protectedCard).toBeVisible();
+    const success = page.locator('#global-message-container .global-message.success-message').filter({ hasText: 'Address deleted successfully' });
+    await expect(success).toBeVisible({ timeout: 15000 });
+    await expect(protectedCard).toHaveCount(0);
   });
 
-  test('should allow adding a new credit card but show warning when attempting to set it as default', async ({ page }) => {
+  test('should allow adding a new credit card and set it as default even when existing default is protected', async ({ page }) => {
     const unique = Date.now();
     const name = `Test Card ${unique}`;
     await page.locator('#toggle-card-form-btn').click();
@@ -178,18 +194,18 @@ test.describe.serial('Profile Page - Address Management', () => {
 
     await Promise.all([
       page.waitForResponse(r =>
-        r.url().includes(`/api/users/${alice.id}/credit-cards/`) &&
+        r.url().includes(`/api/users/${alice.id}/credit-cards/${cardId}`) &&
         r.request().method() === 'PUT' &&
-        r.status() === 403 &&
-        r.url().includes('is_default=false'), { timeout: 20000 }),
+        r.status() === 200 &&
+        r.url().includes('is_default=true'), { timeout: 20000 }),
       card.locator('.set-default-btn').click()
     ]);
 
-    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: 'Action Blocked: Credit Card ID' });
-    await expect(warning).toBeVisible({ timeout: 15000 });
+    const success = page.locator('#global-message-container .global-message.success-message').filter({ hasText: 'Default credit card for AliceSmith updated' });
+    await expect(success).toBeVisible({ timeout: 15000 });
 
-    await expect(card.locator('.default-badge')).toHaveCount(0);
-    await expect(page.locator('.credit-card-card', { hasText: 'Alice Smith' }).locator('.default-badge')).toBeVisible();
+    await expect(card.locator('.default-badge')).toBeVisible();
+    await expect(page.locator('.credit-card-card', { hasText: 'Alice Smith' }).locator('.default-badge')).toHaveCount(0);
 
     page.once('dialog', d => d.accept());
     await Promise.all([
@@ -198,12 +214,32 @@ test.describe.serial('Profile Page - Address Management', () => {
     ]);
   });
 
-  test('should prevent editing/deleting a protected credit card and show warning', async ({ page }) => {
+  test('should allow editing but still prevent deleting a protected credit card', async ({ page }) => {
     const protectedCard = page.locator('.credit-card-card', { hasText: 'Alice Smith' });
     await protectedCard.locator('.edit-card-btn').click();
     await expect(page.locator('#card-protected-note')).toBeVisible();
-    await expect(page.locator('#card-cardholder-name')).toBeDisabled();
-    await page.locator('#card-form-cancel-btn').click();
+    await expect(page.locator('#card-cardholder-name')).toBeEnabled();
+    await expect(page.locator('#card-expiry-month')).toBeEnabled();
+    await expect(page.locator('#card-expiry-year')).toBeEnabled();
+
+    const updatedName = `Alice Updated ${Date.now()}`;
+    await page.fill('#card-cardholder-name', updatedName);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#card-form-submit-btn').click()
+    ]);
+    const successMsg = page.locator('#global-message-container .global-message.success-message');
+    await expect(successMsg.filter({ hasText: /Credit card for AliceSmith updated/i })).toBeVisible({ timeout: 15000 });
+
+    // revert name for later tests
+    const editedCard = page.locator('.credit-card-card', { hasText: updatedName });
+    await editedCard.locator('.edit-card-btn').click();
+    await page.fill('#card-cardholder-name', 'Alice Smith');
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#card-form-submit-btn').click()
+    ]);
+
     page.once('dialog', dialog => dialog.accept());
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'DELETE' && r.status() === 403, { timeout: 20000 }),
@@ -214,18 +250,26 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(protectedCard).toBeVisible();
   });
 
-  test('should block editing own protected email', async ({ page }) => {
+  test('should allow editing own protected email', async ({ page }) => {
     const oldEmail = await page.locator('#current-email-display').textContent();
     const newEmail = `alice${Date.now()}@example.com`;
     await page.locator('#toggle-edit-email-form-btn').click();
     await page.fill('#new-email-input', newEmail);
     await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/api/users/${alice.id}`) && r.request().method() === 'PUT' && r.status() === 403, { timeout: 20000 }),
+      page.waitForResponse(r => r.url().includes(`/api/users/${alice.id}`) && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
       page.locator('#edit-email-form button[type="submit"]').click()
     ]);
-    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: "Action Blocked: User 'AliceSmith'" });
-    await expect(warning).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('#current-email-display')).toHaveText(oldEmail || '', { timeout: 5000 });
+    const success = page.locator('#global-message-container .global-message.success-message').filter({ hasText: 'updated successfully' });
+    await expect(success).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#current-email-display')).toHaveText(newEmail, { timeout: 5000 });
+
+    // revert back
+    await page.locator('#toggle-edit-email-form-btn').click();
+    await page.fill('#new-email-input', oldEmail || '');
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/api/users/${alice.id}`) && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
+      page.locator('#edit-email-form button[type="submit"]').click()
+    ]);
   });
 
   test('should block editing own protected username via BOLA demo form', async ({ page }) => {
