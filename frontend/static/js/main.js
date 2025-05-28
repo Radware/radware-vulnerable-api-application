@@ -1,5 +1,6 @@
 // Constants and global variables
-const API_BASE_URL = 'http://localhost:8000'; // Correct API base URL
+// Derive the API base URL from the current page so requests work on any host
+const API_BASE_URL = window.location.origin;
 let authToken = localStorage.getItem('token');
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
