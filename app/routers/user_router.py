@@ -359,6 +359,11 @@ async def add_credit_card_to_user(
         is_default=is_default,
     )
 
+    if is_default:
+        for card_item in db.db["credit_cards"]:
+            if card_item.user_id == user_id:
+                card_item.is_default = False
+
     card_number_hash = hash_credit_card_data(card_data.card_number)
     cvv_hash = hash_credit_card_data(card_data.cvv) if card_data.cvv else None
     card_last_four = card_data.card_number[-4:]
@@ -480,31 +485,7 @@ async def update_user_credit_card(
         else:
             pass
 
-    if (
-        update_data_dict.get("is_default") is True
-        and owner_user
-        and owner_user.is_protected
-    ):
-        other_default_card = next(
-            (
-                cc
-                for cc in db.db["credit_cards"]
-                if cc.user_id == user_id
-                and cc.is_default
-                and cc.card_id != card_id
-                and cc.is_protected
-            ),
-            None,
-        )
-        if other_default_card:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Cannot set a new default credit card for protected user '{owner_user.username}' "
-                    f"because their current default card (ID: {str(other_default_card.card_id)[:8]}...) is itself protected "
-                    "and cannot be automatically un-defaulted."
-                ),
-            )
+    # If is_default is True, simply make this card default and unset others.
 
     for key, value in update_data_dict.items():
         setattr(credit_card_to_update, key, value)
@@ -512,10 +493,7 @@ async def update_user_credit_card(
     if update_data_dict.get("is_default") is True:
         for card_item in db.db["credit_cards"]:
             if card_item.user_id == user_id and card_item.card_id != card_id:
-                if card_item.is_default and not (
-                    hasattr(card_item, "is_protected") and card_item.is_protected
-                ):
-                    card_item.is_default = False
+                card_item.is_default = False
 
     credit_card_to_update.updated_at = datetime.now(timezone.utc)
     print(
