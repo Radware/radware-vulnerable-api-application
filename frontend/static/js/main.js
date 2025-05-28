@@ -14,6 +14,7 @@ if (
 }
 console.log(`[main.js] API_BASE_URL set to: ${API_BASE_URL}`); // For debugging
 let authToken = localStorage.getItem('token');
+let isHandlingSessionExpiration = false; // Prevent multiple simultaneous logout triggers
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
@@ -72,8 +73,14 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
     const fullUrl = `${API_BASE_URL}${endpoint}`;
     try {
         const response = await fetch(fullUrl, config);
-        
+
         if (!response.ok) {
+            if (response.status === 401 && requiresAuth && !isHandlingSessionExpiration) {
+                console.warn(`API Call to ${method} ${fullUrl} resulted in 401. Session expired or invalid.`);
+                handleSessionExpired();
+                throw new Error('SESSION_EXPIRED');
+            }
+
             const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status} ${response.statusText} for ${method} ${fullUrl}` }));
             console.error('API Call Error Response:', errorData);
             const msg = errorData.detail || `HTTP error! status: ${response.status} for ${method} ${fullUrl}`;
@@ -82,10 +89,13 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
             }
             throw new Error(msg);
         }
-        
+
         return response.status === 204 ? null : response.json();
     } catch (error) {
         console.error(`API Call Exception at ${method} ${fullUrl}:`, error);
+        if (error.message !== 'SESSION_EXPIRED') {
+            // Optionally display global message but avoid noise for handled expirations
+        }
         throw error;
     }
 }
@@ -197,6 +207,37 @@ function updateNavbar() {
     }
 }
 
+function handleSessionExpired() {
+    if (isHandlingSessionExpiration) {
+        console.log("Session expiration handling already in progress.");
+        return;
+    }
+    isHandlingSessionExpiration = true;
+
+    console.log("Session expired. Logging out user.");
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    authToken = null;
+    currentUser = null;
+    cart = [];
+    saveCart();
+
+    updateNavbar();
+
+    displayGlobalMessage('Your session has expired or is invalid. Please log in again.', 'warning', 7000);
+
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/login' && currentPath !== '/register') {
+        setTimeout(() => {
+            window.location.href = '/login';
+            isHandlingSessionExpiration = false;
+        }, 2000);
+    } else {
+        isHandlingSessionExpiration = false;
+    }
+}
+
 function handleLogout(e) {
     e.preventDefault();
     localStorage.removeItem('token');
@@ -205,6 +246,7 @@ function handleLogout(e) {
     currentUser = null;
     cart = []; // Clear cart on logout
     saveCart();
+    isHandlingSessionExpiration = false;
     updateNavbar();
     window.location.href = '/login';
 }
