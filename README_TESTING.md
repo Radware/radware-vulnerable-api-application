@@ -24,6 +24,8 @@ Backend tests run entirely in-memory using FastAPI's `TestClient` fixture define
 
 Protected entities ensure core demo data stays intact. Tests should expect certain actions against these records to be rejected while still allowing non‑destructive exploits (like viewing them through BOLA).
 
+For protected users, addresses and credit cards can usually be modified or deleted. Tests must only expect a **403** when an operation tries to remove the user's last address or card, or when changing the default away from an item that was originally marked `is_protected: true`. Deleting a default item automatically makes another record the new default.
+
 ## 2. Test Suite Structure
 
 The test suite is organized as follows:
