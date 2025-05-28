@@ -396,24 +396,37 @@ function updateUIVulnerabilityFeaturesDisplay() {
 
     // --- Checkout Page (`checkout.html`) ---
     if (document.getElementById('checkout-container')) {
-        const bolaDemoSectionOnCheckout = document.getElementById('bola-demo-section'); 
-        if (bolaDemoSectionOnCheckout) bolaDemoSectionOnCheckout.style.display = displayStyleForBlock;
+        // Get references to all relevant elements
+        const bolaDemoSection = document.getElementById('bola-demo-section');
+        const normalCheckoutFields = document.getElementById('normal-checkout-fields');
+        const placeOrderBtn = document.getElementById('place-order-btn');
 
         const bolaCheckbox = document.getElementById('order-for-other-user');
         const bolaCheckboxLabelContainer = bolaCheckbox?.closest('.form-group');
         const bolaFields = document.getElementById('bola-demo-fields');
         const bolaWarningContainer = document.getElementById('bola-warning-container');
 
-        if (bolaCheckboxLabelContainer) {
-             bolaCheckboxLabelContainer.style.display = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none';
-        }
-        if (!uiVulnerabilityFeaturesEnabled) {
-            if (bolaCheckbox) bolaCheckbox.checked = false; 
-            if (bolaFields) bolaFields.style.display = 'none'; 
-            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none'; 
+        // Standard fields and place order button should always be visible by default
+        if (normalCheckoutFields) normalCheckoutFields.style.display = 'block';
+        if (placeOrderBtn) placeOrderBtn.style.display = 'inline-block';
+
+        if (uiVulnerabilityFeaturesEnabled) {
+            // Show the main BOLA demo section
+            if (bolaDemoSection) bolaDemoSection.style.display = 'block';
+
+            // Show the "Enable BOLA Exploit Mode" checkbox
+            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.style.display = 'flex';
+
+            // Visibility of BOLA input fields and warning depends on the checkbox state
+            if (bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
+            if (bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
         } else {
-             if(bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
-             if(bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
+            // Demos are OFF: Hide all BOLA-specific UI elements
+            if (bolaDemoSection) bolaDemoSection.style.display = 'none';
+            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.style.display = 'none';
+            if (bolaCheckbox) bolaCheckbox.checked = false;
+            if (bolaFields) bolaFields.style.display = 'none';
+            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none';
         }
     }
 
