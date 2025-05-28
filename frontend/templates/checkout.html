@@ -64,47 +64,44 @@
         </div>
     </div>
     
-    <div id="bola-demo-section" class="vulnerability-demo-section card-style">
-        <h2>
-            <svg class="vulnerability-icon" viewBox="0 0 24 24" width="24" height="24" fill="var(--danger-color)">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
-            </svg>
-            BOLA Vulnerability Demo: Order with Another User's Payment
-        </h2>
-        
-        <div id="bola-warning-container" class="vulnerability-warning" style="display: none;">
-            <!-- JS will populate this if BOLA checkbox is checked -->
-        </div>
-        
-        <form id="checkout-form">
-            <div id="normal-checkout-fields" class="profile-section card-style" style="margin-top: 1.5rem;">
-                <h3>Your Shipping & Payment Details</h3>
-                <div class="form-group">
-                    <label for="address-id">Select Shipping Address:</label>
-                    <select id="address-id" name="address-id" class="form-control" data-testid="shipping-address-select">
-                        <option value="">Loading addresses...</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="credit-card-id">Select Payment Method:</label>
-                    <select id="credit-card-id" name="credit-card-id" class="form-control" data-testid="payment-method-select">
-                        <option value="">Loading payment methods...</option>
-                    </select>
-                </div>
+    <!-- Form now wraps both normal and BOLA fields -->
+    <form id="checkout-form">
+        <div id="normal-checkout-fields" class="profile-section card-style" style="margin-top: 1.5rem;">
+            <h3>Your Shipping & Payment Details</h3>
+            <div class="form-group">
+                <label for="address-id">Select Shipping Address:</label>
+                <select id="address-id" name="address-id" class="form-control" data-testid="shipping-address-select">
+                    <option value="">Loading addresses...</option>
+                </select>
             </div>
-            
+            <div class="form-group">
+                <label for="credit-card-id">Select Payment Method:</label>
+                <select id="credit-card-id" name="credit-card-id" class="form-control" data-testid="payment-method-select">
+                    <option value="">Loading payment methods...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- BOLA Demo Section - only contains BOLA specific UI -->
+        <div id="bola-demo-section" class="vulnerability-demo-section card-style" style="margin-top: 1.5rem; display: none;">
+            <h2>
+                <svg class="vulnerability-icon" viewBox="0 0 24 24" width="24" height="24" fill="var(--danger-color)">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                </svg>
+                BOLA Vulnerability Demo: Order with Another User's Payment
+            </h2>
+            <div id="bola-warning-container" class="vulnerability-warning" style="display: none;">
+                <!-- JS will populate this if BOLA checkbox is checked -->
+            </div>
             <div id="bola-demo-form" class="vulnerability-exploit-section" style="margin-top: 1.5rem;">
                 <h3><span class="exploit-indicator">BOLA</span> Exploit Configuration</h3>
                 <p class="vulnerability-info">Use these fields to attempt to use another user's details. If "Target User ID" is blank, the order is for you. If "Target Address ID" is blank, your selected address above (or your default) will be used for shipping. <strong>To exploit payment BOLA, you MUST provide a "Target Credit Card ID".</strong></p>
-                
                 <div class="form-group">
                     <label class="vulnerability-input-label">
                         <input type="checkbox" id="order-for-other-user" name="order-for-other-user" data-testid="bola-checkbox">
                         <span class="checkbox-text">Enable BOLA Exploit Mode</span>
                     </label>
                 </div>
-                
                 <div id="bola-demo-fields" style="display: none;">
                     <div class="attack-steps">
                         <div class="attack-step">
@@ -124,7 +121,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="attack-step">
                             <span class="step-number">2</span>
                             <div class="step-content">
@@ -140,9 +136,7 @@
                                     <h5>Available Victim Addresses:</h5>
                                     <div id="address-list" class="demo-result-list"></div>
                                 </div>
-
                                 <hr style="margin: 1rem 0;">
-
                                 <div class="form-group">
                                      <label for="target-credit-card-id">Target Credit Card ID (Required for BOLA payment exploit):</label>
                                     <div class="card-search-container">
@@ -156,7 +150,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="attack-step">
                             <span class="step-number">3</span>
                             <div class="step-content">
@@ -168,13 +161,15 @@
                                 </div>
                             </div>
                         </div>
-                    </div> 
-                </div> 
-            </div> 
-        </form>
-        <div style="text-align:right; margin-top: 24px;">
-            <button type="submit" form="checkout-form" id="place-order-btn" class="btn btn-primary btn-lg">Place Order</button>
-        </div>
+                    </div>
+                </div>
+            </div> <!-- End of bola-demo-form -->
+        </div> <!-- End of bola-demo-section -->
+    </form> <!-- End of checkout-form -->
+
+    <!-- Place Order Button - Associated with the form via its 'form' attribute -->
+    <div style="text-align:right; margin-top: 24px;">
+        <button type="submit" form="checkout-form" id="place-order-btn" class="btn btn-primary btn-lg">Place Order</button>
     </div>
     <div id="global-message-container"></div> 
 </div>
