@@ -1481,6 +1481,8 @@ def test_delete_default_credit_card_auto_select_new_default(test_client, test_da
 def test_set_default_address_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
     """Protected user can change default even if current default is protected."""
     user_id = regular_user_info["user_id"]
+    old_default_id = regular_user_info["addresses"][0]["address_id"]
+
     new_addr = test_client.post(
         f"/api/users/{user_id}/addresses",
         params={
@@ -1503,7 +1505,9 @@ def test_set_default_address_when_current_default_protected(test_client, regular
         f"/api/users/{user_id}/addresses", headers=regular_auth_headers
     ).json()
     new_default = next(a for a in data if a["address_id"] == new_addr["address_id"])
+    old_default = next(a for a in data if a["address_id"] == old_default_id)
     assert new_default["is_default"] is True
+    assert old_default["is_default"] is False
 
     from app import db
 
@@ -1569,6 +1573,8 @@ def test_set_default_address_allowed_when_current_default_not_protected(test_cli
 def test_set_default_credit_card_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
     """Protected user can change default card even if current default is protected."""
     user_id = regular_user_info["user_id"]
+    old_default_id = regular_user_info["credit_cards"][0]["card_id"]
+
     new_card = test_client.post(
         f"/api/users/{user_id}/credit-cards",
         params={
@@ -1592,7 +1598,9 @@ def test_set_default_credit_card_when_current_default_protected(test_client, reg
         f"/api/users/{user_id}/credit-cards", headers=regular_auth_headers
     ).json()
     new_default = next(c for c in cards if c["card_id"] == new_card["card_id"])
+    old_default = next(c for c in cards if c["card_id"] == old_default_id)
     assert new_default["is_default"] is True
+    assert old_default["is_default"] is False
 
     from app import db
 
