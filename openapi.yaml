@@ -939,6 +939,8 @@ paths:
             type: string
             format: password
           description: User's password
+          allowReserved: true
+          allowEmptyValue: false
       responses:
         '201':
           description: User registered successfully
@@ -969,6 +971,8 @@ paths:
             type: string
             format: password
           description: Password
+          allowReserved: true
+          allowEmptyValue: false
       responses:
         '200':
           description: Login successful, JWT returned

@@ -1435,7 +1435,9 @@
               "type": "string",
               "format": "password"
             },
-            "description": "User's password"
+            "description": "User's password",
+            "allowReserved": true,
+            "allowEmptyValue": false
           }
         ],
         "responses": {
@@ -1481,7 +1483,9 @@
               "type": "string",
               "format": "password"
             },
-            "description": "Password"
+            "description": "Password",
+            "allowReserved": true,
+            "allowEmptyValue": false
           }
         ],
         "responses": {
