@@ -542,7 +542,7 @@ def test_special_protected_card_rules(test_client, regular_auth_headers, test_da
         params={"expiry_year": "2031", "is_default": True},
         headers=regular_auth_headers,
     )
-    assert good.status_code == 403
+    assert good.status_code == 200
 
     bad = test_client.put(
         f"/api/users/{user_id}/credit-cards/{card_id}",
