@@ -1,6 +1,18 @@
 // Constants and global variables
-// Derive the API base URL from the current page so requests work on any host
-const API_BASE_URL = window.location.origin;
+// Derive the API base URL
+let API_BASE_URL;
+if (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+) {
+  // Dev environment, API likely on port 8000
+  API_BASE_URL = 'http://localhost:8000';
+} else {
+  // Production or other environments (e.g., Docker with Nginx proxy)
+  // Assumes API is served from the same origin or correctly proxied
+  API_BASE_URL = window.location.origin;
+}
+console.log(`[main.js] API_BASE_URL set to: ${API_BASE_URL}`); // For debugging
 let authToken = localStorage.getItem('token');
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
