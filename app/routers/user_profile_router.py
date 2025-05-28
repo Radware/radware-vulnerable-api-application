@@ -83,8 +83,10 @@ async def create_user_address(
         f"Creating address for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
-    if not path_user_exists:
+    path_user: Optional[UserInDBBase] = next(
+        (u for u in db.db["users"] if u.user_id == user_id), None
+    )
+    if not path_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with ID {user_id} not found. Cannot create address.",
@@ -115,13 +117,40 @@ async def create_user_address(
         zip_code=zip_code,
         is_default=is_default,
     )
-    new_address = AddressInDBBase(
+
+    if is_default and path_user.is_protected:
+        other_protected_default_address = next(
+            (
+                a
+                for a in db.db["addresses"]
+                if a.user_id == user_id and a.is_default and a.is_protected
+            ),
+            None,
+        )
+        if other_protected_default_address:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cannot set new default address for protected user {path_user.username} because "
+                f"their current default address (ID: {str(other_protected_default_address.address_id)[:8]}...) is itself protected "
+                "and cannot be automatically un-defaulted. This restriction is for demo stability.",
+            )
+
+    if is_default:
+        for addr_item in db.db["addresses"]:
+            if addr_item.user_id == user_id and not (
+                hasattr(addr_item, "is_protected")
+                and addr_item.is_protected
+                and addr_item.is_default
+            ):
+                addr_item.is_default = False
+
+    new_address_db = AddressInDBBase(
         **address_data.model_dump(),
         user_id=user_id,
         is_protected=False,
     )
-    db.db["addresses"].append(new_address)
-    return Address.model_validate(new_address)
+    db.db["addresses"].append(new_address_db)
+    return Address.model_validate(new_address_db)
 
 
 @router.put("/addresses/{address_id}", response_model=Address)
@@ -158,29 +187,64 @@ async def update_user_address(
             detail="Address not found for this user or address ID is incorrect.",
         )
 
-    if hasattr(address_to_update, "is_protected") and address_to_update.is_protected:
+    owner_user: Optional[UserInDBBase] = next(
+        (u for u in db.db["users"] if u.user_id == user_id), None
+    )
+    if not owner_user:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Address ID '{address_id}' is protected and cannot be modified. "
-                "Try with a non-protected address."
-            ),
+            status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
         )
 
-    update_data = AddressUpdate(
-        street=street,
-        city=city,
-        country=country,
-        zip_code=zip_code,
-        is_default=is_default,
-    ).model_dump(exclude_unset=True)
-    if not update_data:
+    if is_default is True and owner_user and owner_user.is_protected:
+        other_default_address = next(
+            (
+                a
+                for a in db.db["addresses"]
+                if a.user_id == user_id
+                and a.is_default
+                and a.address_id != address_id
+                and a.is_protected
+            ),
+            None,
+        )
+        if other_default_address:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Cannot set a new default address for protected user '{owner_user.username}' "
+                    f"because their current default address (ID: {str(other_default_address.address_id)[:8]}...) is itself protected "
+                    "and cannot be automatically un-defaulted. This restriction is for demo stability."
+                ),
+            )
+
+    update_data_dict = {}
+    if street is not None:
+        update_data_dict["street"] = street
+    if city is not None:
+        update_data_dict["city"] = city
+    if country is not None:
+        update_data_dict["country"] = country
+    if zip_code is not None:
+        update_data_dict["zip_code"] = zip_code
+    if is_default is not None:
+        update_data_dict["is_default"] = is_default
+    if not update_data_dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
-    for key, value in update_data.items():
+    for key, value in update_data_dict.items():
         setattr(address_to_update, key, value)
+
+    if is_default is True:
+        for addr_item in db.db["addresses"]:
+            if addr_item.user_id == user_id and addr_item.address_id != address_id:
+                if addr_item.is_default and not (
+                    hasattr(addr_item, "is_protected") and addr_item.is_protected
+                ):
+                    addr_item.is_default = False
+
+    address_to_update.updated_at = datetime.now(timezone.utc)
     return Address.model_validate(address_to_update)
 
 
@@ -213,16 +277,43 @@ async def delete_user_address(
             detail="Address not found for this user or address ID is incorrect.",
         )
 
-    if hasattr(address_to_delete, "is_protected") and address_to_delete.is_protected:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Address ID '{address_id}' is protected and cannot be deleted. "
-                "Try with a non-protected address."
-            ),
-        )
+    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    if owner_user and owner_user.is_protected:
+        remaining = [a for a in db.db["addresses"] if a.user_id == user_id]
+        if len(remaining) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Protected user '{owner_user.username}' must have at least one address. "
+                    "Cannot delete the last one."
+                ),
+            )
 
+    was_default = address_to_delete.is_default
     db.db["addresses"].pop(address_index)
+
+    if was_default:
+        remaining_user_addresses = [
+            a for a in db.db["addresses"] if a.user_id == user_id
+        ]
+        if remaining_user_addresses and not any(
+            a.is_default for a in remaining_user_addresses
+        ):
+            non_item_protected_remaining = [
+                a
+                for a in remaining_user_addresses
+                if not (hasattr(a, "is_protected") and a.is_protected)
+            ]
+            if non_item_protected_remaining:
+                non_item_protected_remaining[0].is_default = True
+                print(
+                    f"Address {non_item_protected_remaining[0].address_id} made default for user {user_id} after deleting previous default."
+                )
+            else:
+                remaining_user_addresses[0].is_default = True
+                print(
+                    f"Address {remaining_user_addresses[0].address_id} (item.is_protected) made default for user {user_id} after deleting previous default."
+                )
     return
 
 
@@ -279,8 +370,10 @@ async def create_user_credit_card(
         f"Creating credit card for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
-    if not path_user_exists:
+    path_user: Optional[UserInDBBase] = next(
+        (u for u in db.db["users"] if u.user_id == user_id), None
+    )
+    if not path_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with ID {user_id} not found. Cannot create credit card.",
@@ -302,10 +395,31 @@ async def create_user_credit_card(
             detail=f"Validation error for query parameters: {e}",
         )
 
-    # Extract last four digits before hashing
-    card_last_four_digits = card_data_from_query.card_number[-4:]
+    if is_default and path_user.is_protected:
+        other_protected_default_card = next(
+            (
+                c
+                for c in db.db["credit_cards"]
+                if c.user_id == user_id and c.is_default and c.is_protected
+            ),
+            None,
+        )
+        if other_protected_default_card:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cannot set new default credit card for protected user {path_user.username} because "
+                f"their current default card (ID: {str(other_protected_default_card.card_id)[:8]}...) is itself protected.",
+            )
+    if is_default:
+        for card_item in db.db["credit_cards"]:
+            if card_item.user_id == user_id and not (
+                hasattr(card_item, "is_protected")
+                and card_item.is_protected
+                and card_item.is_default
+            ):
+                card_item.is_default = False
 
-    # Hash sensitive information
+    card_last_four_digits = card_data_from_query.card_number[-4:]
     card_number_hash = get_password_hash(card_data_from_query.card_number)
     cvv_hash = (
         get_password_hash(card_data_from_query.cvv)
@@ -313,20 +427,19 @@ async def create_user_credit_card(
         else None
     )
 
-    new_card = CreditCardInDBBase(
-        # Pass fields from the validated card_data_from_query (excluding sensitive ones)
+    new_card_db = CreditCardInDBBase(
         cardholder_name=card_data_from_query.cardholder_name,
         expiry_month=card_data_from_query.expiry_month,
         expiry_year=card_data_from_query.expiry_year,
         is_default=card_data_from_query.is_default,
-        user_id=user_id,  # Assign to user_id from path
+        user_id=user_id,
         card_number_hash=card_number_hash,
         cvv_hash=cvv_hash,
         card_last_four=card_last_four_digits,
         is_protected=False,
     )
-    db.db["credit_cards"].append(new_card)
-    return CreditCard.model_validate(new_card)
+    db.db["credit_cards"].append(new_card_db)
+    return CreditCard.model_validate(new_card_db)
 
 
 @router.put("/credit-cards/{card_id}", response_model=CreditCard)
@@ -364,18 +477,25 @@ async def update_user_credit_card(
             detail="Credit card not found for this user or card ID is incorrect.",
         )
 
-    # Manually collect update data from query parameters
-    update_data = {}
-    if cardholder_name is not None:
-        update_data["cardholder_name"] = cardholder_name
-    if expiry_month is not None:
-        update_data["expiry_month"] = expiry_month
-    if expiry_year is not None:
-        update_data["expiry_year"] = expiry_year
-    if is_default is not None:
-        update_data["is_default"] = is_default
+    owner_user: Optional[UserInDBBase] = next(
+        (u for u in db.db["users"] if u.user_id == user_id), None
+    )
+    if not owner_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
+        )
 
-    if not update_data:
+    update_data_dict = {}
+    if cardholder_name is not None:
+        update_data_dict["cardholder_name"] = cardholder_name
+    if expiry_month is not None:
+        update_data_dict["expiry_month"] = expiry_month
+    if expiry_year is not None:
+        update_data_dict["expiry_year"] = expiry_year
+    if is_default is not None:
+        update_data_dict["is_default"] = is_default
+
+    if not update_data_dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
@@ -385,35 +505,72 @@ async def update_user_credit_card(
             str(card_to_update.card_id) == "cc000003-0002-0000-0000-000000000002"
             and str(user_id) == "00000003-0000-0000-0000-000000000003"
         ):
-            allowed_updates = {}
-            if "expiry_year" in update_data and update_data["expiry_year"] == "2031":
-                allowed_updates["expiry_year"] = "2031"
-            if "is_default" in update_data and update_data["is_default"] is True:
-                allowed_updates["is_default"] = True
-            if len(allowed_updates) == len(update_data) and len(update_data) > 0:
-                for key, value in allowed_updates.items():
-                    setattr(card_to_update, key, value)
-                card_to_update.updated_at = datetime.now(timezone.utc)
-                return CreditCard.model_validate(card_to_update)
+            allowed_updates_for_bob_card = {}
+            if (
+                "expiry_year" in update_data_dict
+                and update_data_dict["expiry_year"] == "2031"
+            ):
+                allowed_updates_for_bob_card["expiry_year"] = "2031"
+            if (
+                "is_default" in update_data_dict
+                and update_data_dict["is_default"] is True
+            ):
+                allowed_updates_for_bob_card["is_default"] = True
+
+            is_subset = all(
+                key in allowed_updates_for_bob_card for key in update_data_dict
+            )
+
+            if not is_subset or not update_data_dict:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "For this protected card (Bob's demo card), only specific updates "
+                        "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
+                    ),
+                )
+            update_data_dict = allowed_updates_for_bob_card
+        else:
+            pass  # Other protected cards can now be modified
+
+    if (
+        update_data_dict.get("is_default") is True
+        and owner_user
+        and owner_user.is_protected
+    ):
+        other_default_card = next(
+            (
+                cc
+                for cc in db.db["credit_cards"]
+                if cc.user_id == user_id
+                and cc.is_default
+                and cc.card_id != card_id
+                and cc.is_protected
+            ),
+            None,
+        )
+        if other_default_card:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
-                    "For this protected card (Bob's demo card), only specific updates "
-                    "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
+                    f"Cannot set a new default credit card for protected user '{owner_user.username}' "
+                    f"because their current default card (ID: {str(other_default_card.card_id)[:8]}...) is itself protected "
+                    "and cannot be automatically un-defaulted."
                 ),
             )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Credit Card ID '{card_id}' is protected and cannot be modified. "
-                "Try with a non-protected card."
-            ),
-        )
 
-    # Apply updates to the found card
-    for key, value in update_data.items():
+    for key, value in update_data_dict.items():
         setattr(card_to_update, key, value)
-    card_to_update.updated_at = datetime.now(timezone.utc)  # Update timestamp
+
+    if update_data_dict.get("is_default") is True:
+        for card_item in db.db["credit_cards"]:
+            if card_item.user_id == user_id and card_item.card_id != card_id:
+                if card_item.is_default and not (
+                    hasattr(card_item, "is_protected") and card_item.is_protected
+                ):
+                    card_item.is_default = False
+
+    card_to_update.updated_at = datetime.now(timezone.utc)
     return CreditCard.model_validate(card_to_update)
 
 
@@ -446,14 +603,39 @@ async def delete_user_credit_card(
             detail="Credit card not found for this user or card ID is incorrect.",
         )
 
-    if hasattr(card_to_delete, "is_protected") and card_to_delete.is_protected:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Credit Card ID '{card_id}' is protected and cannot be deleted. "
-                "Try with a non-protected card."
-            ),
-        )
+    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    if owner_user and owner_user.is_protected:
+        remaining = [cc for cc in db.db["credit_cards"] if cc.user_id == user_id]
+        if len(remaining) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Protected user '{owner_user.username}' must have at least one credit card. "
+                    "Cannot delete the last one."
+                ),
+            )
 
+    was_default = card_to_delete.is_default
     db.db["credit_cards"].pop(card_index)
+
+    if was_default:
+        remaining_user_cards = [
+            cc for cc in db.db["credit_cards"] if cc.user_id == user_id
+        ]
+        if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
+            non_item_protected_remaining_cards = [
+                c
+                for c in remaining_user_cards
+                if not (hasattr(c, "is_protected") and c.is_protected)
+            ]
+            if non_item_protected_remaining_cards:
+                non_item_protected_remaining_cards[0].is_default = True
+                print(
+                    f"Card {non_item_protected_remaining_cards[0].card_id} made default for user {user_id} after deleting previous default."
+                )
+            else:
+                remaining_user_cards[0].is_default = True
+                print(
+                    f"Card {remaining_user_cards[0].card_id} (item.is_protected) made default for user {user_id} after deleting previous default."
+                )
     return
