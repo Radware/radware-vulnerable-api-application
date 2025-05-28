@@ -118,30 +118,9 @@ async def create_user_address(
         is_default=is_default,
     )
 
-    if is_default and path_user.is_protected:
-        other_protected_default_address = next(
-            (
-                a
-                for a in db.db["addresses"]
-                if a.user_id == user_id and a.is_default and a.is_protected
-            ),
-            None,
-        )
-        if other_protected_default_address:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Cannot set new default address for protected user {path_user.username} because "
-                f"their current default address (ID: {str(other_protected_default_address.address_id)[:8]}...) is itself protected "
-                "and cannot be automatically un-defaulted. This restriction is for demo stability.",
-            )
-
     if is_default:
         for addr_item in db.db["addresses"]:
-            if addr_item.user_id == user_id and not (
-                hasattr(addr_item, "is_protected")
-                and addr_item.is_protected
-                and addr_item.is_default
-            ):
+            if addr_item.user_id == user_id:
                 addr_item.is_default = False
 
     new_address_db = AddressInDBBase(
@@ -195,27 +174,9 @@ async def update_user_address(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
         )
 
-    if is_default is True and owner_user and owner_user.is_protected:
-        other_default_address = next(
-            (
-                a
-                for a in db.db["addresses"]
-                if a.user_id == user_id
-                and a.is_default
-                and a.address_id != address_id
-                and a.is_protected
-            ),
-            None,
-        )
-        if other_default_address:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Cannot set a new default address for protected user '{owner_user.username}' "
-                    f"because their current default address (ID: {str(other_default_address.address_id)[:8]}...) is itself protected "
-                    "and cannot be automatically un-defaulted. This restriction is for demo stability."
-                ),
-            )
+    # If is_default is being set to True, all other addresses for this user will
+    # be un-defaulted. Previous restrictions around un-defaulting item.is_protected
+    # defaults have been removed.
 
     update_data_dict = {}
     if street is not None:
@@ -239,10 +200,7 @@ async def update_user_address(
     if is_default is True:
         for addr_item in db.db["addresses"]:
             if addr_item.user_id == user_id and addr_item.address_id != address_id:
-                if addr_item.is_default and not (
-                    hasattr(addr_item, "is_protected") and addr_item.is_protected
-                ):
-                    addr_item.is_default = False
+                addr_item.is_default = False
 
     address_to_update.updated_at = datetime.now(timezone.utc)
     return Address.model_validate(address_to_update)
@@ -395,28 +353,9 @@ async def create_user_credit_card(
             detail=f"Validation error for query parameters: {e}",
         )
 
-    if is_default and path_user.is_protected:
-        other_protected_default_card = next(
-            (
-                c
-                for c in db.db["credit_cards"]
-                if c.user_id == user_id and c.is_default and c.is_protected
-            ),
-            None,
-        )
-        if other_protected_default_card:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Cannot set new default credit card for protected user {path_user.username} because "
-                f"their current default card (ID: {str(other_protected_default_card.card_id)[:8]}...) is itself protected.",
-            )
     if is_default:
         for card_item in db.db["credit_cards"]:
-            if card_item.user_id == user_id and not (
-                hasattr(card_item, "is_protected")
-                and card_item.is_protected
-                and card_item.is_default
-            ):
+            if card_item.user_id == user_id:
                 card_item.is_default = False
 
     card_last_four_digits = card_data_from_query.card_number[-4:]
@@ -533,31 +472,9 @@ async def update_user_credit_card(
         else:
             pass  # Other protected cards can now be modified
 
-    if (
-        update_data_dict.get("is_default") is True
-        and owner_user
-        and owner_user.is_protected
-    ):
-        other_default_card = next(
-            (
-                cc
-                for cc in db.db["credit_cards"]
-                if cc.user_id == user_id
-                and cc.is_default
-                and cc.card_id != card_id
-                and cc.is_protected
-            ),
-            None,
-        )
-        if other_default_card:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Cannot set a new default credit card for protected user '{owner_user.username}' "
-                    f"because their current default card (ID: {str(other_default_card.card_id)[:8]}...) is itself protected "
-                    "and cannot be automatically un-defaulted."
-                ),
-            )
+    # If is_default is True, we simply make this card default and un-default all
+    # other cards for the user. Previous restrictions on un-defaulting
+    # item.is_protected defaults have been removed.
 
     for key, value in update_data_dict.items():
         setattr(card_to_update, key, value)
@@ -565,10 +482,7 @@ async def update_user_credit_card(
     if update_data_dict.get("is_default") is True:
         for card_item in db.db["credit_cards"]:
             if card_item.user_id == user_id and card_item.card_id != card_id:
-                if card_item.is_default and not (
-                    hasattr(card_item, "is_protected") and card_item.is_protected
-                ):
-                    card_item.is_default = False
+                card_item.is_default = False
 
     card_to_update.updated_at = datetime.now(timezone.utc)
     return CreditCard.model_validate(card_to_update)

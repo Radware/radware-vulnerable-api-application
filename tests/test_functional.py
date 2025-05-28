@@ -1478,8 +1478,8 @@ def test_delete_default_credit_card_auto_select_new_default(test_client, test_da
     db.initialize_database_from_json()
 
 
-def test_set_default_address_blocked_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
-    """Protected user's existing protected default prevents setting a new default."""
+def test_set_default_address_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+    """Protected user can change default even if current default is protected."""
     user_id = regular_user_info["user_id"]
     new_addr = test_client.post(
         f"/api/users/{user_id}/addresses",
@@ -1498,7 +1498,12 @@ def test_set_default_address_blocked_when_current_default_protected(test_client,
         params={"is_default": True},
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 200
+    data = test_client.get(
+        f"/api/users/{user_id}/addresses", headers=regular_auth_headers
+    ).json()
+    new_default = next(a for a in data if a["address_id"] == new_addr["address_id"])
+    assert new_default["is_default"] is True
 
     from app import db
 
@@ -1561,8 +1566,8 @@ def test_set_default_address_allowed_when_current_default_not_protected(test_cli
     db.initialize_database_from_json()
 
 
-def test_set_default_credit_card_blocked_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
-    """Protected credit card default cannot be replaced directly."""
+def test_set_default_credit_card_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+    """Protected user can change default card even if current default is protected."""
     user_id = regular_user_info["user_id"]
     new_card = test_client.post(
         f"/api/users/{user_id}/credit-cards",
@@ -1582,7 +1587,12 @@ def test_set_default_credit_card_blocked_when_current_default_protected(test_cli
         params={"is_default": True},
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 200
+    cards = test_client.get(
+        f"/api/users/{user_id}/credit-cards", headers=regular_auth_headers
+    ).json()
+    new_default = next(c for c in cards if c["card_id"] == new_card["card_id"])
+    assert new_default["is_default"] is True
 
     from app import db
 
