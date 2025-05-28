@@ -275,7 +275,12 @@ function displayGlobalMessage(message, type = 'info', duration = 5000) {
 
 function handleProtectedEntityError(error) {
     if (error && error.message && /protected/i.test(error.message)) {
-        displayGlobalMessage(`<strong>Action Blocked:</strong> ${error.message}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`, 'warning', 8000);
+        const msg = error.message;
+        if (/must have at least one|cannot delete the last|protected default/i.test(msg)) {
+            displayGlobalMessage(msg, 'warning');
+        } else {
+            displayGlobalMessage(`<strong>Action Blocked:</strong> ${msg}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`, 'warning', 8000);
+        }
         return true;
     }
     return false;
@@ -2779,22 +2784,8 @@ function populateAddressFormForEdit(addressId, allAddresses) {
     document.getElementById('address-form-submit-btn').textContent = 'Update Address';
 
     const protectedNote = document.getElementById('address-protected-note');
-    const streetInput = document.getElementById('address-street');
-    const cityInput = document.getElementById('address-city');
-    const countryInput = document.getElementById('address-country');
-    const zipInput = document.getElementById('address-zip');
-    if (address.is_protected) {
-        if (protectedNote) protectedNote.style.display = 'block';
-        if (streetInput) streetInput.disabled = true;
-        if (cityInput) cityInput.disabled = true;
-        if (countryInput) countryInput.disabled = true;
-        if (zipInput) zipInput.disabled = true;
-    } else {
-        if (protectedNote) protectedNote.style.display = 'none';
-        if (streetInput) streetInput.disabled = false;
-        if (cityInput) cityInput.disabled = false;
-        if (countryInput) countryInput.disabled = false;
-        if (zipInput) zipInput.disabled = false;
+    if (protectedNote) {
+        protectedNote.style.display = address.is_protected ? 'block' : 'none';
     }
     
     const editIndicator = document.getElementById('address-edit-mode-indicator');
@@ -2913,9 +2904,7 @@ async function handleAddressFormSubmit(event) {
 
 async function handleDeleteAddress(addressId, isProtected = false) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
-    const confirmMsg = isProtected ?
-        'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
-        `Are you sure you want to delete this address from ${currentlyViewedUsername}'s profile?`;
+    const confirmMsg = `Are you sure you want to delete this address from ${currentlyViewedUsername}'s profile?`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -2999,17 +2988,11 @@ function populateCardFormForEdit(cardId, allCards) {
         cardCvvInput.disabled = true;
     }
 
-    if (card.is_protected) {
-        if (protectedNote) protectedNote.style.display = 'block';
-        if (cardholderInput) cardholderInput.disabled = true;
-        if (expiryMonthInput) expiryMonthInput.disabled = card.card_id !== 'cc000003-0002-0000-0000-000000000002';
-        if (expiryYearInput) expiryYearInput.disabled = false;
-    } else {
-        if (protectedNote) protectedNote.style.display = 'none';
-        if (cardholderInput) cardholderInput.disabled = false;
-        if (expiryMonthInput) expiryMonthInput.disabled = false;
-        if (expiryYearInput) expiryYearInput.disabled = false;
-    }
+    const isSpecialCard = card.card_id === 'cc000003-0002-0000-0000-000000000002';
+    if (protectedNote) protectedNote.style.display = card.is_protected ? 'block' : 'none';
+    if (cardholderInput) cardholderInput.disabled = isSpecialCard;
+    if (expiryMonthInput) expiryMonthInput.disabled = false;
+    if (expiryYearInput) expiryYearInput.disabled = false;
     
     document.getElementById('card-form-submit-btn').textContent = 'Update Card';
     
@@ -3192,9 +3175,7 @@ async function handleCardFormSubmit(event) {
 
 async function handleDeleteCreditCard(cardId, isProtected = false) {
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
-    const confirmMsg = isProtected ?
-        'This item is protected. Are you sure you want to attempt this action? It might be blocked for demo stability.' :
-        `Are you sure you want to delete this credit card from ${currentlyViewedUsername}'s profile?`;
+    const confirmMsg = `Are you sure you want to delete this credit card from ${currentlyViewedUsername}'s profile?`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -3330,7 +3311,9 @@ async function setDefaultAddress(addressId) {
         await fetchAndDisplayFullProfile(userIdForRequest);
         highlightElement(`address-item-${addressId.substring(0,8)}`);
     } catch (error) {
-        displayGlobalMessage(`Error setting default address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+        if (!handleProtectedEntityError(error)) {
+            displayGlobalMessage(`Error setting default address for ${currentlyViewedUsername}: ${error.message}`, 'error');
+        }
     }
 }
 
@@ -3346,7 +3329,9 @@ async function setDefaultCard(cardId) {
         displayGlobalMessage(`Default credit card for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
-        displayGlobalMessage(`Error setting default credit card: ${error.message}`, 'error');
+        if (!handleProtectedEntityError(error)) {
+            displayGlobalMessage(`Error setting default credit card: ${error.message}`, 'error');
+        }
     }
 }
 
