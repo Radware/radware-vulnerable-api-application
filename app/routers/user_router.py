@@ -132,14 +132,13 @@ async def update_user(
         )
 
     if hasattr(user_to_update, "is_protected") and user_to_update.is_protected:
+        # Protected users can modify fields except their username. Email changes are allowed.
         username_change = username is not None and username != user_to_update.username
-        email_change = email is not None and email != user_to_update.email
-        if username_change or email_change:
+        if username_change:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
-                    f"User '{user_to_update.username}' is protected. "
-                    "Username and email cannot be changed. Other fields might be modifiable for demo purposes."
+                    f"User '{user_to_update.username}' is protected. Username cannot be changed. Other fields can be modified."
                 ),
             )
 
@@ -422,17 +421,25 @@ async def update_user_credit_card(
             detail="Credit card not found for this user.",
         )
 
-    update_data = {}
-    if cardholder_name is not None:
-        update_data["cardholder_name"] = cardholder_name
-    if expiry_month is not None:
-        update_data["expiry_month"] = expiry_month
-    if expiry_year is not None:
-        update_data["expiry_year"] = expiry_year
-    if is_default is not None:
-        update_data["is_default"] = is_default
+    owner_user: Optional[UserInDBBase] = next(
+        (u for u in db.db["users"] if u.user_id == user_id), None
+    )
+    if not owner_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
+        )
 
-    if not update_data:
+    update_data_dict = {}
+    if cardholder_name is not None:
+        update_data_dict["cardholder_name"] = cardholder_name
+    if expiry_month is not None:
+        update_data_dict["expiry_month"] = expiry_month
+    if expiry_year is not None:
+        update_data_dict["expiry_year"] = expiry_year
+    if is_default is not None:
+        update_data_dict["is_default"] = is_default
+
+    if not update_data_dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
@@ -445,33 +452,71 @@ async def update_user_credit_card(
             str(credit_card_to_update.card_id) == "cc000003-0002-0000-0000-000000000002"
             and str(user_id) == "00000003-0000-0000-0000-000000000003"
         ):
-            allowed_updates = {}
-            if "expiry_year" in update_data and update_data["expiry_year"] == "2031":
-                allowed_updates["expiry_year"] = "2031"
-            if "is_default" in update_data and update_data["is_default"] is True:
-                allowed_updates["is_default"] = True
-            if len(allowed_updates) == len(update_data) and len(update_data) > 0:
-                for key, value in allowed_updates.items():
-                    setattr(credit_card_to_update, key, value)
-                credit_card_to_update.updated_at = datetime.now(timezone.utc)
-                return CreditCard.model_validate(credit_card_to_update)
+            allowed_updates_for_bob_card = {}
+            if (
+                "expiry_year" in update_data_dict
+                and update_data_dict["expiry_year"] == "2031"
+            ):
+                allowed_updates_for_bob_card["expiry_year"] = "2031"
+            if (
+                "is_default" in update_data_dict
+                and update_data_dict["is_default"] is True
+            ):
+                allowed_updates_for_bob_card["is_default"] = True
+
+            is_subset = all(
+                key in allowed_updates_for_bob_card for key in update_data_dict
+            )
+
+            if not is_subset or not update_data_dict:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "For this protected card (Bob's demo card), only specific updates "
+                        "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
+                    ),
+                )
+            update_data_dict = allowed_updates_for_bob_card
+        else:
+            pass
+
+    if (
+        update_data_dict.get("is_default") is True
+        and owner_user
+        and owner_user.is_protected
+    ):
+        other_default_card = next(
+            (
+                cc
+                for cc in db.db["credit_cards"]
+                if cc.user_id == user_id
+                and cc.is_default
+                and cc.card_id != card_id
+                and cc.is_protected
+            ),
+            None,
+        )
+        if other_default_card:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
-                    "For this protected card (Bob's demo card), only specific updates "
-                    "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
+                    f"Cannot set a new default credit card for protected user '{owner_user.username}' "
+                    f"because their current default card (ID: {str(other_default_card.card_id)[:8]}...) is itself protected "
+                    "and cannot be automatically un-defaulted."
                 ),
             )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Credit Card ID '{card_id}' is protected and cannot be modified. "
-                "Try with a non-protected card."
-            ),
-        )
 
-    for key, value in update_data.items():
+    for key, value in update_data_dict.items():
         setattr(credit_card_to_update, key, value)
+
+    if update_data_dict.get("is_default") is True:
+        for card_item in db.db["credit_cards"]:
+            if card_item.user_id == user_id and card_item.card_id != card_id:
+                if card_item.is_default and not (
+                    hasattr(card_item, "is_protected") and card_item.is_protected
+                ):
+                    card_item.is_default = False
+
     credit_card_to_update.updated_at = datetime.now(timezone.utc)
     print(
         f"Credit card {card_id} for user {user_id} updated. Intended BOLA: No owner check performed."
@@ -506,16 +551,42 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             detail="Credit card not found for this user.",
         )
 
-    if hasattr(card_to_delete, "is_protected") and card_to_delete.is_protected:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Credit Card ID '{card_id}' is protected and cannot be deleted. "
-                "Try with a non-protected card."
-            ),
-        )
+    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    if owner_user and owner_user.is_protected:
+        remaining = [cc for cc in db.db["credit_cards"] if cc.user_id == user_id]
+        if len(remaining) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    f"Protected user '{owner_user.username}' must have at least one credit card. "
+                    "Cannot delete the last one."
+                ),
+            )
 
+    was_default = card_to_delete.is_default
     db.db["credit_cards"].pop(card_index)
+
+    if was_default:
+        remaining_user_cards = [
+            cc for cc in db.db["credit_cards"] if cc.user_id == user_id
+        ]
+        if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
+            non_item_protected_remaining_cards = [
+                c
+                for c in remaining_user_cards
+                if not (hasattr(c, "is_protected") and c.is_protected)
+            ]
+            if non_item_protected_remaining_cards:
+                non_item_protected_remaining_cards[0].is_default = True
+                print(
+                    f"Card {non_item_protected_remaining_cards[0].card_id} made default for user {user_id} after deleting previous default."
+                )
+            else:
+                remaining_user_cards[0].is_default = True
+                print(
+                    f"Card {remaining_user_cards[0].card_id} (item.is_protected) made default for user {user_id} after deleting previous default."
+                )
+
     print(
         f"Credit card {card_id} for user {user_id} deleted. Intended BOLA: No owner check performed."
     )
