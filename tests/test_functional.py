@@ -1285,6 +1285,21 @@ def test_update_protected_user_is_admin_allowed(test_client, regular_user_info):
     assert resp.json()["is_admin"] is True
 
 
+def test_update_protected_user_email_allowed(test_client, regular_user_info):
+    """Protected users should be able to update their email."""
+    user_id = regular_user_info["user_id"]
+    old_email = regular_user_info["email"]
+    new_email = f"updated_{uuid.uuid4().hex[:6]}@example.com"
+
+    resp = test_client.put(f"/api/users/{user_id}", params={"email": new_email})
+    assert resp.status_code == 200
+    assert resp.json()["email"] == new_email
+
+    # revert for cleanliness
+    revert = test_client.put(f"/api/users/{user_id}", params={"email": old_email})
+    assert revert.status_code == 200
+
+
 def test_update_user_duplicate_username_or_email(test_client):
     username1 = f"dup_a_{uuid.uuid4().hex[:6]}"
     email1 = f"{username1}@example.com"
@@ -1364,3 +1379,270 @@ def test_delete_user_not_found(test_client):
 def test_delete_user_invalid_uuid(test_client):
     resp = test_client.delete("/api/users/not-a-uuid")
     assert resp.status_code == 422
+
+
+def test_delete_last_address_forbidden_protected_user(test_client, test_data, regular_auth_headers):
+    """Deleting the last remaining address of a protected user should fail."""
+    david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
+    user_id = david["user_id"]
+    addr_ids = [a["address_id"] for a in david["addresses"]]
+
+    # Delete first address successfully (not last)
+    first_del = test_client.delete(
+        f"/api/users/{user_id}/addresses/{addr_ids[0]}",
+        headers=regular_auth_headers,
+    )
+    assert first_del.status_code == 204
+
+    # Attempt to delete last remaining address
+    second_del = test_client.delete(
+        f"/api/users/{user_id}/addresses/{addr_ids[1]}",
+        headers=regular_auth_headers,
+    )
+    assert second_del.status_code == 403
+    assert "must have at least one address" in second_del.json()["detail"]
+
+    # reset DB so other tests aren't affected
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_delete_last_credit_card_forbidden_protected_user(test_client, test_data, regular_auth_headers):
+    """Deleting the only credit card of a protected user should return 403."""
+    david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
+    user_id = david["user_id"]
+    card_id = david["credit_cards"][0]["card_id"]
+
+    resp = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{card_id}",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+    assert "must have at least one credit card" in resp.json()["detail"]
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_delete_default_address_auto_select_new_default(test_client, test_data, regular_auth_headers):
+    """Deleting a default address should promote another address to default."""
+    david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
+    user_id = david["user_id"]
+    default_id = david["addresses"][0]["address_id"]
+    other_id = david["addresses"][1]["address_id"]
+
+    del_resp = test_client.delete(
+        f"/api/users/{user_id}/addresses/{default_id}",
+        headers=regular_auth_headers,
+    )
+    assert del_resp.status_code == 204
+
+    remaining = test_client.get(
+        f"/api/users/{user_id}/addresses",
+        headers=regular_auth_headers,
+    ).json()
+    assert len(remaining) == 1
+    assert remaining[0]["address_id"] == other_id
+    assert remaining[0]["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_delete_default_credit_card_auto_select_new_default(test_client, test_data, regular_auth_headers):
+    """Deleting a default credit card should promote another card to default."""
+    frank = next(u for u in test_data["users"] if u["username"] == "FrankMiller")
+    user_id = frank["user_id"]
+    default_id = frank["credit_cards"][0]["card_id"]
+    other_id = frank["credit_cards"][1]["card_id"]
+
+    del_resp = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{default_id}",
+        headers=regular_auth_headers,
+    )
+    assert del_resp.status_code == 204
+
+    remaining = test_client.get(
+        f"/api/users/{user_id}/credit-cards",
+        headers=regular_auth_headers,
+    ).json()
+    assert len(remaining) == 1
+    assert remaining[0]["card_id"] == other_id
+    assert remaining[0]["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_set_default_address_blocked_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+    """Protected user's existing protected default prevents setting a new default."""
+    user_id = regular_user_info["user_id"]
+    new_addr = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "New Addr",
+            "city": "City",
+            "country": "USA",
+            "zip_code": "00000",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    resp = test_client.put(
+        f"/api/users/{user_id}/addresses/{new_addr['address_id']}",
+        params={"is_default": True},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_set_default_address_allowed_when_current_default_not_protected(test_client, regular_auth_headers, test_data):
+    """Setting default succeeds when current default is not protected."""
+    david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
+    user_id = david["user_id"]
+    orig_default = david["addresses"][0]["address_id"]
+
+    # Unset current protected default
+    test_client.put(
+        f"/api/users/{user_id}/addresses/{orig_default}",
+        params={"is_default": False},
+        headers=regular_auth_headers,
+    )
+
+    first_new = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "Tmp1",
+            "city": "C",
+            "country": "U",
+            "zip_code": "11111",
+            "is_default": True,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    second_new = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "Tmp2",
+            "city": "C",
+            "country": "U",
+            "zip_code": "22222",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    resp = test_client.put(
+        f"/api/users/{user_id}/addresses/{second_new['address_id']}",
+        params={"is_default": True},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 200
+    data = test_client.get(
+        f"/api/users/{user_id}/addresses", headers=regular_auth_headers
+    ).json()
+    new_default = next(a for a in data if a["address_id"] == second_new["address_id"])
+    old_default = next(a for a in data if a["address_id"] == first_new["address_id"])
+    assert new_default["is_default"] is True
+    assert old_default["is_default"] is False
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_set_default_credit_card_blocked_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+    """Protected credit card default cannot be replaced directly."""
+    user_id = regular_user_info["user_id"]
+    new_card = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "New Card",
+            "card_number": "4111111111111111",
+            "expiry_month": "12",
+            "expiry_year": "2030",
+            "cvv": "123",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    resp = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{new_card['card_id']}",
+        params={"is_default": True},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 403
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_set_default_credit_card_allowed_when_current_default_not_protected(test_client, regular_auth_headers, test_data):
+    """Setting new default succeeds when existing default is not protected."""
+    frank = next(u for u in test_data["users"] if u["username"] == "FrankMiller")
+    user_id = frank["user_id"]
+    orig_default = frank["credit_cards"][0]["card_id"]
+
+    test_client.put(
+        f"/api/users/{user_id}/credit-cards/{orig_default}",
+        params={"is_default": False},
+        headers=regular_auth_headers,
+    )
+
+    first_new = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "Tmp1",
+            "card_number": "4000000000000002",
+            "expiry_month": "12",
+            "expiry_year": "2030",
+            "cvv": "111",
+            "is_default": True,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    second_new = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "Tmp2",
+            "card_number": "4222222222222",
+            "expiry_month": "11",
+            "expiry_year": "2031",
+            "cvv": "222",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    resp = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{second_new['card_id']}",
+        params={"is_default": True},
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 200
+
+    cards = test_client.get(
+        f"/api/users/{user_id}/credit-cards", headers=regular_auth_headers
+    ).json()
+    new_default = next(c for c in cards if c["card_id"] == second_new["card_id"])
+    old_default = next(c for c in cards if c["card_id"] == first_new["card_id"])
+    assert new_default["is_default"] is True
+    assert old_default["is_default"] is False
+
+    from app import db
+
+    db.initialize_database_from_json()
+
