@@ -24,7 +24,7 @@ Backend tests run entirely in-memory using FastAPI's `TestClient` fixture define
 
 Protected entities ensure core demo data stays intact. Tests should expect certain actions against these records to be rejected while still allowing non‑destructive exploits (like viewing them through BOLA).
 
-For protected users, addresses and credit cards can usually be modified or deleted. Tests must only expect a **403** when an operation tries to remove the user's last address or card, or when changing the default away from an item that was originally marked `is_protected: true`. Deleting a default item automatically makes another record the new default.
+For protected users, addresses and credit cards can usually be modified or deleted. Tests must only expect a **403** when an operation tries to remove the user's last address or card. Changing which item is marked as default should succeed and the prior default will simply have `is_default=false`. Deleting a default item automatically makes another record the new default.
 
 ## 2. Test Suite Structure
 
@@ -55,7 +55,7 @@ frontend/e2e-tests/
 ```
 
 Notable specs:
-- **profile-address-management.spec.ts** – Focuses on the logged‑in user's profile management (addresses and credit cards). It verifies CRUD operations and asserts that attempts to change protected defaults or critical fields correctly return 403 with UI warnings.
+- **profile-address-management.spec.ts** – Focuses on the logged‑in user's profile management (addresses and credit cards). It verifies CRUD operations and asserts that critical field restrictions (like Bob's special card rules) return 403 while normal default changes succeed with UI feedback.
 - **profile-bola.spec.ts** – Exercises BOLA scenarios by manipulating victim profiles and credit cards from another user's account. It covers both protected and non‑protected victims, confirming 403 responses and warning banners for protected data.
 
 Key components:
