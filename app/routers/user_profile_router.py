@@ -206,7 +206,9 @@ async def update_user_address(
     return Address.model_validate(address_to_update)
 
 
-@router.delete("/addresses/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/addresses/{address_id}", status_code=status.HTTP_200_OK, response_model=dict
+)
 async def delete_user_address(
     user_id: UUID,  # User ID from path
     address_id: UUID,
@@ -272,7 +274,8 @@ async def delete_user_address(
                 print(
                     f"Address {remaining_user_addresses[0].address_id} (item.is_protected) made default for user {user_id} after deleting previous default."
                 )
-    return
+
+    return {"message": "Address deleted successfully"}
 
 
 # --- Credit Card Endpoints (BOLA Targets - for demonstration) ---
@@ -488,7 +491,9 @@ async def update_user_credit_card(
     return CreditCard.model_validate(card_to_update)
 
 
-@router.delete("/credit-cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/credit-cards/{card_id}", status_code=status.HTTP_200_OK, response_model=dict
+)
 async def delete_user_credit_card(
     user_id: UUID,  # User ID from path
     card_id: UUID,
@@ -552,4 +557,5 @@ async def delete_user_credit_card(
                 print(
                     f"Card {remaining_user_cards[0].card_id} (item.is_protected) made default for user {user_id} after deleting previous default."
                 )
-    return
+
+    return {"message": "Credit card deleted successfully"}

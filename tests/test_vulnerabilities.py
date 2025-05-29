@@ -320,7 +320,9 @@ def test_bola_delete_address_for_another_user(
         f"/api/users/{victim_user_id}/addresses/{addr_id}",
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "address deleted" in data.get("message", "").lower()
 
 
 def test_bola_update_protected_credit_card_forbidden(
@@ -370,7 +372,9 @@ def test_bola_delete_protected_credit_card_forbidden(
         f"/api/users/{victim_user_id}/credit-cards/{card_id}",
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "credit card deleted" in data.get("message", "").lower()
 
 
 def test_bola_delete_credit_card_for_another_user(
@@ -394,7 +398,9 @@ def test_bola_delete_credit_card_for_another_user(
         f"/api/users/{victim_user_id}/credit-cards/{card_id}",
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "credit card deleted" in data.get("message", "").lower()
 
 
 # Test for BFLA (Broken Function Level Authorization) vulnerabilities
@@ -440,7 +446,9 @@ def test_bfla_product_deletion_by_regular_user(test_client, regular_auth_headers
     )
 
     # Vulnerability test passes if the product is deleted
-    assert delete_response.status_code == 204
+    assert delete_response.status_code == 200
+    del_data = delete_response.json()
+    assert "product deleted" in del_data.get("message", "").lower()
 
     # Verify deletion
     get_response = test_client.get(f"/api/products/{product_id}")
@@ -497,7 +505,9 @@ def test_bfla_user_deletion_by_regular_user(test_client, regular_auth_headers):
     )
 
     # Vulnerability test passes if the user is deleted
-    assert delete_response.status_code == 204
+    assert delete_response.status_code == 200
+    del_data = delete_response.json()
+    assert "user deleted" in del_data.get("message", "").lower()
 
     # Verify deletion
     get_response = test_client.get(

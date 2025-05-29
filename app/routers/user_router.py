@@ -197,7 +197,10 @@ async def update_user(
 
 # BFLA Target: Initially, no admin check for deleting users.
 @router.delete(
-    "/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
+    "/users/{user_id}",
+    status_code=status.HTTP_200_OK,
+    tags=["Users"],
+    response_model=dict,
 )
 async def delete_user(
     user_id: UUID,
@@ -240,7 +243,7 @@ async def delete_user(
     ]
     # Orders might be kept for historical reasons or marked inactive.
 
-    return
+    return {"message": "User deleted successfully"}
 
 
 @router.get("/users", response_model=List[User], tags=["Users"])
@@ -504,8 +507,9 @@ async def update_user_credit_card(
 
 @router.delete(
     "/users/{user_id}/credit-cards/{card_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     tags=["Credit Cards"],
+    response_model=dict,
 )
 async def delete_user_credit_card(user_id: UUID, card_id: UUID):
     """Delete a specific credit card for a given user."""
@@ -568,4 +572,4 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
     print(
         f"Credit card {card_id} for user {user_id} deleted. Intended BOLA: No owner check performed."
     )
-    return
+    return {"message": "Credit card deleted successfully"}
