@@ -606,6 +606,15 @@ def test_order_creation_and_retrieval(
     assert new_order["items"][0]["product_id"] == product["product_id"]
     assert new_order["items"][0]["quantity"] == 1
 
+    # Verify enhanced info fields on creation response
+    assert isinstance(new_order["created_at"], str)
+    assert "T" in new_order["created_at"]
+    from datetime import datetime
+
+    datetime.fromisoformat(new_order["created_at"])
+    expected_last_four = user_card["card_number_plain"][-4:]
+    assert new_order["credit_card_last_four"] == expected_last_four
+
     # Retrieve the order
     get_response = test_client.get(
         f"/api/users/{user_id}/orders/{new_order['order_id']}",
@@ -614,6 +623,10 @@ def test_order_creation_and_retrieval(
     assert get_response.status_code == 200
     retrieved_order = get_response.json()
     assert retrieved_order["order_id"] == new_order["order_id"]
+    assert isinstance(retrieved_order["created_at"], str)
+    assert "T" in retrieved_order["created_at"]
+    datetime.fromisoformat(retrieved_order["created_at"])
+    assert retrieved_order["credit_card_last_four"] == expected_last_four
 
     # List all orders
     list_response = test_client.get(
@@ -622,6 +635,11 @@ def test_order_creation_and_retrieval(
     assert list_response.status_code == 200
     orders = list_response.json()
     assert any(order["order_id"] == new_order["order_id"] for order in orders)
+    target_order = next(o for o in orders if o["order_id"] == new_order["order_id"])
+    assert isinstance(target_order["created_at"], str)
+    assert "T" in target_order["created_at"]
+    datetime.fromisoformat(target_order["created_at"])
+    assert target_order["credit_card_last_four"] == expected_last_four
 
 
 # Test product search functionality

@@ -76,6 +76,25 @@ test.describe('Orders Page UI', () => {
       await expect(rows.first()).toBeVisible({ timeout: 15000 });
       expect(await rows.count()).toBeGreaterThan(1);
       await expect(page.locator('#current-viewing')).toBeHidden();
+
+      // Verify headers for enhanced columns
+      await expect(
+        page.locator('#orders-container table th').filter({ hasText: 'Date & Time' })
+      ).toBeVisible();
+      await expect(
+        page.locator('#orders-container table th').filter({ hasText: 'Card Used' })
+      ).toBeVisible();
+
+      // Verify first row displays date/time and card info
+      const firstRow = rows.first();
+      const dateTimeCell = firstRow.locator('td').nth(1);
+      await expect(dateTimeCell).not.toBeEmpty();
+      const dtText = await dateTimeCell.textContent();
+      expect(dtText || '').toContain('/');
+      expect(dtText || '').toContain(':');
+
+      const cardCell = firstRow.locator('td').nth(4);
+      await expect(cardCell).toHaveText(/\u2022{4} \d{4}/);
     });
   });
 
