@@ -40,6 +40,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
         raise credentials_exception
     username: Optional[str] = payload.get("sub")
     user_id_val: Optional[UUID] = payload.get("user_id")
+    is_admin_claim: Optional[bool] = payload.get("is_admin")
 
     if username is None or user_id_val is None:
         raise credentials_exception
@@ -60,7 +61,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )  # Changed to 401 for consistency
-    return TokenData(username=user.username, user_id=user.user_id)
+    return TokenData(
+        username=user.username,
+        user_id=user.user_id,
+        is_admin=is_admin_claim if is_admin_claim is not None else False,
+    )
 
 
 # --- User Endpoints ---
