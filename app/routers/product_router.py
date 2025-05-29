@@ -156,7 +156,6 @@ async def update_existing_product(
             ),
         )
 
-
     # Use ProductUpdate model to get clean update data
     update_data = ProductUpdate(
         name=name,
@@ -187,7 +186,10 @@ async def update_existing_product(
 
 # BFLA Target: No admin check initially.
 @router.delete(
-    "/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Products"]
+    "/products/{product_id}",
+    status_code=status.HTTP_200_OK,
+    tags=["Products"],
+    response_model=dict,
 )
 async def delete_existing_product(
     product_id: UUID,
@@ -218,7 +220,6 @@ async def delete_existing_product(
             ),
         )
 
-
     print(
         f"Deleting product {product_id}. Intended BFLA: No admin check performed."
     )  # Logging for demo
@@ -226,7 +227,7 @@ async def delete_existing_product(
     # Also remove associated stock
     db.db["stock"] = [s for s in db.db["stock"] if s.product_id != product_id]
     # Consider implications for orders with this product (e.g., mark as unavailable, don't delete from historical orders)
-    return
+    return {"message": "Product deleted successfully"}
 
 
 @router.get("/products/{product_id}/stock", response_model=Stock, tags=["Stock"])
@@ -292,7 +293,6 @@ async def update_product_stock_quantity(
                 ),
             )
 
-   
     if not stock_to_update:
         # If product exists but stock record doesn't, create it (could happen if product was added without stock init)
         print(f"Stock record for product {product_id} not found. Creating one.")

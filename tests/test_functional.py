@@ -230,7 +230,9 @@ def test_address_management(test_client, regular_auth_headers, regular_user_info
         f"/api/users/{user_id}/addresses/{new_address['address_id']}",
         headers=regular_auth_headers,
     )
-    assert delete_response.status_code == 204
+    assert delete_response.status_code == 200
+    delete_data = delete_response.json()
+    assert "Address deleted".lower() in delete_data.get("message", "").lower()
 
     # Verify address was deleted
     list_after_delete = test_client.get(
@@ -282,7 +284,9 @@ def test_credit_card_management(test_client, regular_auth_headers, regular_user_
         f"/api/users/{user_id}/credit-cards/{new_card['card_id']}",
         headers=regular_auth_headers,
     )
-    assert delete_response.status_code == 204
+    assert delete_response.status_code == 200
+    del_data = delete_response.json()
+    assert "credit card deleted" in del_data.get("message", "").lower()
 
 
 # --- Additional Address Endpoint Tests ---
@@ -383,7 +387,9 @@ def test_update_delete_address_non_protected(
     delete_resp = test_client.delete(
         f"/api/users/{user_id}/addresses/{addr_id}", headers=non_protected_auth_headers
     )
-    assert delete_resp.status_code == 204
+    assert delete_resp.status_code == 200
+    del_data = delete_resp.json()
+    assert "address deleted" in del_data.get("message", "").lower()
 
 
 def test_protected_address_modification_forbidden(
@@ -503,7 +509,9 @@ def test_update_delete_credit_card_non_protected(
         f"/api/users/{user_id}/credit-cards/{card_id}",
         headers=non_protected_auth_headers,
     )
-    assert delete_resp.status_code == 204
+    assert delete_resp.status_code == 200
+    del_data = delete_resp.json()
+    assert "credit card deleted" in del_data.get("message", "").lower()
 
 
 def test_protected_credit_card_modification_forbidden(
@@ -723,7 +731,9 @@ def test_create_update_delete_product_flow(test_client):
     assert up.get("internal_status") == "hidden"
 
     delete_resp = test_client.delete(f"/api/products/{pid}")
-    assert delete_resp.status_code == 204
+    assert delete_resp.status_code == 200
+    del_data = delete_resp.json()
+    assert "product deleted" in del_data.get("message", "").lower()
     get_resp = test_client.get(f"/api/products/{pid}")
     assert get_resp.status_code == 404
 
@@ -1383,7 +1393,9 @@ def test_delete_non_protected_user_success(test_client):
     )
     user_id = create.json()["user_id"]
     delete_resp = test_client.delete(f"/api/users/{user_id}")
-    assert delete_resp.status_code == 204
+    assert delete_resp.status_code == 200
+    del_data = delete_resp.json()
+    assert "user deleted" in del_data.get("message", "").lower()
     get_resp = test_client.get(f"/api/users/{user_id}")
     assert get_resp.status_code == 404
 
@@ -1399,7 +1411,9 @@ def test_delete_user_invalid_uuid(test_client):
     assert resp.status_code == 422
 
 
-def test_delete_last_address_forbidden_protected_user(test_client, test_data, regular_auth_headers):
+def test_delete_last_address_forbidden_protected_user(
+    test_client, test_data, regular_auth_headers
+):
     """Deleting the last remaining address of a protected user should fail."""
     david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
     user_id = david["user_id"]
@@ -1410,7 +1424,9 @@ def test_delete_last_address_forbidden_protected_user(test_client, test_data, re
         f"/api/users/{user_id}/addresses/{addr_ids[0]}",
         headers=regular_auth_headers,
     )
-    assert first_del.status_code == 204
+    assert first_del.status_code == 200
+    del_data = first_del.json()
+    assert "address deleted" in del_data.get("message", "").lower()
 
     # Attempt to delete last remaining address
     second_del = test_client.delete(
@@ -1426,7 +1442,9 @@ def test_delete_last_address_forbidden_protected_user(test_client, test_data, re
     db.initialize_database_from_json()
 
 
-def test_delete_last_credit_card_forbidden_protected_user(test_client, test_data, regular_auth_headers):
+def test_delete_last_credit_card_forbidden_protected_user(
+    test_client, test_data, regular_auth_headers
+):
     """Deleting the only credit card of a protected user should return 403."""
     david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
     user_id = david["user_id"]
@@ -1444,7 +1462,9 @@ def test_delete_last_credit_card_forbidden_protected_user(test_client, test_data
     db.initialize_database_from_json()
 
 
-def test_delete_default_address_auto_select_new_default(test_client, test_data, regular_auth_headers):
+def test_delete_default_address_auto_select_new_default(
+    test_client, test_data, regular_auth_headers
+):
     """Deleting a default address should promote another address to default."""
     david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
     user_id = david["user_id"]
@@ -1455,7 +1475,9 @@ def test_delete_default_address_auto_select_new_default(test_client, test_data, 
         f"/api/users/{user_id}/addresses/{default_id}",
         headers=regular_auth_headers,
     )
-    assert del_resp.status_code == 204
+    assert del_resp.status_code == 200
+    del_data = del_resp.json()
+    assert "address deleted" in del_data.get("message", "").lower()
 
     remaining = test_client.get(
         f"/api/users/{user_id}/addresses",
@@ -1470,7 +1492,9 @@ def test_delete_default_address_auto_select_new_default(test_client, test_data, 
     db.initialize_database_from_json()
 
 
-def test_delete_default_credit_card_auto_select_new_default(test_client, test_data, regular_auth_headers):
+def test_delete_default_credit_card_auto_select_new_default(
+    test_client, test_data, regular_auth_headers
+):
     """Deleting a default credit card should promote another card to default."""
     frank = next(u for u in test_data["users"] if u["username"] == "FrankMiller")
     user_id = frank["user_id"]
@@ -1481,7 +1505,9 @@ def test_delete_default_credit_card_auto_select_new_default(test_client, test_da
         f"/api/users/{user_id}/credit-cards/{default_id}",
         headers=regular_auth_headers,
     )
-    assert del_resp.status_code == 204
+    assert del_resp.status_code == 200
+    del_data = del_resp.json()
+    assert "credit card deleted" in del_data.get("message", "").lower()
 
     remaining = test_client.get(
         f"/api/users/{user_id}/credit-cards",
@@ -1496,7 +1522,9 @@ def test_delete_default_credit_card_auto_select_new_default(test_client, test_da
     db.initialize_database_from_json()
 
 
-def test_set_default_address_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+def test_set_default_address_when_current_default_protected(
+    test_client, regular_auth_headers, regular_user_info
+):
     """Protected user can change default even if current default is protected."""
     user_id = regular_user_info["user_id"]
     old_default_id = regular_user_info["addresses"][0]["address_id"]
@@ -1532,7 +1560,9 @@ def test_set_default_address_when_current_default_protected(test_client, regular
     db.initialize_database_from_json()
 
 
-def test_set_default_address_allowed_when_current_default_not_protected(test_client, regular_auth_headers, test_data):
+def test_set_default_address_allowed_when_current_default_not_protected(
+    test_client, regular_auth_headers, test_data
+):
     """Setting default succeeds when current default is not protected."""
     david = next(u for u in test_data["users"] if u["username"] == "DavidBrown")
     user_id = david["user_id"]
@@ -1588,7 +1618,9 @@ def test_set_default_address_allowed_when_current_default_not_protected(test_cli
     db.initialize_database_from_json()
 
 
-def test_set_default_credit_card_when_current_default_protected(test_client, regular_auth_headers, regular_user_info):
+def test_set_default_credit_card_when_current_default_protected(
+    test_client, regular_auth_headers, regular_user_info
+):
     """Protected user can change default card even if current default is protected."""
     user_id = regular_user_info["user_id"]
     old_default_id = regular_user_info["credit_cards"][0]["card_id"]
@@ -1625,7 +1657,9 @@ def test_set_default_credit_card_when_current_default_protected(test_client, reg
     db.initialize_database_from_json()
 
 
-def test_set_default_credit_card_allowed_when_current_default_not_protected(test_client, regular_auth_headers, test_data):
+def test_set_default_credit_card_allowed_when_current_default_not_protected(
+    test_client, regular_auth_headers, test_data
+):
     """Setting new default succeeds when existing default is not protected."""
     frank = next(u for u in test_data["users"] if u["username"] == "FrankMiller")
     user_id = frank["user_id"]
@@ -1681,4 +1715,3 @@ def test_set_default_credit_card_allowed_when_current_default_not_protected(test
     from app import db
 
     db.initialize_database_from_json()
-
