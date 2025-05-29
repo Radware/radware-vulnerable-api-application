@@ -164,6 +164,17 @@ def test_login_missing_fields(test_client, params):
     assert response.status_code == 422
 
 
+def test_jwks_endpoint(test_client):
+    """JWKS endpoint should return the RSA public key in JWK format."""
+    response = test_client.get("/api/auth/.well-known/jwks.json")
+    assert response.status_code == 200
+    data = response.json()
+    assert "keys" in data and isinstance(data["keys"], list)
+    key = data["keys"][0]
+    for field in ["kty", "kid", "alg", "n", "e"]:
+        assert field in key
+
+
 # Test product listing functionality
 def test_list_products(test_client):
     """Test retrieving the list of products."""
