@@ -55,10 +55,12 @@ test.describe('Admin Page UI Demos', () => {
     await page.goto('/admin');
     await page.fill('#delete-user-id', graceId);
     page.once('dialog', d => d.accept());
-    await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/api/users/${graceId}`) && r.request().method() === 'DELETE' && r.status() === 204),
+    const [delResp] = await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/api/users/${graceId}`) && r.request().method() === 'DELETE' && r.status() === 200),
       page.locator('#delete-user-form button[type="submit"]').click()
     ]);
+    const delBody = await delResp.json();
+    expect(delBody.message).toMatch(/user deleted/i);
     await expect(page.locator('#global-message-container .global-message.success-message')).toContainText(/User .* deleted/i);
     await page.fill('#delete-user-id', bobId);
     page.once('dialog', d => d.accept());

@@ -87,10 +87,12 @@ test.describe.serial('Profile Page - Address Management', () => {
     await page.unroute('**/addresses/**');
 
     page.once('dialog', d => d.accept());
-    await Promise.all([
-      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+    const [delResp] = await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 200, { timeout: 20000 }),
       updatedCard.locator('.delete-address-btn').click()
     ]);
+    const delBody = await delResp.json();
+    expect(delBody.message).toMatch(/address deleted/i);
     await expect(successMsg.filter({ hasText: /Address deleted successfully/i })).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#address-list-container .address-card', { hasText: 'Updated Test Street' })).toHaveCount(0);
   });
@@ -128,10 +130,12 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('.address-card', { hasText: '123 Oak Street' }).locator('.default-badge')).toHaveCount(0);
 
     page.once('dialog', d => d.accept());
-    await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/addresses/${addrId}`) && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+    const [delResp2] = await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/addresses/${addrId}`) && r.request().method() === 'DELETE' && r.status() === 200, { timeout: 20000 }),
       newCard.locator('.delete-address-btn').click()
     ]);
+    const delBody2 = await delResp2.json();
+    expect(delBody2.message).toMatch(/address deleted/i);
   });
 
   test('should allow editing a protected address via UI', async ({ page }) => {
@@ -162,10 +166,12 @@ test.describe.serial('Profile Page - Address Management', () => {
   test('should allow deleting a protected address when another address exists', async ({ page }) => {
     const protectedCard = page.locator('.address-card', { hasText: '123 Oak Street' });
     page.once('dialog', dialog => dialog.accept());
-    await Promise.all([
-      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+    const [delResp3] = await Promise.all([
+      page.waitForResponse(r => r.url().includes('/addresses/') && r.request().method() === 'DELETE' && r.status() === 200, { timeout: 20000 }),
       protectedCard.locator('.delete-address-btn').click()
     ]);
+    const delBody3 = await delResp3.json();
+    expect(delBody3.message).toMatch(/address deleted/i);
     const success = page.locator('#global-message-container .global-message.success-message').filter({ hasText: 'Address deleted successfully' });
     await expect(success).toBeVisible({ timeout: 15000 });
     await expect(protectedCard).toHaveCount(0);
@@ -208,10 +214,12 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('.credit-card-card', { hasText: 'Alice Smith' }).locator('.default-badge')).toHaveCount(0);
 
     page.once('dialog', d => d.accept());
-    await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/credit-cards/${cardId}`) && r.request().method() === 'DELETE' && r.status() === 204, { timeout: 20000 }),
+    const [delRespCard] = await Promise.all([
+      page.waitForResponse(r => r.url().includes(`/credit-cards/${cardId}`) && r.request().method() === 'DELETE' && r.status() === 200, { timeout: 20000 }),
       card.locator(`.delete-card-btn[data-card-id="${cardId}"]`).click()
     ]);
+    const delCardBody = await delRespCard.json();
+    expect(delCardBody.message).toMatch(/credit card deleted/i);
   });
 
   test('should allow editing but still prevent deleting a protected credit card', async ({ page }) => {

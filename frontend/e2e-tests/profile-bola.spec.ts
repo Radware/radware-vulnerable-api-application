@@ -150,14 +150,16 @@ test.describe('Profile Page - BOLA Vulnerabilities', () => {
     await expect(cardToDelete).toBeVisible();
 
     page.once('dialog', d => d.accept());
-    await Promise.all([
+    const [delResp] = await Promise.all([
       page.waitForResponse(r =>
         r.url().includes(`/api/users/${grace.id}/credit-cards/${newlyCreatedCardIdForGrace}`) &&
         r.request().method() === 'DELETE' &&
-        r.status() === 204
+        r.status() === 200
       , { timeout: 20000 }),
       cardToDelete.locator('.delete-card-btn').click()
     ]);
+    const delBody = await delResp.json();
+    expect(delBody.message).toMatch(/credit card deleted/i);
 
     const successMsg = page.locator('#global-message-container .global-message.success-message');
     await expect(successMsg.filter({ hasText: `Credit card deleted successfully for ${grace.username}!` })).toBeVisible({ timeout: 15000 });
