@@ -41,6 +41,12 @@ async def list_user_orders(
         items_db = [item for item in db.db["order_items"] if item.order_id == order_db.order_id]
         order_response = Order.model_validate(order_db)
         order_response.items = [OrderItem.model_validate(item) for item in items_db]
+        card = next(
+            (cc for cc in db.db["credit_cards"] if cc.card_id == order_db.credit_card_id),
+            None,
+        )
+        if card:
+            order_response.credit_card_last_four = card.card_last_four
         response_orders.append(order_response)
     return response_orders
 
@@ -167,7 +173,13 @@ async def get_user_order_by_id(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Order with ID {order_id} not found for user {user_id}.")
 
     items_db = [item for item in db.db["order_items"] if item.order_id == order_db.order_id]
-    
+
     order_response = Order.model_validate(order_db)
     order_response.items = [OrderItem.model_validate(item) for item in items_db]
+    card = next(
+        (cc for cc in db.db["credit_cards"] if cc.card_id == order_db.credit_card_id),
+        None,
+    )
+    if card:
+        order_response.credit_card_last_four = card.card_last_four
     return order_response
