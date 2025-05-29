@@ -67,8 +67,11 @@ test.describe('Admin Page UI Demos', () => {
       page.locator('#delete-user-form button[type="submit"]').click()
     ]);
     expect(resp.status()).toBe(403);
-    const warn = page.locator('#global-message-container .global-message.warning-message');
-    await expect(warn).toContainText('Action Blocked');
+    const warn = page
+      .locator('#global-message-container .global-message.warning-message')
+      .filter({ hasText: 'Action Blocked' })
+      .first();
+    await expect(warn).toContainText(/Action Blocked/);
     await expect(warn).toContainText(/protected for demo purposes/i);
   });
 });
