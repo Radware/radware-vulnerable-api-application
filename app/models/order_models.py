@@ -45,6 +45,7 @@ class OrderInDBBase(OrderBase):
 
 class Order(OrderInDBBase):
     items: List[OrderItem] = []
+    credit_card_last_four: Optional[str] = None
 
 # For responses
 class OrderDetails(Order):
