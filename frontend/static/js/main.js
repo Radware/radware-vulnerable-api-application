@@ -276,14 +276,63 @@ function displayGlobalMessage(message, type = 'info', duration = 5000) {
 function handleProtectedEntityError(error) {
     if (error && error.message && /protected/i.test(error.message)) {
         const msg = error.message;
-        if (/must have at least one|cannot delete the last|protected default/i.test(msg)) {
-            displayGlobalMessage(msg, 'warning');
+        if (/must have at least one|cannot delete the last/i.test(msg)) {
+            const userNameForMsg = typeof currentlyViewedUsername !== 'undefined' && currentlyViewedUsername ? currentlyViewedUsername : 'The user';
+            displayGlobalMessage(
+                `${msg}<br><em><strong>Note:</strong> '${userNameForMsg}' is a protected entity for this demo. For more details on protected entities, please consult your lab guide or the project README.md.</em>`,
+                'warning',
+                10000
+            );
+        } else if (/protected default/i.test(msg)) {
+            displayGlobalMessage(
+                `${msg}<br><em><strong>Note:</strong> This action is restricted for demo stability. Please consult your lab guide or project README.md.</em>`,
+                'warning',
+                10000
+            );
         } else {
-            displayGlobalMessage(`<strong>Action Blocked:</strong> ${msg}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`, 'warning', 8000);
+            displayGlobalMessage(
+                `<strong>Action Blocked:</strong> ${msg}<br><em>This is part of the demo design. Try exploiting a non-protected item or one you created.</em>`,
+                'warning',
+                8000
+            );
         }
         return true;
     }
     return false;
+}
+
+function clearFormErrors(formId, fieldConfig) {
+    fieldConfig.forEach(({ inputId, errorId }) => {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (input) input.classList.remove('is-invalid');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
+    });
+}
+
+function validateAndDisplayFormErrors(formId, fieldConfig) {
+    let allValid = true;
+    fieldConfig.forEach((cfg) => {
+        const input = document.getElementById(cfg.inputId);
+        const errorEl = document.getElementById(cfg.errorId);
+        if (!input) return;
+        const value = input.value.trim();
+        let valid = true;
+        if (cfg.required && !value) valid = false;
+        if (valid && cfg.validationFn && value) valid = cfg.validationFn(value);
+        if (!valid) {
+            allValid = false;
+            input.classList.add('is-invalid');
+            if (errorEl) {
+                errorEl.textContent = cfg.errorMessage || 'Invalid field.';
+                errorEl.style.display = 'block';
+            }
+        }
+    });
+    return allValid;
 }
 
 function showPageLoader(message = 'Loading...') {
@@ -1160,6 +1209,23 @@ function cancelItemForm(itemType) {
             cardCvvInput.placeholder = 'Required for new cards';
             cardCvvInput.disabled = false;
         }
+    }
+
+    if (itemType === 'address') {
+        clearFormErrors('address-form', [
+            { inputId: 'address-street', errorId: 'address-street-error' },
+            { inputId: 'address-city', errorId: 'address-city-error' },
+            { inputId: 'address-country', errorId: 'address-country-error' },
+            { inputId: 'address-zip', errorId: 'address-zip-error' },
+        ]);
+    } else if (itemType === 'card') {
+        clearFormErrors('card-form', [
+            { inputId: 'card-cardholder-name', errorId: 'card-cardholder-name-error' },
+            { inputId: 'card-number-input', errorId: 'card-number-input-error' },
+            { inputId: 'card-expiry-month', errorId: 'card-expiry-month-error' },
+            { inputId: 'card-expiry-year', errorId: 'card-expiry-year-error' },
+            { inputId: 'card-cvv-input', errorId: 'card-cvv-input-error' },
+        ]);
     }
 }
 
@@ -2871,15 +2937,20 @@ async function handleAddressFormSubmit(event) {
     const addressId = document.getElementById('address-id-hidden').value;
     const isEditing = !!addressId;
 
+    const addressFields = [
+        { inputId: 'address-street', errorId: 'address-street-error', required: true, errorMessage: 'Street is required.' },
+        { inputId: 'address-city', errorId: 'address-city-error', required: true, errorMessage: 'City is required.' },
+        { inputId: 'address-country', errorId: 'address-country-error', required: true, errorMessage: 'Country is required.' },
+        { inputId: 'address-zip', errorId: 'address-zip-error', required: true, errorMessage: 'Zip code is required.' },
+    ];
+
+    clearFormErrors('address-form', addressFields);
+    if (!validateAndDisplayFormErrors('address-form', addressFields)) return;
+
     const street = document.getElementById('address-street').value.trim(); // HTML ID
     const city = document.getElementById('address-city').value.trim();
     const country = document.getElementById('address-country').value.trim();
     const zip_code = document.getElementById('address-zip').value.trim(); // HTML ID
-
-    if (!street || !city || !country || !zip_code) {
-        displayGlobalMessage('All address fields are required.', 'error');
-        return;
-    }
     
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     let queryParams = `street=${encodeURIComponent(street)}&city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&zip_code=${encodeURIComponent(zip_code)}`;
@@ -3106,33 +3177,27 @@ async function handleCardFormSubmit(event) {
 
     if (!cardholderNameInput || !expiryMonthInput || !expiryYearInput || !cardNumberInput || !cvvInput) {
         displayGlobalMessage('One or more card form fields are missing from the page.', 'error');
-        console.error("Card form input elements not found.");
+        console.error('Card form input elements not found.');
         return;
     }
+
+    const cardFields = [
+        { inputId: 'card-cardholder-name', errorId: 'card-cardholder-name-error', required: true, errorMessage: 'Cardholder name is required.' },
+        { inputId: 'card-number-input', errorId: 'card-number-input-error', required: !isEditing, validationFn: v => /^\d{12,19}$/.test(v), errorMessage: 'Valid card number is required for new cards.' },
+        { inputId: 'card-expiry-month', errorId: 'card-expiry-month-error', required: true, validationFn: v => /^(0[1-9]|1[0-2])$/.test(v), errorMessage: 'Valid month (MM) required.' },
+        { inputId: 'card-expiry-year', errorId: 'card-expiry-year-error', required: true, validationFn: v => /^20[2-9][0-9]$/.test(v), errorMessage: 'Valid year (YYYY) required.' },
+        { inputId: 'card-cvv-input', errorId: 'card-cvv-input-error', required: !isEditing, validationFn: v => /^\d{3,4}$/.test(v), errorMessage: 'CVV required for new cards.' },
+    ];
+
+    clearFormErrors('card-form', cardFields);
+    if (!validateAndDisplayFormErrors('card-form', cardFields)) return;
 
     const cardholder_name = cardholderNameInput.value.trim();
     const expiry_month = expiryMonthInput.value.trim();
     const expiry_year = expiryYearInput.value.trim();
-    
+
     const card_number = cardNumberInput.value.trim();
     const cvv = cvvInput.value.trim();
-
-    if (!cardholder_name || !expiry_month || !expiry_year) {
-        displayGlobalMessage('Cardholder name, expiry month, and expiry year are required.', 'error');
-        return;
-    }
-    if (!isEditing && (!card_number || !cvv)) {
-        displayGlobalMessage('Card number and CVV are required for new cards.', 'error');
-        return;
-    }
-    if (!/^(0[1-9]|1[0-2])$/.test(expiry_month)) {
-        displayGlobalMessage('Invalid expiry month format. Please use MM (e.g., 01 for January).', 'error');
-        return;
-    }
-    if (!/^20[2-9][0-9]$/.test(expiry_year)) { // Validates YYYY from 2020-2099
-        displayGlobalMessage('Invalid expiry year format. Please use YYYY (e.g., 2027).', 'error');
-        return;
-    }
 
     const userIdForRequest = document.getElementById('currently-viewed-user-id').value;
     if (!userIdForRequest) {

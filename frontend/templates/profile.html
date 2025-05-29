@@ -105,18 +105,22 @@
                     <div class="form-group">
                         <label for="address-street">Street:</label>
                         <input type="text" id="address-street" class="form-control" required>
+                        <small class="form-error-text" id="address-street-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div class="form-group">
                         <label for="address-city">City:</label>
                         <input type="text" id="address-city" class="form-control" required>
+                        <small class="form-error-text" id="address-city-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div class="form-group">
                         <label for="address-country">Country:</label>
                         <input type="text" id="address-country" class="form-control" required>
+                        <small class="form-error-text" id="address-country-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div class="form-group">
                         <label for="address-zip">Zip Code:</label>
                         <input type="text" id="address-zip" class="form-control" required>
+                        <small class="form-error-text" id="address-zip-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div id="address-protected-note" class="protected-edit-note" style="display:none;">
                         This is a protected address. Only limited modifications are allowed for demo purposes.
@@ -149,25 +153,30 @@
                     <div class="form-group">
                         <label for="card-cardholder-name">Cardholder Name:</label>
                         <input type="text" id="card-cardholder-name" class="form-control" required>
+                        <small class="form-error-text" id="card-cardholder-name-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div class="form-group">
                         <label for="card-number-input">Card Number:</label>
                         <input type="text" id="card-number-input" class="form-control" placeholder="Required for new cards">
+                        <small class="form-error-text" id="card-number-input-error" style="display:none; color:var(--danger-color);"></small>
                         <small class="form-text text-muted">Enter a valid test card number (e.g., Visa: 4xxx..., MC: 51-55xxx...).</small>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="card-expiry-month">Expiry Month (MM):</label>
                             <input type="text" id="card-expiry-month" class="form-control" placeholder="MM" required pattern="0[1-9]|1[0-2]">
+                            <small class="form-error-text" id="card-expiry-month-error" style="display:none; color:var(--danger-color);"></small>
                         </div>
                         <div class="form-group col-md-6">
                             <label for="card-expiry-year">Expiry Year (YYYY):</label>
                             <input type="text" id="card-expiry-year" class="form-control" placeholder="YYYY" required pattern="20[2-9][0-9]">
+                            <small class="form-error-text" id="card-expiry-year-error" style="display:none; color:var(--danger-color);"></small>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="card-cvv-input">CVV:</label>
                         <input type="text" id="card-cvv-input" class="form-control" placeholder="Required for new cards">
+                        <small class="form-error-text" id="card-cvv-input-error" style="display:none; color:var(--danger-color);"></small>
                     </div>
                     <div id="card-protected-note" class="protected-edit-note" style="display:none;">
                         This is a protected card. Only limited modifications are allowed for demo purposes.
