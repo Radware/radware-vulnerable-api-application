@@ -1,5 +1,7 @@
 import pytest
 import uuid
+from jose import jwt
+from app.security import RSA_PUBLIC_KEY
 from app.routers.product_router import PROTECTED_STOCK_MINIMUM
 
 
@@ -128,6 +130,23 @@ def test_login_existing_user_success(test_client, regular_user_credentials):
     assert "access_token" in data and data["token_type"] == "bearer"
 
 
+def test_login_token_decoding(test_client, regular_user_credentials):
+    """Token returned from login should be valid and include expected claims."""
+    response = test_client.post(
+        "/api/auth/login",
+        params={
+            "username": regular_user_credentials["username"],
+            "password": regular_user_credentials["password"],
+        },
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    payload = jwt.decode(token, RSA_PUBLIC_KEY, algorithms=["RS256"])
+    assert payload["sub"] == regular_user_credentials["username"]
+    assert payload.get("user_id")
+    assert "is_admin" in payload
+
+
 def test_login_incorrect_username(test_client):
     """Login with a non-existent username should return 401."""
     response = test_client.post(
@@ -170,9 +189,14 @@ def test_jwks_endpoint(test_client):
     assert response.status_code == 200
     data = response.json()
     assert "keys" in data and isinstance(data["keys"], list)
+    assert len(data["keys"]) == 1
     key = data["keys"][0]
-    for field in ["kty", "kid", "alg", "n", "e"]:
-        assert field in key
+    assert key.get("kty") == "RSA"
+    assert key.get("alg") == "RS256"
+    assert key.get("use") == "sig"
+    assert key.get("kid")
+    assert isinstance(key.get("n"), str) and key.get("n")
+    assert isinstance(key.get("e"), str) and key.get("e")
 
 
 # Test product listing functionality
