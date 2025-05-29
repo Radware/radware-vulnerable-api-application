@@ -258,6 +258,11 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('#card-cardholder-name-error')).toBeHidden();
     await expect(page.locator('#card-cardholder-name')).not.toHaveClass(/is-invalid/);
     await expect(page.locator('#card-number-input-error')).toBeVisible();
+    await expect(page.locator('#card-number-input-error')).toHaveText('Valid card number is required for new cards.');
+    await expect(page.locator('#card-number-input')).toHaveClass(/is-invalid/);
+    await expect(page.locator('#card-cvv-input-error')).toBeVisible();
+    await expect(page.locator('#card-cvv-input-error')).toHaveText('CVV required for new cards.');
+    await expect(page.locator('#card-cvv-input')).toHaveClass(/is-invalid/);
 
     await page.fill('#card-number-input', '4111111111111111');
     await page.fill('#card-expiry-month', '12');
