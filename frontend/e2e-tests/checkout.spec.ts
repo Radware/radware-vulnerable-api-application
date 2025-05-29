@@ -97,13 +97,19 @@ test.describe('Checkout Process', () => {
     await page.goto('/');
     await expect(page.locator('#loading-indicator')).toBeHidden({ timeout: 15000 });
     const laptop = page.locator('article.product-card', { hasText: 'Laptop Pro 15' });
-    await laptop.locator('button.add-to-cart-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible({ timeout: 10000 });
+      await laptop.locator('button.add-to-cart-btn').click();
+      await expect(
+        page.locator('#global-message-container .global-message.success-message').first()
+      ).toBeVisible({ timeout: 10000 });
     const mouse = page.locator('article.product-card', { hasText: 'Wireless Mouse' });
-    await mouse.locator('button.add-to-cart-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible();
-    await mouse.locator('button.add-to-cart-btn').click();
-    await expect(page.locator('#global-message-container .global-message.success-message')).toBeVisible();
+      await mouse.locator('button.add-to-cart-btn').click();
+      await expect(
+        page.locator('#global-message-container .global-message.success-message').first()
+      ).toBeVisible();
+      await mouse.locator('button.add-to-cart-btn').click();
+      await expect(
+        page.locator('#global-message-container .global-message.success-message').first()
+      ).toBeVisible();
     await page.goto('/checkout');
     await page.waitForSelector('#address-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
     await page.waitForSelector('#credit-card-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
