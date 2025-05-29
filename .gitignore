@@ -75,9 +75,7 @@ build/
 # Ignore Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
 
-# Certificate files
-*.pem
-ZscalerRootCA.pem
+
 
 # Playwright test results and reports
 /test-results/
@@ -89,6 +87,6 @@ debug_*.py
 # Local development files
 .last-run.json
 
-# Local certificates
-*.cert
-*.key
+
+
+ZscalerRootCA.pem
