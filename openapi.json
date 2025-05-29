@@ -1841,6 +1841,12 @@
               "$ref": "#/components/schemas/OrderItem"
             },
             "default": []
+          },
+          "credit_card_last_four": {
+            "type": "string",
+            "nullable": true,
+            "description": "Last four digits of the credit card used for the order, if available.",
+            "readOnly": true
           }
         }
       },
