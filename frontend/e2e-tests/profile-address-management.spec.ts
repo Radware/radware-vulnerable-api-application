@@ -7,6 +7,7 @@ const alice = {
 };
 const bob = {
   username: 'BobJohnson',
+  password: 'BobPass2@',
   id: '00000003-0000-0000-0000-000000000003'
 };
 
@@ -47,7 +48,24 @@ test.describe.serial('Profile Page - Address Management', () => {
 
     await page.locator('#toggle-address-form-btn').click();
     await expect(page.locator('#address-form-container')).toBeVisible();
+    await page.evaluate(() => document.getElementById('address-form')?.setAttribute('novalidate', 'true'));
+
+    // client-side validation: submit empty form
+    await page.locator('#address-form-submit-btn').click();
+    await expect(page.locator('#address-street-error')).toBeVisible();
+    await expect(page.locator('#address-street-error')).toHaveText('Street is required.');
+    await expect(page.locator('#address-street')).toHaveClass(/is-invalid/);
+    await expect(page.locator('#address-city-error')).toBeVisible();
+    await expect(page.locator('#address-country-error')).toBeVisible();
+    await expect(page.locator('#address-zip-error')).toBeVisible();
+
+    // fill one field and verify other errors remain
     await page.fill('#address-street', uniqueStreet);
+    await page.locator('#address-form-submit-btn').click();
+    await expect(page.locator('#address-street-error')).toBeHidden();
+    await expect(page.locator('#address-street')).not.toHaveClass(/is-invalid/);
+    await expect(page.locator('#address-city-error')).toBeVisible();
+
     await page.fill('#address-city', 'Testville');
     await page.fill('#address-country', 'USA');
     await page.fill('#address-zip', '99999');
@@ -59,6 +77,11 @@ test.describe.serial('Profile Page - Address Management', () => {
 
     const successMsg = page.locator('#global-message-container .global-message.success-message');
     await expect(successMsg.filter({ hasText: /Address for AliceSmith added successfully/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#address-street-error')).toBeHidden();
+    await expect(page.locator('#address-city-error')).toBeHidden();
+    await expect(page.locator('#address-country-error')).toBeHidden();
+    await expect(page.locator('#address-zip-error')).toBeHidden();
+    await expect(page.locator('#address-street')).not.toHaveClass(/is-invalid/);
 
     const newCard = page.locator('#address-list-container .address-card', { hasText: uniqueStreet });
     await expect(newCard).toBeVisible();
@@ -66,6 +89,13 @@ test.describe.serial('Profile Page - Address Management', () => {
     await newCard.locator('.edit-address-btn').click();
     await expect(page.locator('#address-form-container')).toBeVisible();
     await expect(page.locator('#address-edit-mode-indicator')).toBeVisible();
+
+    // client-side validation when editing
+    await page.fill('#address-street', '');
+    await page.locator('#address-form-submit-btn').click();
+    await expect(page.locator('#address-street-error')).toBeVisible();
+    await expect(page.locator('#address-street')).toHaveClass(/is-invalid/);
+
     await page.fill('#address-street', 'Updated Test Street');
 
     await page.route('**/addresses/**', async (route, request) => {
@@ -82,6 +112,8 @@ test.describe.serial('Profile Page - Address Management', () => {
     ]);
 
     await expect(successMsg.filter({ hasText: /Address for AliceSmith updated successfully/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#address-street-error')).toBeHidden();
+    await expect(page.locator('#address-street')).not.toHaveClass(/is-invalid/);
     const updatedCard = page.locator('#address-list-container .address-card', { hasText: 'Updated Test Street' });
     await expect(updatedCard).toBeVisible({ timeout: 20000 });
     await page.unroute('**/addresses/**');
@@ -144,6 +176,13 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('#address-form-container')).toBeVisible();
     await expect(page.locator('#address-protected-note')).toBeVisible();
     await expect(page.locator('#address-street')).toBeEnabled();
+    await page.evaluate(() => document.getElementById('address-form')?.setAttribute('novalidate', 'true'));
+
+    // validation during edit
+    await page.fill('#address-street', '');
+    await page.locator('#address-form-submit-btn').click();
+    await expect(page.locator('#address-street-error')).toBeVisible();
+    await page.fill('#address-street', '123 Oak Street Updated');
     const updatedStreet = `123 Oak Street Updated ${Date.now()}`;
     await page.fill('#address-street', updatedStreet);
     await Promise.all([
@@ -152,6 +191,8 @@ test.describe.serial('Profile Page - Address Management', () => {
     ]);
     const successMsg = page.locator('#global-message-container .global-message.success-message');
     await expect(successMsg.filter({ hasText: /Address for AliceSmith updated/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#address-street-error')).toBeHidden();
+    await expect(page.locator('#address-street')).not.toHaveClass(/is-invalid/);
 
     // revert changes for subsequent tests
     const editedCard = page.locator('.address-card', { hasText: updatedStreet });
@@ -177,12 +218,47 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(protectedCard).toHaveCount(0);
   });
 
+  test('should show specific warning when trying to delete the last address of a protected user', async ({ page }) => {
+    await page.goto('/logout');
+    await login(page, bob.username, bob.password);
+    await page.goto('/profile');
+    const lastAddress = page.locator('.address-card', { hasText: '789 Pine Avenue' });
+    await expect(lastAddress).toBeVisible();
+
+    page.once('dialog', d => d.accept());
+    await Promise.all([
+      page.waitForResponse(r =>
+        r.url().includes(`/api/users/${bob.id}/addresses/`) && r.request().method() === 'DELETE' && r.status() === 403,
+        { timeout: 20000 }
+      ),
+      lastAddress.locator('.delete-address-btn').click()
+    ]);
+
+    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: "BobJohnson" });
+    await expect(warning).toContainText(/Protected user 'BobJohnson' must have at least one address\. Cannot delete the last one\./i);
+    await expect(warning).toContainText(/protected entity for this demo/i);
+    await expect(lastAddress).toBeVisible();
+  });
+
   test('should allow adding a new credit card and set it as default even when existing default is protected', async ({ page }) => {
     const unique = Date.now();
     const name = `Test Card ${unique}`;
     await page.locator('#toggle-card-form-btn').click();
     await expect(page.locator('#card-form-container')).toBeVisible();
+    await page.evaluate(() => document.getElementById('card-form')?.setAttribute('novalidate', 'true'));
+
+    // client-side validation for new card
+    await page.locator('#card-form-submit-btn').click();
+    await expect(page.locator('#card-cardholder-name-error')).toBeVisible();
+    await expect(page.locator('#card-cardholder-name-error')).toHaveText('Cardholder name is required.');
+    await expect(page.locator('#card-cardholder-name')).toHaveClass(/is-invalid/);
+
     await page.fill('#card-cardholder-name', name);
+    await page.locator('#card-form-submit-btn').click();
+    await expect(page.locator('#card-cardholder-name-error')).toBeHidden();
+    await expect(page.locator('#card-cardholder-name')).not.toHaveClass(/is-invalid/);
+    await expect(page.locator('#card-number-input-error')).toBeVisible();
+
     await page.fill('#card-number-input', '4111111111111111');
     await page.fill('#card-expiry-month', '12');
     await page.fill('#card-expiry-year', '2030');
@@ -193,6 +269,12 @@ test.describe.serial('Profile Page - Address Management', () => {
     ]);
     const cardSuccess = page.locator('#global-message-container .global-message.success-message');
     await expect(cardSuccess.filter({ hasText: /Credit card for AliceSmith added successfully/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#card-cardholder-name-error')).toBeHidden();
+    await expect(page.locator('#card-number-input-error')).toBeHidden();
+    await expect(page.locator('#card-expiry-month-error')).toBeHidden();
+    await expect(page.locator('#card-expiry-year-error')).toBeHidden();
+    await expect(page.locator('#card-cvv-input-error')).toBeHidden();
+    await expect(page.locator('#card-cardholder-name')).not.toHaveClass(/is-invalid/);
 
     const card = page.locator('.credit-card-card', { hasText: name });
     await expect(card).toBeVisible();
@@ -230,8 +312,14 @@ test.describe.serial('Profile Page - Address Management', () => {
     await expect(page.locator('#card-expiry-month')).toBeEnabled();
     await expect(page.locator('#card-expiry-year')).toBeEnabled();
 
+    // validation during edit
+    await page.fill('#card-cardholder-name', '');
+    await page.locator('#card-form-submit-btn').click();
+    await expect(page.locator('#card-cardholder-name-error')).toBeVisible();
+
     const updatedName = `Alice Updated ${Date.now()}`;
     await page.fill('#card-cardholder-name', updatedName);
+    await expect(page.locator('#card-cardholder-name-error')).toBeHidden();
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'PUT' && r.status() === 200, { timeout: 20000 }),
       page.locator('#card-form-submit-btn').click()
@@ -253,8 +341,9 @@ test.describe.serial('Profile Page - Address Management', () => {
       page.waitForResponse(r => r.url().includes('/credit-cards/') && r.request().method() === 'DELETE' && r.status() === 403, { timeout: 20000 }),
       protectedCard.locator('.delete-card-btn').click()
     ]);
-    const warning = page.locator('#global-message-container .global-message.warning-message').filter({ hasText: 'protected' }).first();
-    await expect(warning).toBeVisible({ timeout: 15000 });
+    const warning = page.locator('#global-message-container .global-message.warning-message');
+    await expect(warning).toContainText(/Protected user 'AliceSmith' must have at least one credit card\. Cannot delete the last one\./i, { timeout: 15000 });
+    await expect(warning).toContainText(/protected entity for this demo/i);
     await expect(protectedCard).toBeVisible();
   });
 
