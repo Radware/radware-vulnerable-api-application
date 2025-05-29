@@ -57,7 +57,23 @@
     </div>
 
     <div id="orders-container" class="profile-section">
-        <p class="loading-indicator">Loading orders...</p>
+        <table class="orders-table table table-striped table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Order ID</th>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-center">Card Used</th>
+                    <th class="text-center">Items</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="loading-indicator">Loading orders...</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     
 {% endblock %}

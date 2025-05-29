@@ -2477,27 +2477,31 @@ function renderOrders(orders, container) {
             <thead class="thead-light">
                 <tr>
                     <th>Order ID</th>
-                    <th>Date</th>
+                    <th>Date &amp; Time</th>
                     <th>Status</th>
                     <th class="text-right">Total</th>
+                    <th class="text-center">Card Used</th>
                     <th class="text-center">Items</th>
                 </tr>
             </thead>
             <tbody>`;
     orders.forEach(order => {
-        const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A';
+        const orderDateTime = order.created_at ? new Date(order.created_at) : null;
+        const formattedDateTime = orderDateTime ? `${orderDateTime.toLocaleDateString()} ${orderDateTime.toLocaleTimeString()}` : 'N/A';
         let totalAmount = order.total_amount || 0;
         if(order.items && order.items.length > 0 && totalAmount === 0) { // Recalculate if needed
             totalAmount = order.items.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0);
         }
         const itemCount = order.items ? order.items.length : 0;
+        const cardLastFour = order.credit_card_last_four ? `\u2022\u2022\u2022\u2022 ${order.credit_card_last_four}` : 'N/A';
 
         ordersHTML += `
             <tr data-order-id="${order.order_id}">
                 <td><code>${order.order_id.substring(0,8)}...</code></td>
-                <td>${orderDate}</td>
+                <td>${formattedDateTime}</td>
                 <td><span class="badge badge-info order-status ${order.status.toLowerCase()}">${order.status}</span></td>
                 <td class="text-right">$${totalAmount.toFixed(2)}</td>
+                <td class="text-center">${cardLastFour}</td>
                 <td class="text-center">${itemCount}</td>
             </tr>`;
     });
