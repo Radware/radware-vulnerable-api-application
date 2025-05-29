@@ -91,6 +91,12 @@ def test_bola_user_orders_access(
     # The response is a list of orders, which might be empty if the user hasn't placed any
     for order in orders:
         assert order["user_id"] == victim_user_id
+        assert isinstance(order["created_at"], str)
+        assert "T" in order["created_at"]
+        from datetime import datetime
+
+        datetime.fromisoformat(order["created_at"])
+        assert "credit_card_last_four" in order
 
 
 def test_bola_create_address_for_another_user(
@@ -151,6 +157,13 @@ def test_bola_cross_user_order_creation(
     assert new_order["user_id"] == victim_user_id
     assert new_order["address_id"] == victim_address["address_id"]
     assert new_order["credit_card_id"] == victim_card["card_id"]
+    assert isinstance(new_order["created_at"], str)
+    assert "T" in new_order["created_at"]
+    from datetime import datetime
+
+    datetime.fromisoformat(new_order["created_at"])
+    expected_last_four = victim_card["card_number_plain"][-4:]
+    assert new_order["credit_card_last_four"] == expected_last_four
 
 
 def test_bola_using_another_users_address_for_order(
@@ -180,6 +193,13 @@ def test_bola_using_another_users_address_for_order(
     new_order = response.json()
     assert new_order["user_id"] == user_id
     assert new_order["address_id"] == victim_address["address_id"]
+    assert isinstance(new_order["created_at"], str)
+    assert "T" in new_order["created_at"]
+    from datetime import datetime
+
+    datetime.fromisoformat(new_order["created_at"])
+    expected_last_four = user_card["card_number_plain"][-4:]
+    assert new_order["credit_card_last_four"] == expected_last_four
 
 
 def test_bola_using_another_users_card_for_order(
@@ -204,6 +224,13 @@ def test_bola_using_another_users_card_for_order(
     new_order = response.json()
     assert new_order["user_id"] == user_id
     assert new_order["credit_card_id"] == victim_card["card_id"]
+    assert isinstance(new_order["created_at"], str)
+    assert "T" in new_order["created_at"]
+    from datetime import datetime
+
+    datetime.fromisoformat(new_order["created_at"])
+    expected_last_four = victim_card["card_number_plain"][-4:]
+    assert new_order["credit_card_last_four"] == expected_last_four
 
 
 # --- Additional BOLA address & credit card modification tests ---

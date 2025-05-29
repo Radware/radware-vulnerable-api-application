@@ -150,6 +150,12 @@ async def create_user_order(
     # Prepare response model
     order_response = Order.model_validate(new_order_db)
     order_response.items = [OrderItem.model_validate(item) for item in created_order_items_db]
+    card = next(
+        (cc for cc in db.db["credit_cards"] if cc.card_id == new_order_db.credit_card_id),
+        None,
+    )
+    if card:
+        order_response.credit_card_last_four = card.card_last_four
     
     print(f"Order {new_order_db.order_id} created successfully for user {user_id} with total {new_order_db.total_amount}.")
     return order_response
