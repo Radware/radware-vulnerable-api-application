@@ -40,6 +40,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (description) params.append('description', description);
             if (category) params.append('category', category);
 
+            // Default role parameter for consistency with fetchAdminProducts
+            params.append('role', 'user');
+
+            // Parameter pollution demo: escalate to admin if checkbox checked
+            if (adminEscalationCheckbox && adminEscalationCheckbox.checked) {
+                params.append('role', 'admin');
+            }
+
             // Parameter pollution for internal_status
             const internalStatusValue = document.getElementById('new-product-internal-status').value;
             if (internalStatusValue) {
@@ -47,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof displaySuccess === 'function') {
                     displaySuccess("Parameter Pollution Demo: Adding internal_status parameter to the request!");
                 }
+            } else if (revealInternalCheckbox && revealInternalCheckbox.checked) {
+                // Mirror "Show Internal Products" toggle for POST demo consistency
+                params.append('status', 'internal');
             }
             
             const endpoint = `/api/products?${params.toString()}`;
