@@ -2,13 +2,20 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Union, Any
 from uuid import UUID
 
-from jose import JWTError, jwt
+from jose import JWTError, jwt, jwk
+from pathlib import Path
 from passlib.context import CryptContext
 import bcrypt # <-- ADD THIS IMPORT FOR BCrypt
 
 # Configuration (consider moving to a config file or environment variables)
-SECRET_KEY = "a_very_secret_key_for_jwt_radware_demo"  # KEEP THIS SECRET IN A REAL APP
-ALGORITHM = "HS256"
+BASE_DIR = Path(__file__).resolve().parent
+PRIVATE_KEY_PATH = BASE_DIR / "keys" / "private_key.pem"
+PUBLIC_KEY_PATH = BASE_DIR / "keys" / "public_key.pem"
+
+RSA_PRIVATE_KEY = PRIVATE_KEY_PATH.read_text()
+RSA_PUBLIC_KEY = PUBLIC_KEY_PATH.read_text()
+
+ALGORITHM = "RS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,13 +40,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     for key, value in to_encode.items():
         if isinstance(value, UUID):
             to_encode[key] = str(value)
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, RSA_PRIVATE_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def decode_access_token(token: str) -> Optional[dict[str, Any]]:
     """Decodes a JWT access token."""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, RSA_PUBLIC_KEY, algorithms=[ALGORITHM])
         # Convert user_id back to UUID if it exists
         if "user_id" in payload and payload["user_id"] is not None:
             try:

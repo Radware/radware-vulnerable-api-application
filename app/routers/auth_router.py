@@ -48,6 +48,10 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(
-        data={"sub": user.username, "user_id": str(user.user_id)} # Ensure user_id is str for JWT
+        data={
+            "sub": user.username,
+            "user_id": str(user.user_id),
+            "is_admin": user.is_admin,
+        }
     )
     return {"access_token": access_token, "token_type": "bearer"}
