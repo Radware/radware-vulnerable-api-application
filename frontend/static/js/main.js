@@ -3543,9 +3543,10 @@ async function handleOrderSubmission(e) {
     const targetAddressIdInput = document.getElementById('target-address-id');
     const targetCreditCardIdInput = document.getElementById('target-credit-card-id');
 
-    let userIdForOrder = currentUser.user_id; 
-    let addressIdForOrder = normalAddressId; 
-    let creditCardIdForOrder = normalCreditCardId; 
+    // The order record should always be created for the authenticated user.
+    let userIdForOrder = currentUser.user_id;
+    let addressIdForOrder = normalAddressId;
+    let creditCardIdForOrder = normalCreditCardId;
     
     let victimUserNameForMessage = ''; // User whose resources are being targeted or whose card is used
     let isBOLAExploitActive = bolaCheckbox && bolaCheckbox.checked;
@@ -3556,13 +3557,12 @@ async function handleOrderSubmission(e) {
         const victimAddressIdValue = targetAddressIdInput?.value?.trim();
         const victimCreditCardIdValue = targetCreditCardIdInput?.value?.trim();
 
-        if (victimUserIdValue) { // If a target user ID is provided for BOLA (order AS another user)
-            userIdForOrder = victimUserIdValue;
+        if (victimUserIdValue) { // Target user ID provided (victim whose data is reused)
             try {
                 const victimInfo = await apiCall(`/api/users/${victimUserIdValue}`, 'GET', null, true);
                 if (victimInfo) victimUserNameForMessage = victimInfo.username;
             } catch (err) { console.warn("Could not fetch victim user info:", err); victimUserNameForMessage = "Target User"; }
-        } else { 
+        } else {
             // No BOLA target user ID, so order is for currentUser.
             // victimUserNameForMessage will be populated later if a victim's card is used.
         }
