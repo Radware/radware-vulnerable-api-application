@@ -196,8 +196,7 @@
           "city": "AdminCity",
           "country": "AdminCountry",
           "zip_code": "00001",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -209,8 +208,7 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4000000000000001",
-          "cvv_plain": "123",
-          "is_protected": true
+          "cvv_plain": "123"
         }
       ],
       "is_protected": true
@@ -229,8 +227,7 @@
           "city": "Springfield",
           "country": "USA",
           "zip_code": "12345",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         },
         {
           "address_id": "ad000002-0002-0000-0000-000000000002",
@@ -239,8 +236,7 @@
           "city": "Shelbyville",
           "country": "USA",
           "zip_code": "67890",
-          "is_default": false,
-          "is_protected": true
+          "is_default": false
         }
       ],
       "credit_cards": [
@@ -252,8 +248,7 @@
           "expiry_year": "2027",
           "is_default": true,
           "card_number_plain": "4111111111111111",
-          "cvv_plain": "234",
-          "is_protected": true
+          "cvv_plain": "234"
         }
       ],
       "is_protected": true
@@ -272,8 +267,7 @@
           "city": "Capital City",
           "country": "USA",
           "zip_code": "23456",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -285,8 +279,7 @@
           "expiry_year": "2026",
           "is_default": true,
           "card_number_plain": "4222222222222222",
-          "cvv_plain": "345",
-          "is_protected": true
+          "cvv_plain": "345"
         },
         {
           "card_id": "cc000003-0002-0000-0000-000000000002",
@@ -296,8 +289,7 @@
           "expiry_year": "2029",
           "is_default": false,
           "card_number_plain": "4333333333333333",
-          "cvv_plain": "456",
-          "is_protected": true
+          "cvv_plain": "456"
         }
       ],
       "is_protected": true
@@ -316,8 +308,7 @@
           "city": "Metroburg",
           "country": "USA",
           "zip_code": "34567",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -329,8 +320,7 @@
           "expiry_year": "2025",
           "is_default": true,
           "card_number_plain": "4444444444444444",
-          "cvv_plain": "567",
-          "is_protected": true
+          "cvv_plain": "567"
         }
       ],
       "is_protected": true
@@ -349,8 +339,7 @@
           "city": "Gotham",
           "country": "USA",
           "zip_code": "45678",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         },
         {
           "address_id": "ad000005-0002-0000-0000-000000000002",
@@ -359,8 +348,7 @@
           "city": "Star City",
           "country": "USA",
           "zip_code": "56789",
-          "is_default": false,
-          "is_protected": true
+          "is_default": false
         }
       ],
       "credit_cards": [
@@ -372,8 +360,7 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4555555555555555",
-          "cvv_plain": "678",
-          "is_protected": true
+          "cvv_plain": "678"
         }
       ],
       "is_protected": true
@@ -392,8 +379,7 @@
           "city": "Smallville",
           "country": "USA",
           "zip_code": "54321",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -405,8 +391,7 @@
           "expiry_year": "2026",
           "is_default": true,
           "card_number_plain": "4666666666666666",
-          "cvv_plain": "789",
-          "is_protected": true
+          "cvv_plain": "789"
         }
       ],
       "is_protected": true
@@ -425,8 +410,7 @@
           "city": "Central City",
           "country": "USA",
           "zip_code": "65432",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -438,8 +422,7 @@
           "expiry_year": "2027",
           "is_default": true,
           "card_number_plain": "4777777777777777",
-          "cvv_plain": "890",
-          "is_protected": true
+          "cvv_plain": "890"
         },
         {
           "card_id": "cc000007-0002-0000-0000-000000000002",
@@ -449,8 +432,7 @@
           "expiry_year": "2029",
           "is_default": false,
           "card_number_plain": "4888888888888888",
-          "cvv_plain": "901",
-          "is_protected": true
+          "cvv_plain": "901"
         }
       ],
       "is_protected": true
@@ -469,8 +451,7 @@
           "city": "Coast City",
           "country": "USA",
           "zip_code": "76543",
-          "is_default": true,
-          "is_protected": false
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -482,8 +463,7 @@
           "expiry_year": "2028",
           "is_default": true,
           "card_number_plain": "4999999999999999",
-          "cvv_plain": "012",
-          "is_protected": false
+          "cvv_plain": "012"
         }
       ],
       "is_protected": false
@@ -502,8 +482,7 @@
           "city": "Keystone City",
           "country": "USA",
           "zip_code": "87654",
-          "is_default": true,
-          "is_protected": false
+          "is_default": true
         },
         {
           "address_id": "ad000009-0002-0000-0000-000000000002",
@@ -512,8 +491,7 @@
           "city": "Fawcett City",
           "country": "USA",
           "zip_code": "98765",
-          "is_default": false,
-          "is_protected": false
+          "is_default": false
         }
       ],
       "credit_cards": [
@@ -525,8 +503,7 @@
           "expiry_year": "2025",
           "is_default": true,
           "card_number_plain": "4012345678901234",
-          "cvv_plain": "112",
-          "is_protected": false
+          "cvv_plain": "112"
         }
       ],
       "is_protected": false
@@ -545,8 +522,7 @@
           "city": "Opal City",
           "country": "USA",
           "zip_code": "97531",
-          "is_default": true,
-          "is_protected": true
+          "is_default": true
         }
       ],
       "credit_cards": [
@@ -558,8 +534,7 @@
           "expiry_year": "2029",
           "is_default": true,
           "card_number_plain": "4123456789012345",
-          "cvv_plain": "213",
-          "is_protected": true
+          "cvv_plain": "213"
         }
       ],
       "is_protected": true

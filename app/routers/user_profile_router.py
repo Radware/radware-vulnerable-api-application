@@ -126,7 +126,6 @@ async def create_user_address(
     new_address_db = AddressInDBBase(
         **address_data.model_dump(),
         user_id=user_id,
-        is_protected=False,
     )
     db.db["addresses"].append(new_address_db)
     return Address.model_validate(new_address_db)
@@ -174,9 +173,9 @@ async def update_user_address(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
         )
 
-    # If is_default is being set to True, all other addresses for this user will
-    # be un-defaulted. Previous restrictions around un-defaulting item.is_protected
-    # defaults have been removed.
+    # If is_default is set to True, all other addresses for this user will be
+    # un-defaulted. Item-level protection flags have been removed so there are no
+    # additional checks here.
 
     update_data_dict = {}
     if street is not None:
@@ -259,21 +258,10 @@ async def delete_user_address(
         if remaining_user_addresses and not any(
             a.is_default for a in remaining_user_addresses
         ):
-            non_item_protected_remaining = [
-                a
-                for a in remaining_user_addresses
-                if not (hasattr(a, "is_protected") and a.is_protected)
-            ]
-            if non_item_protected_remaining:
-                non_item_protected_remaining[0].is_default = True
-                print(
-                    f"Address {non_item_protected_remaining[0].address_id} made default for user {user_id} after deleting previous default."
-                )
-            else:
-                remaining_user_addresses[0].is_default = True
-                print(
-                    f"Address {remaining_user_addresses[0].address_id} (item.is_protected) made default for user {user_id} after deleting previous default."
-                )
+            remaining_user_addresses[0].is_default = True
+            print(
+                f"Address {remaining_user_addresses[0].address_id} made default for user {user_id} after deleting previous default."
+            )
 
     return {"message": "Address deleted successfully"}
 
@@ -378,7 +366,6 @@ async def create_user_credit_card(
         card_number_hash=card_number_hash,
         cvv_hash=cvv_hash,
         card_last_four=card_last_four_digits,
-        is_protected=False,
     )
     db.db["credit_cards"].append(new_card_db)
     return CreditCard.model_validate(new_card_db)
@@ -442,42 +429,9 @@ async def update_user_credit_card(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
-    if hasattr(card_to_update, "is_protected") and card_to_update.is_protected:
-        if (
-            str(card_to_update.card_id) == "cc000003-0002-0000-0000-000000000002"
-            and str(user_id) == "00000003-0000-0000-0000-000000000003"
-        ):
-            allowed_updates_for_bob_card = {}
-            if (
-                "expiry_year" in update_data_dict
-                and update_data_dict["expiry_year"] == "2031"
-            ):
-                allowed_updates_for_bob_card["expiry_year"] = "2031"
-            if (
-                "is_default" in update_data_dict
-                and update_data_dict["is_default"] is True
-            ):
-                allowed_updates_for_bob_card["is_default"] = True
-
-            is_subset = all(
-                key in allowed_updates_for_bob_card for key in update_data_dict
-            )
-
-            if not is_subset or not update_data_dict:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "For this protected card (Bob's demo card), only specific updates "
-                        "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
-                    ),
-                )
-            update_data_dict = allowed_updates_for_bob_card
-        else:
-            pass  # Other protected cards can now be modified
-
-    # If is_default is True, we simply make this card default and un-default all
-    # other cards for the user. Previous restrictions on un-defaulting
-    # item.is_protected defaults have been removed.
+    # If is_default is True, make this card default and un-default all other
+    # cards for the user. Any previous item-level protection restrictions have
+    # been removed.
 
     for key, value in update_data_dict.items():
         setattr(card_to_update, key, value)
@@ -542,20 +496,9 @@ async def delete_user_credit_card(
             cc for cc in db.db["credit_cards"] if cc.user_id == user_id
         ]
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
-            non_item_protected_remaining_cards = [
-                c
-                for c in remaining_user_cards
-                if not (hasattr(c, "is_protected") and c.is_protected)
-            ]
-            if non_item_protected_remaining_cards:
-                non_item_protected_remaining_cards[0].is_default = True
-                print(
-                    f"Card {non_item_protected_remaining_cards[0].card_id} made default for user {user_id} after deleting previous default."
-                )
-            else:
-                remaining_user_cards[0].is_default = True
-                print(
-                    f"Card {remaining_user_cards[0].card_id} (item.is_protected) made default for user {user_id} after deleting previous default."
-                )
+            remaining_user_cards[0].is_default = True
+            print(
+                f"Card {remaining_user_cards[0].card_id} made default for user {user_id} after deleting previous default."
+            )
 
     return {"message": "Credit card deleted successfully"}
