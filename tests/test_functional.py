@@ -570,29 +570,58 @@ def test_protected_credit_card_modification_forbidden(
     assert dele.status_code == 403
 
 
-def test_special_protected_card_rules(test_client, regular_auth_headers, test_data):
+def test_protected_bob_card_general_update(
+    test_client, regular_auth_headers, test_data
+):
+    """Bob's cards should allow regular field updates like other protected cards."""
     bob = next(u for u in test_data["users"] if u["username"] == "BobJohnson")
-    card = next(
-        c
+    user_id = bob["user_id"]
+    card_id = next(
+        c["card_id"]
         for c in bob["credit_cards"]
         if c["card_id"] == "cc000003-0002-0000-0000-000000000002"
     )
+
+    upd = test_client.put(
+        f"/api/users/{user_id}/credit-cards/{card_id}",
+        params={"cardholder_name": "Bobby J", "expiry_year": "2032"},
+        headers=regular_auth_headers,
+    )
+    assert upd.status_code == 200
+    body = upd.json()
+    assert body["cardholder_name"] == "Bobby J"
+    assert body["expiry_year"] == "2032"
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_protected_bob_last_card_deletion_forbidden(
+    test_client, regular_auth_headers, test_data
+):
+    """Deleting Bob's last remaining credit card should be forbidden."""
+    bob = next(u for u in test_data["users"] if u["username"] == "BobJohnson")
     user_id = bob["user_id"]
-    card_id = card["card_id"]
+    cards = [c["card_id"] for c in bob["credit_cards"]]
 
-    good = test_client.put(
-        f"/api/users/{user_id}/credit-cards/{card_id}",
-        params={"expiry_year": "2031", "is_default": True},
+    # Delete one card first (allowed since he has two)
+    resp_first = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{cards[1]}",
         headers=regular_auth_headers,
     )
-    assert good.status_code == 200
+    assert resp_first.status_code == 200
 
-    bad = test_client.put(
-        f"/api/users/{user_id}/credit-cards/{card_id}",
-        params={"expiry_year": "2030"},
+    # Attempt deleting last remaining card
+    resp_last = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{cards[0]}",
         headers=regular_auth_headers,
     )
-    assert bad.status_code == 403
+    assert resp_last.status_code == 403
+
+    from app import db
+
+    db.initialize_database_from_json()
 
 
 def test_credit_card_update_delete_not_found(

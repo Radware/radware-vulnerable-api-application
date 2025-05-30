@@ -3036,9 +3036,8 @@ function populateCardFormForEdit(cardId, allCards) {
         cardCvvInput.disabled = true;
     }
 
-    const isSpecialCard = card.card_id === 'cc000003-0002-0000-0000-000000000002';
     if (protectedNote) protectedNote.style.display = card.is_protected ? 'block' : 'none';
-    if (cardholderInput) cardholderInput.disabled = isSpecialCard;
+    if (cardholderInput) cardholderInput.disabled = false;
     if (expiryMonthInput) expiryMonthInput.disabled = false;
     if (expiryYearInput) expiryYearInput.disabled = false;
     

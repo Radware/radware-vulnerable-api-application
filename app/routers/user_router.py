@@ -457,42 +457,6 @@ async def update_user_credit_card(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
-    if (
-        hasattr(credit_card_to_update, "is_protected")
-        and credit_card_to_update.is_protected
-    ):
-        if (
-            str(credit_card_to_update.card_id) == "cc000003-0002-0000-0000-000000000002"
-            and str(user_id) == "00000003-0000-0000-0000-000000000003"
-        ):
-            allowed_updates_for_bob_card = {}
-            if (
-                "expiry_year" in update_data_dict
-                and update_data_dict["expiry_year"] == "2031"
-            ):
-                allowed_updates_for_bob_card["expiry_year"] = "2031"
-            if (
-                "is_default" in update_data_dict
-                and update_data_dict["is_default"] is True
-            ):
-                allowed_updates_for_bob_card["is_default"] = True
-
-            is_subset = all(
-                key in allowed_updates_for_bob_card for key in update_data_dict
-            )
-
-            if not is_subset or not update_data_dict:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "For this protected card (Bob's demo card), only specific updates "
-                        "(expiry_year to 2031, is_default to true) are permitted for the demo flow."
-                    ),
-                )
-            update_data_dict = allowed_updates_for_bob_card
-        else:
-            pass
-
     # If is_default is True, simply make this card default and unset others.
 
     for key, value in update_data_dict.items():
