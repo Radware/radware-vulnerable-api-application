@@ -134,12 +134,17 @@ def test_bola_create_address_for_another_user(
 
 
 def test_bola_cross_user_order_creation(
-    test_client, regular_auth_headers, another_regular_user_info, test_data
+    test_client,
+    regular_auth_headers,
+    regular_user_info,
+    another_regular_user_info,
+    test_data,
 ):
     """
-    Test BOLA vulnerability: creating an order for another user
-    A regular user should be able to create an order for another user by using their user_id
+    Test BOLA vulnerability: reusing another user's address and card
+    while creating an order. The order itself should belong to the attacker.
     """
+    attacker_user_id = regular_user_info["user_id"]
     victim_user_id = another_regular_user_info["user_id"]
     victim_address = another_regular_user_info["addresses"][0]
     victim_card = another_regular_user_info["credit_cards"][0]
@@ -154,7 +159,7 @@ def test_bola_cross_user_order_creation(
     # Vulnerability test passes if the order is created
     assert response.status_code == 201
     new_order = response.json()
-    assert new_order["user_id"] == victim_user_id
+    assert new_order["user_id"] == attacker_user_id
     assert new_order["address_id"] == victim_address["address_id"]
     assert new_order["credit_card_id"] == victim_card["card_id"]
     assert isinstance(new_order["created_at"], str)

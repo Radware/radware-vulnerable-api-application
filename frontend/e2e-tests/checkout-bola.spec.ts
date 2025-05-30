@@ -58,14 +58,14 @@ test.describe('Checkout BOLA Vulnerability', () => {
 
     await Promise.all([
       page.waitForResponse(
-        r => r.url().includes(`/api/users/${user2Id}/orders`) && r.status() === 201,
+        r => r.url().includes(`/api/users/${user1Id}/orders`) && r.status() === 201,
         { timeout: 20000 }
       ),
       page.locator('#place-order-btn').click()
     ]);
 
     await expect(page.locator('#global-message-container .global-message')).toContainText(
-      /BOLA EXPLOIT: Order .* placed FOR BobJohnson!/i,
+      /BOLA EXPLOIT: Order .* charged to BobJohnson's card!/i,
       { timeout: 15000 }
     );
 
@@ -76,7 +76,7 @@ test.describe('Checkout BOLA Vulnerability', () => {
       page.locator('form#view-orders-form button[type="submit"]').click()
     ]);
     const orderRowsVictim = page.locator('#orders-container table tbody tr');
-    await expect(orderRowsVictim.first()).toBeVisible({ timeout: 15000 });
+    await expect(orderRowsVictim).toHaveCount(0);
   });
 
   test('order for self using victim credit card', async ({ page }) => {
