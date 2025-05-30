@@ -190,6 +190,34 @@ test.describe('Profile Page - BOLA Vulnerabilities', () => {
     await expect(bobProtectedCard).toBeVisible(); // Card should still be there
   });
 
+  test('BOLA - Attacker edits protected victim\'s (BobJohnson) secondary card', async ({ page }) => {
+    await viewVictimProfile(page, bob.id, bob.username);
+
+    const bobSecondCardId = 'cc000003-0002-0000-0000-000000000002';
+    const cardToEdit = page.locator(`#card-list-container .item-card:has(.edit-card-btn[data-card-id="${bobSecondCardId}"])`);
+    await expect(cardToEdit.filter({hasText: 'Robert Johnson'})).toBeVisible();
+
+    await cardToEdit.locator('.edit-card-btn').click();
+    await expect(page.locator('#card-form-container')).toBeVisible();
+
+    const newName = `Bob Updated ${Date.now()}`;
+    await page.fill('#card-cardholder-name', newName);
+    await page.fill('#card-expiry-year', '2033');
+
+    await Promise.all([
+      page.waitForResponse(r =>
+        r.url().includes(`/api/users/${bob.id}/credit-cards/${bobSecondCardId}`) &&
+        r.request().method() === 'PUT' &&
+        r.status() === 200
+      , { timeout: 20000 }),
+      page.locator('#card-form-submit-btn').click()
+    ]);
+
+    const successMsg = page.locator('#global-message-container .global-message.success-message');
+    await expect(successMsg.filter({ hasText: `Credit card for ${bob.username} updated successfully!` })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#card-list-container .credit-card-card', { hasText: newName })).toBeVisible();
+  });
+
   test('BOLA - Attacker attempts to update another user\'s (non-protected GraceWilson) username', async ({ page }) => {
     await viewVictimProfile(page, grace.id, grace.username);
     const originalUsername = grace.username; // From const definition
