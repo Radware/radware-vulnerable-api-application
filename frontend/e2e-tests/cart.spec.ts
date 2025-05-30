@@ -106,7 +106,9 @@ test.describe('Shopping Cart', () => {
     const initialTotal = await getMoney(page, '#cart-total');
     await page.fill('#promo-code', 'TESTCODE');
     await page.locator('#promo-form button[type="submit"]').click();
-    await expect(page.locator('#success-message-container .success-message')).toBeVisible();
+    await expect(
+      page.locator('#global-message-container .global-message.success-message')
+    ).toBeVisible();
     await expect(page.locator('.summary-line.discount')).toBeVisible();
     const finalTotal = await getMoney(page, '#cart-total');
     expect(finalTotal).toBeLessThan(initialTotal);

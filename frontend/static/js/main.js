@@ -100,47 +100,20 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
     }
 }
 
-function displayError(message, containerId = 'error-message-container') {
-    const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = `<div class="error-message"><strong>Error:</strong> ${message}</div>`;
-        container.style.display = 'block';
-        setTimeout(() => { clearError(containerId); }, 8000);
-    } else {
-        displayGlobalMessage(message, 'error');
-    }
+function displayError(message, _containerId = 'error-message-container') {
+    displayGlobalMessage(`<strong>Error:</strong> ${message}`, 'error');
 }
 
-function clearError(containerId = 'error-message-container') {
-    const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = '';
-        container.style.display = 'none';
-    }
-    const genericErrorContainer = document.getElementById('global-error-container');
-    if (genericErrorContainer) {
-        genericErrorContainer.innerHTML = '';
-        genericErrorContainer.style.display = 'none';
-    }
+function clearError(_containerId = 'error-message-container') {
+    /* Deprecated container-based errors now use global pop-ups */
 }
 
-function displaySuccess(message, containerId = 'success-message-container') {
-    const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = `<div class="success-message"><strong>Success:</strong> ${message}</div>`;
-        container.style.display = 'block';
-        setTimeout(() => { clearSuccess(containerId); }, 5000);
-    } else {
-        displayGlobalMessage(message, 'success');
-    }
+function displaySuccess(message, _containerId = 'success-message-container') {
+    displayGlobalMessage(`<strong>Success:</strong> ${message}`, 'success');
 }
 
-function clearSuccess(containerId = 'success-message-container') {
-    const container = document.getElementById(containerId);
-    if (container) {
-        container.innerHTML = '';
-        container.style.display = 'none';
-    }
+function clearSuccess(_containerId = 'success-message-container') {
+    /* Deprecated container-based success messages now use global pop-ups */
 }
 
 function initializeUIVulnerabilityFeaturesToggle() {
