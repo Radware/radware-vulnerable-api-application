@@ -11,11 +11,11 @@ function displayGlobalMessage(message, type = 'info', duration = 5000) {
     if (!container) return;
     
     // Check if we already have a messages container
-    let messagesContainer = document.getElementById('global-messages-container');
+    let messagesContainer = document.getElementById('global-message-container');
     
     if (!messagesContainer) {
         messagesContainer = document.createElement('div');
-        messagesContainer.id = 'global-messages-container';
+        messagesContainer.id = 'global-message-container';
         container.appendChild(messagesContainer);
     }
     

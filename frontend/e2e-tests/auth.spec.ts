@@ -40,7 +40,7 @@ test.describe('User Authentication', () => {
 
     await expect(page).toHaveURL(/\/login/);
     await expect(
-      page.locator('main #error-message-container')
+      page.locator('#global-message-container .global-message.error-message')
     ).toContainText('Error: Login failed: Incorrect username or password');
   });
   

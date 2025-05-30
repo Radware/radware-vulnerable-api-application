@@ -303,7 +303,7 @@ footer {
 }
 
 /* Global Message System */
-#global-messages-container {
+#global-message-container {
     position: fixed;
     top: 20px;
     right: 20px;

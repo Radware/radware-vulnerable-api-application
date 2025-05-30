@@ -119,7 +119,7 @@ test.describe('Vulnerability Demonstrations', () => {
     page.once('dialog', dialog => dialog.accept());
     await page.locator(`#admin-products-container tr:has-text("${productName}") button.delete-product-btn`).click();
     const deleteSuccessLocator = page.locator(
-      '#success-message-container .success-message, #global-message-container .global-message.success-message',
+      '#global-message-container .global-message.success-message',
       { hasText: /deleted/ }
     );
     await expect(deleteSuccessLocator).toBeVisible({ timeout: 15000 }).catch(() => {});
