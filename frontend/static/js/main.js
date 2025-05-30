@@ -2961,7 +2961,7 @@ async function handleAddressFormSubmit(event) {
     try {
         showPageLoader(isEditing ? 'Updating address...' : 'Adding address...');
         const response = await apiCall(endpoint, method, null);
-        displayGlobalMessage(`Address for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Address for ${currentlyViewedUsername} ${actionText} successfully!`, 'success');
         
         const newOrUpdatedAddressId = isEditing ? addressId : response.address_id;
         
@@ -2984,7 +2984,7 @@ async function handleDeleteAddress(addressId, isProtected = false) {
 
     try {
         await apiCall(`/api/users/${userIdForRequest}/addresses/${addressId}`, 'DELETE');
-        displayGlobalMessage(`Address deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Address deleted successfully for ${currentlyViewedUsername}!`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
         if (!handleProtectedEntityError(error)) {
@@ -3225,7 +3225,7 @@ async function handleCardFormSubmit(event) {
     try {
         showPageLoader(isEditing ? 'Updating card...' : 'Adding card...');
         const response = await apiCall(endpoint, method, null); // Body is null as data is in query params
-        displayGlobalMessage(`Credit card for ${currentlyViewedUsername} ${actionText} successfully! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Credit card for ${currentlyViewedUsername} ${actionText} successfully!`, 'success');
         
         const newOrUpdatedCardId = isEditing ? cardId : response.card_id;
 
@@ -3249,7 +3249,7 @@ async function handleDeleteCreditCard(cardId, isProtected = false) {
 
     try {
         await apiCall(`/api/users/${userIdForRequest}/credit-cards/${cardId}`, 'DELETE');
-        displayGlobalMessage(`Credit card deleted successfully for ${currentlyViewedUsername}! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Credit card deleted successfully for ${currentlyViewedUsername}!`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
         if (!handleProtectedEntityError(error)) {
@@ -3376,7 +3376,7 @@ async function setDefaultAddress(addressId) {
             const params = `street=${encodeURIComponent(addr.street)}&city=${encodeURIComponent(addr.city)}&country=${encodeURIComponent(addr.country)}&zip_code=${encodeURIComponent(addr.zip_code)}&is_default=${isTarget}`;
             await apiCall(`/api/users/${userIdForRequest}/addresses/${addr.address_id}?${params}`, 'PUT', null);
         }
-        displayGlobalMessage(`Default address for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Default address for ${currentlyViewedUsername} updated!`, 'success');
         await fetchAndDisplayFullProfile(userIdForRequest);
         highlightElement(`address-item-${addressId.substring(0,8)}`);
     } catch (error) {
@@ -3395,7 +3395,7 @@ async function setDefaultCard(cardId) {
             const params = `cardholder_name=${encodeURIComponent(card.cardholder_name)}&expiry_month=${encodeURIComponent(card.expiry_month)}&expiry_year=${encodeURIComponent(card.expiry_year)}&is_default=${isTarget}`;
             await apiCall(`/api/users/${userIdForRequest}/credit-cards/${card.card_id}?${params}`, 'PUT', null);
         }
-        displayGlobalMessage(`Default credit card for ${currentlyViewedUsername} updated! (BOLA: on user ID in path)`, 'success');
+        displayGlobalMessage(`Default credit card for ${currentlyViewedUsername} updated!`, 'success');
         fetchAndDisplayFullProfile(userIdForRequest);
     } catch (error) {
         if (!handleProtectedEntityError(error)) {
