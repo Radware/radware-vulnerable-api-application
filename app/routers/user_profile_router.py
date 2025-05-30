@@ -118,16 +118,22 @@ async def create_user_address(
         is_default=is_default,
     )
 
-    if is_default:
-        for addr_item in db.db["addresses"]:
-            if addr_item.user_id == user_id:
-                addr_item.is_default = False
-
     new_address_db = AddressInDBBase(
         **address_data.model_dump(),
         user_id=user_id,
     )
     db.db["addresses"].append(new_address_db)
+
+    user_addresses = [a for a in db.db["addresses"] if a.user_id == user_id]
+    if len(user_addresses) == 1:
+        new_address_db.is_default = True
+
+    if is_default:
+        for addr_item in user_addresses:
+            if addr_item.address_id != new_address_db.address_id:
+                addr_item.is_default = False
+        new_address_db.is_default = True
+
     return Address.model_validate(new_address_db)
 
 

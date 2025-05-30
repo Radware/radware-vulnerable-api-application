@@ -597,6 +597,247 @@ def test_protected_bob_card_general_update(
     db.initialize_database_from_json()
 
 
+def test_first_address_and_card_auto_default_new_user(
+    test_client, regular_auth_headers
+):
+    """First address and card added for a new user should auto-set as default."""
+    username = f"autodef_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    user_resp = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    assert user_resp.status_code == 201
+    user_id = user_resp.json()["user_id"]
+
+    addr_resp = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "1 Test Way",
+            "city": "Testville",
+            "country": "USA",
+            "zip_code": "00000",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    )
+    assert addr_resp.status_code == 201
+    addr_data = addr_resp.json()
+    assert addr_data["is_default"] is True
+
+    card_resp = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "Tester",
+            "card_number": "4111111111111111",
+            "expiry_month": "12",
+            "expiry_year": "2030",
+            "cvv": "123",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    )
+    assert card_resp.status_code == 201
+    card_data = card_resp.json()
+    assert card_data["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_second_address_no_default_change_when_flag_false(
+    test_client, regular_auth_headers
+):
+    """Adding a second address with is_default False should not change current default."""
+    username = f"nodef_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    user_resp = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    assert user_resp.status_code == 201
+    user_id = user_resp.json()["user_id"]
+
+    first = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "A1",
+            "city": "City",
+            "country": "US",
+            "zip_code": "11111",
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    second = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "A2",
+            "city": "City",
+            "country": "US",
+            "zip_code": "22222",
+            "is_default": False,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    data = test_client.get(
+        f"/api/users/{user_id}/addresses", headers=regular_auth_headers
+    ).json()
+    first_after = next(a for a in data if a["address_id"] == first["address_id"])
+    second_after = next(a for a in data if a["address_id"] == second["address_id"])
+    assert first_after["is_default"] is True
+    assert second_after["is_default"] is False
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_second_address_with_flag_true_switches_default(
+    test_client, regular_auth_headers
+):
+    """Adding a second address with is_default True should switch default."""
+    username = f"switch_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    user_resp = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    assert user_resp.status_code == 201
+    user_id = user_resp.json()["user_id"]
+
+    first = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "B1",
+            "city": "City",
+            "country": "US",
+            "zip_code": "12345",
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    second = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={
+            "street": "B2",
+            "city": "City",
+            "country": "US",
+            "zip_code": "67890",
+            "is_default": True,
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    data = test_client.get(
+        f"/api/users/{user_id}/addresses", headers=regular_auth_headers
+    ).json()
+    first_after = next(a for a in data if a["address_id"] == first["address_id"])
+    second_after = next(a for a in data if a["address_id"] == second["address_id"])
+    assert first_after["is_default"] is False
+    assert second_after["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_delete_non_default_address_keeps_default(test_client, regular_auth_headers):
+    """Deleting a non-default address should not change default."""
+    username = f"deladdr_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    create = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    user_id = create.json()["user_id"]
+
+    first = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={"street": "C1", "city": "C", "country": "U", "zip_code": "11111"},
+        headers=regular_auth_headers,
+    ).json()
+
+    second = test_client.post(
+        f"/api/users/{user_id}/addresses",
+        params={"street": "C2", "city": "C", "country": "U", "zip_code": "22222"},
+        headers=regular_auth_headers,
+    ).json()
+
+    del_resp = test_client.delete(
+        f"/api/users/{user_id}/addresses/{second['address_id']}",
+        headers=regular_auth_headers,
+    )
+    assert del_resp.status_code == 200
+
+    remaining = test_client.get(
+        f"/api/users/{user_id}/addresses", headers=regular_auth_headers
+    ).json()
+    assert len(remaining) == 1
+    assert remaining[0]["address_id"] == first["address_id"]
+    assert remaining[0]["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_delete_non_default_credit_card_keeps_default(
+    test_client, regular_auth_headers
+):
+    """Deleting a non-default credit card should not change default."""
+    username = f"delcard_{uuid.uuid4().hex[:6]}"
+    email = f"{username}@example.com"
+    create = test_client.post(
+        "/api/users",
+        params={"username": username, "email": email, "password": "Pass123!"},
+    )
+    user_id = create.json()["user_id"]
+
+    first = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "C1",
+            "card_number": "4000000000000002",
+            "expiry_month": "12",
+            "expiry_year": "2030",
+            "cvv": "111",
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    second = test_client.post(
+        f"/api/users/{user_id}/credit-cards",
+        params={
+            "cardholder_name": "C2",
+            "card_number": "4222222222222",
+            "expiry_month": "11",
+            "expiry_year": "2031",
+            "cvv": "222",
+        },
+        headers=regular_auth_headers,
+    ).json()
+
+    del_resp = test_client.delete(
+        f"/api/users/{user_id}/credit-cards/{second['card_id']}",
+        headers=regular_auth_headers,
+    )
+    assert del_resp.status_code == 200
+
+    remaining = test_client.get(
+        f"/api/users/{user_id}/credit-cards", headers=regular_auth_headers
+    ).json()
+    assert len(remaining) == 1
+    assert remaining[0]["card_id"] == first["card_id"]
+    assert remaining[0]["is_default"] is True
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
 def test_protected_bob_last_card_deletion_forbidden(
     test_client, regular_auth_headers, test_data
 ):

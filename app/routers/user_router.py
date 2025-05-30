@@ -367,11 +367,6 @@ async def add_credit_card_to_user(
         is_default=is_default,
     )
 
-    if is_default:
-        for card_item in db.db["credit_cards"]:
-            if card_item.user_id == user_id:
-                card_item.is_default = False
-
     card_number_hash = hash_credit_card_data(card_data.card_number)
     cvv_hash = hash_credit_card_data(card_data.cvv) if card_data.cvv else None
     card_last_four = card_data.card_number[-4:]
@@ -388,6 +383,16 @@ async def add_credit_card_to_user(
         is_protected=False,
     )
     db.db["credit_cards"].append(new_card_in_db)
+
+    user_cards = [c for c in db.db["credit_cards"] if c.user_id == user_id]
+    if len(user_cards) == 1:
+        new_card_in_db.is_default = True
+
+    if is_default:
+        for card_item in user_cards:
+            if card_item.card_id != new_card_in_db.card_id:
+                card_item.is_default = False
+        new_card_in_db.is_default = True
     print(
         f"Credit card added for user {user_id}. Intended BOLA: No owner check performed."
     )
@@ -522,21 +527,10 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             cc for cc in db.db["credit_cards"] if cc.user_id == user_id
         ]
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
-            non_item_protected_remaining_cards = [
-                c
-                for c in remaining_user_cards
-                if not (hasattr(c, "is_protected") and c.is_protected)
-            ]
-            if non_item_protected_remaining_cards:
-                non_item_protected_remaining_cards[0].is_default = True
-                print(
-                    f"Card {non_item_protected_remaining_cards[0].card_id} made default for user {user_id} after deleting previous default."
-                )
-            else:
-                remaining_user_cards[0].is_default = True
-                print(
-                    f"Card {remaining_user_cards[0].card_id} (item.is_protected) made default for user {user_id} after deleting previous default."
-                )
+            remaining_user_cards[0].is_default = True
+            print(
+                f"Card {remaining_user_cards[0].card_id} made default for user {user_id} after deleting previous default."
+            )
 
     print(
         f"Credit card {card_id} for user {user_id} deleted. Intended BOLA: No owner check performed."
