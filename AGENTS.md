@@ -11,10 +11,20 @@ You are an AI programming assistant operating in a containerized Codex WebUI env
 
 **KEY CONCEPT: Protected Demo Entities**
 -   Certain entities (flagged `is_protected: true` in `prepopulated_data.json` and detailed in `PROTECTED_ENTITIES.MD`) have specific defense rules:
-    -   CANNOT be deleted.
-    -   Critical fields CANNOT be modified.
-    -   Attempts MUST result in HTTP 403 Forbidden with a message like "...is protected for demo purposes...".
-    -   Non-destructive exploits (BOLA viewing, allowed parameter pollutions) SHOULD still work.
+    -   **Protected Users (`user.is_protected: true`):**
+        -   CANNOT be deleted.
+        -   Their `username` CANNOT be changed.
+        -   Their `email` CAN be changed.
+        -   They MUST retain at least one address and one credit card. Attempts to delete the last one of either will result in HTTP 403 with a specific message.
+    -   **Addresses and Credit Cards belonging to a Protected User:**
+        -   Can generally be modified (e.g., street name, cardholder name, expiry dates).
+        -   Can be deleted, *unless* it's the user's last address or last credit card respectively.
+        -   Can be set as default, and this will correctly un-default any previous default item for that user.
+    -   **Protected Products (`product.is_protected: true`):**
+        -   CANNOT be deleted.
+        -   Core fields like `name`, `price`, `category` CANNOT be modified. `internal_status` can be modified via parameter pollution for demo purposes. Stock can be updated (with minimums for direct updates).
+-   Attempts to perform forbidden actions (e.g., deleting a protected user, changing their username, deleting their last address/card, deleting/critically modifying a protected product) MUST result in HTTP 403 Forbidden. The error message should ideally be specific to the rule violated (e.g., "...cannot delete last address...", "...username cannot be changed...", "...product is protected...").
+-   Non-destructive exploits (BOLA viewing, allowed parameter pollutions) SHOULD still work on protected entities or their sub-entities where applicable.
 -   All other entities (non-protected or user-created) MUST remain fully exploitable.
 
 ## 2. How I Will Interact With You & Your Workflow
@@ -40,33 +50,48 @@ You are an AI programming assistant operating in a containerized Codex WebUI env
 
 **3.2. Frontend E2E Testing (Playwright):**
     **IMPORTANT:** For any task requiring Playwright tests, you must ensure the backend and frontend servers are running *within the current task's container environment*.
-    *   **Sequence for Playwright Tasks:**
-        1.  `echo "Ensuring ports are free..."`
-        2.  `lsof -ti:8000 | xargs -r kill -9 2>/dev/null`
-        3.  `lsof -ti:5001 | xargs -r kill -9 2>/dev/null`
-        4.  `echo "Starting backend API..."`
-        5.  `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-config app/log_conf.json > /tmp/backend_uvicorn.log 2>&1 & APP_PID=$!`
-        6.  `for i in {1..15}; do curl -s http://localhost:8000/docs >/dev/null && break; sleep 2; done`
-        7.  `echo "Starting frontend server..."`
-        8.  `python frontend/main.py > /tmp/frontend_flask.log 2>&1 & FRONTEND_PID=$!`
-        9.  `for i in {1..15}; do curl -s http://localhost:5001 >/dev/null && break; sleep 2; done`
-        10. `echo "Running Playwright tests..."`
-        11. `npx playwright test frontend/e2e-tests/<specific_spec_file.spec.ts_or_leave_blank_for_all>`
-            *   (e.g., `npx playwright test frontend/e2e-tests/auth.spec.ts`)
-        12. `TEST_EXIT=$?`
-        13. `echo "Playwright tests finished. Killing servers..."`
-        14. `kill $APP_PID $FRONTEND_PID || true`
-        15. `wait $APP_PID $FRONTEND_PID 2>/dev/null`
-        16. `echo "Servers shut down."`
-        17. `if [ $TEST_EXIT -ne 0 ]; then echo "Dumping backend log:" && cat /tmp/backend_uvicorn.log; echo "Dumping frontend log:" && cat /tmp/frontend_flask.log; fi`
-    *   **Command to Run All E2E Tests:** (Follow the sequence above, using `npx playwright test frontend/e2e-tests/` at step 10).
-    *   **Command for Specific E2E File:** (Follow sequence, using `npx playwright test frontend/e2e-tests/your_file.spec.ts` at step 10).
+    *   **Sequence for Playwright Tasks (Robust Version):**
+        1.  `echo "--- Preparing for Playwright Tests ---"`
+        2.  `cd /workspace/radware-vulnerable-api-application/`
+        3.  Define variables: `BACKEND_PORT=8000`, `FRONTEND_PORT=5001`, `BACKEND_LOG="/tmp/backend_uvicorn_TASKNAME.log"`, `FRONTEND_LOG="/tmp/frontend_flask_TASKNAME.log"` (use a unique TASKNAME in logs for clarity if running multiple E2E tasks).
+        4.  `echo "Clearing previous server logs..."`
+        5.  `rm -f $BACKEND_LOG $FRONTEND_LOG`
+        6.  `echo "Attempting to stop any existing server on port $BACKEND_PORT..."`
+        7.  `lsof -ti tcp:$BACKEND_PORT | xargs -r kill -9 || ss -tulnp | grep ":$BACKEND_PORT" | awk '{print $7}' | sed 's/.*pid=\([0-9]*\).*/\1/' | xargs -r kill -9 || echo "No process found on port $BACKEND_PORT or tools unavailable."`
+        8.  `sleep 1`
+        9.  `echo "Attempting to stop any existing server on port $FRONTEND_PORT..."`
+        10. `lsof -ti tcp:$FRONTEND_PORT | xargs -r kill -9 || ss -tulnp | grep ":$FRONTEND_PORT" | awk '{print $7}' | sed 's/.*pid=\([0-9]*\).*/\1/' | xargs -r kill -9 || echo "No process found on port $FRONTEND_PORT or tools unavailable."`
+        11. `sleep 1`
+        12. `echo "Starting backend API on port $BACKEND_PORT in background..."`
+        13. `python -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --log-config app/log_conf.json > $BACKEND_LOG 2>&1 & APP_PID=$!`
+        14. `echo "Backend potentially started with PID: $APP_PID. Log: $BACKEND_LOG"`
+        15. `sleep 3`
+        16. `echo "Starting frontend server on port $FRONTEND_PORT in background..."`
+        17. `python frontend/main.py > $FRONTEND_LOG 2>&1 & FRONTEND_PID=$!`
+        18. `echo "Frontend potentially started with PID: $FRONTEND_PID. Log: $FRONTEND_LOG"`
+        19. `sleep 8`
+        20. `echo "Checking if backend is responsive..."`
+        21. `if curl -s --head "http://localhost:$BACKEND_PORT/docs" | grep "200 OK" > /dev/null; then echo "Backend is UP."; else echo "ERROR: Backend FAILED. Check $BACKEND_LOG."; kill $APP_PID || true; kill $FRONTEND_PID || true; exit 1; fi`
+        22. `echo "Checking if frontend is responsive..."`
+        23. `if curl -s --head "http://localhost:$FRONTEND_PORT/" | grep "200 OK" > /dev/null; then echo "Frontend is UP."; else echo "ERROR: Frontend FAILED. Check $FRONTEND_LOG."; kill $APP_PID || true; kill $FRONTEND_PID || true; exit 1; fi`
+        24. `echo "Running Playwright tests: <SPECIFIC_PLAYWRIGHT_COMMAND_USER_WILL_PROVIDE>..."`
+        25. `TEST_EXIT_CODE=0`
+        26. `<SPECIFIC_PLAYWRIGHT_COMMAND_USER_WILL_PROVIDE> || TEST_EXIT_CODE=$?`
+        27. `echo "Playwright test execution finished with exit code: $TEST_EXIT_CODE"`
+        28. `echo "--- Cleaning up servers ---"`
+        29. `if [ ! -z "$APP_PID" ]; then echo "Killing backend (PID $APP_PID)..."; kill $APP_PID || echo "Backend already stopped."; sleep 0.5; kill -9 $APP_PID 2>/dev/null || true; fi`
+        30. `if [ ! -z "$FRONTEND_PID" ]; then echo "Killing frontend (PID $FRONTEND_PID)..."; kill $FRONTEND_PID || echo "Frontend already stopped."; sleep 0.5; kill -9 $FRONTEND_PID 2>/dev/null || true; fi`
+        31. `wait $APP_PID $FRONTEND_PID 2>/dev/null || true`
+        32. `echo "Server cleanup attempted."`
+        33. `if [ $TEST_EXIT_CODE -ne 0 ]; then echo "Playwright tests FAILED. Dumping server logs:"; echo "--- Backend Log ($BACKEND_LOG) ---"; cat $BACKEND_LOG; echo "--- Frontend Log ($FRONTEND_LOG) ---"; cat $FRONTEND_LOG; echo "--- End of Logs ---"; else echo "Playwright tests passed or completed."; fi`
+    *   **Command to Run All E2E Tests:** (Follow the sequence above, using `npx playwright test frontend/e2e-tests/` at step 26, replacing the placeholder).
+    *   **Command for Specific E2E File:** (Follow sequence, using `npx playwright test frontend/e2e-tests/your_file.spec.ts` at step 26, replacing the placeholder).
 
 **3.3. General:**
 -   After any code modifications (app or test), run the narrowest possible set of tests to verify your change before running broader suites.
 -   If a functional test fails due to a bug in the application code (that is NOT an intentional vulnerability), you should fix that application bug.
 -   If a vulnerability test fails to exploit a vulnerability on a NON-PROTECTED entity, the application code or the test's exploit logic needs fixing.
--   If a test fails because it's incorrectly trying to perform a destructive action on a PROTECTED entity and not asserting the 403, fix the test's assertion.
+-   If a test fails because it's incorrectly trying to perform a destructive action on a PROTECTED entity and not asserting the 403, fix the test's assertion based on the defined protected entity rules.
 
 ## 4. Code Contribution & Style
 -   **Python:** Black formatting (88 char limit), snake_case, type hints, clear docstrings.
@@ -80,4 +105,3 @@ You are an AI programming assistant operating in a containerized Codex WebUI env
 -   Playwright Tests: `frontend/e2e-tests/`
 -   Data: `prepopulated_data.json`
 -   Docs: `README.md`, `PROTECTED_ENTITIES.MD`, `openapi.yaml`
-

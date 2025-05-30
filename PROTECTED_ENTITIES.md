@@ -4,26 +4,36 @@ To ensure the stability of core demonstration flows and the continuous learning 
 
 ## Purpose of Protected Entities
 
-1.  **Flow Stability:** Core users, products, addresses, and credit cards used in automated legitimate traffic generation (e.g., by FlowRunner using `flow.json`) are protected from destructive changes that would break these flows.
+1.  **Flow Stability:** Core users and products used in automated legitimate traffic generation are protected from destructive changes that would break these flows. Addresses and credit cards are protected by virtue of their owner being protected, particularly against deletion of the last item.
 2.  **Predictable Demos:** Key entities used in common manual demonstration scenarios remain consistent.
 3.  **WAAP Learning:** Provides a stable baseline of "normal" API interactions for security systems to learn from.
 4.  **User Guidance:** Prevents accidental or malicious disruption of the shared demo environment by guiding users to exploit non-protected or self-created entities for destructive tests.
 
 ## What "Protected" Means
 
-*   **Deletion Prevention:** Protected entities **cannot be deleted**. Attempts will result in an HTTP 403 Forbidden error with a message guiding you to try a non-protected entity.
-*   **Limited Modification:**
-    *   **Protected Users:** Username cannot be changed, and the user itself cannot be deleted. **Email can be updated.** Other attributes (like `is_admin` for parameter pollution demos) may still be modifiable.
-    *   **Protected Products:** Name, price, and category cannot be changed. Other attributes (like `internal_status` for parameter pollution demos or `description`) may still be modifiable.
-    *   **Protected Addresses & Credit Cards:** Items belonging to a protected user can generally be edited or removed. However, you **cannot delete the user's last address or card** (403 error). If the item being deleted was the default, another remaining item is automatically set as the new default. Protected users may change which address or card is the default at any time; the previous default simply has `is_default` set to `false`. BobJohnson's second credit card (`cc000003-0002-...`) only permits changing `expiry_year` to `2031` and setting `is_default` to `true`. The `is_protected` flag on these sub-entities now only indicates they came from the initial demo dataset.
+*   **Top-Level Protected Entities (Users, Products):**
+    *   Cannot be deleted if their `is_protected` flag is `true` in `prepopulated_data.json`. Attempts will result in an HTTP 403 Forbidden error.
+*   **Limited Modification for Protected Users (`user.is_protected: true`):**
+    *   `username` cannot be changed.
+    *   `email` **can** be updated.
+    *   Other attributes (like `is_admin` for parameter pollution demos) may still be modifiable.
+*   **Limited Modification for Protected Products (`product.is_protected: true`):**
+    *   `name`, `price`, and `category` cannot be changed.
+    *   Other attributes (like `internal_status` for parameter pollution demos or `description`) may still be modifiable.
+    *   Stock quantity for protected products can be updated directly (though there's a `PROTECTED_STOCK_MINIMUM` if updating via the dedicated stock endpoint, not via purchase).
+*   **Addresses & Credit Cards of a Protected User (`user.is_protected: true`):**
+    *   **Modification:** Addresses and credit cards belonging to a protected user can generally be edited (e.g., street name, cardholder name, expiry dates).
+    *   **Deletion:** Can be deleted, **unless** it is the user's last address or last credit card respectively. Attempting to delete the last one results in an HTTP 403 error with a message like "Protected user '{username}' must have at least one address/card. Cannot delete the last one."
+    *   **Default Status:** Protected users can change which of their addresses or credit cards is the default at any time. If a new item is set as default, the previous default item will have its `is_default` flag set to `false`. If a default address/card is deleted (and it wasn't their last one), another remaining item for that user is automatically set as the new default.
 *   **Non-Destructive Exploits Still Work:** You can still perform BOLA to *view* data of protected users/objects, and other non-altering exploits like certain parameter pollutions.
-*   **Newly Created Entities are NOT Protected:** Any user, product, address, or credit card you create (either legitimately or via a BFLA exploit) will **not** be protected by default. These are fair game for all types of vulnerability testing, including deletion.
+*   **Newly Created Entities are NOT Protected:** Any user, product, address, or credit card you create (either legitimately or via a BFLA exploit) will **not** be protected by default (their `is_protected` flag will be `false`). These are fair game for all types of vulnerability testing, including deletion.
 *   **Daily Reset:** The entire application environment is reset daily, so any changes to non-protected entities or any newly created entities will be wiped.
 
 ## List of Protected Entities (from `prepopulated_data.json`)
 
 ### Protected Users:
 
+The following users have `is_protected: true` in `prepopulated_data.json`:
 *   `admin` (ID: `00000001-0000-0000-0000-000000000001`)
 *   `AliceSmith` (ID: `00000002-0000-0000-0000-000000000002`)
 *   `BobJohnson` (ID: `00000003-0000-0000-0000-000000000003`)
@@ -33,15 +43,15 @@ To ensure the stability of core demonstration flows and the continuous learning 
 *   `FrankMiller` (ID: `00000007-0000-0000-0000-000000000007`)
 *   `IvyTaylor` (ID: `00000010-0000-0000-0000-000000000010`)
 
-*(GraceWilson and HenryMoore are NOT protected)*
+*(GraceWilson and HenryMoore are NOT protected, i.e., their `is_protected` flag is `false`)*
 
-### Protected User Addresses & Credit Cards:
+### User Addresses & Credit Cards:
 
-*   All addresses and credit cards listed under the **protected users** above in `prepopulated_data.json` are also considered protected by default (with the modification exception for BobJohnson's specific card `cc000003-0002-...` as per its flow).
+The protection of addresses and credit cards (specifically, the rule against deleting the last item) is derived from their owning user's `is_protected` status. All addresses and credit cards belonging to the **Protected Users** listed above are subject to the "cannot delete last item" rule. Individual address and credit card objects in `prepopulated_data.json` do not have their own `is_protected` flags.
 
 ### Protected Products:
 
-The following products are protected:
+The following products have `is_protected: true` in `prepopulated_data.json`:
 *   `Laptop Pro 15` (ID: `f47ac10b-58cc-4372-a567-0e02b2c3d479`)
 *   `Wireless Mouse` (ID: `a1b2c3d4-e5f6-7890-1234-567890abcdef`)
 *   `Mechanical Keyboard` (ID: `b2c3d4e5-f6a7-8901-2345-678901bcdef0`)
@@ -58,22 +68,22 @@ The following products are protected:
 *   `E-Reader Pro` (ID: `63b4c5d6-e7f8-9012-3456-789012678901`)
 *   `Fitness Tracker Band` (ID: `74c5d6e7-f8a9-0123-4567-890123789012`)
 
-The following products are **NOT protected** and can be fully manipulated/deleted for demo purposes:
+The following products are **NOT protected** (i.e., `is_protected: false` in `prepopulated_data.json`) and can be fully manipulated/deleted for demo purposes:
 *   `Portable Charger 20000mAh`
 *   `VR Headset Advanced`
 *   `Digital Camera DSLR`
 *   `Projector Mini HD`
 *   `Desk Lamp LED`
 
-Updating the stock quantity of a protected product is permitted. The system will log the action (e.g., "Updating stock for protected product {product_id}") but does not block it. This keeps demo scenarios functional while noting that a protected item was changed.
-
 ## Testing Vulnerabilities
 
 When testing vulnerabilities that involve deleting or making critical modifications:
-1.  **Attempt on a Protected Entity:** Observe the 403 error and the instructive message.
-2.  **Attempt on a Non-Protected Entity:**
+1.  **Attempt on a Protected User or Product:** Observe the 403 error for disallowed actions (e.g., deleting user, changing username, deleting product).
+2.  **Attempt on Addresses/Cards of a Protected User:**
+    *   Modification should generally succeed.
+    *   Setting a new default should succeed.
+    *   Deletion should succeed unless it's the user's last address/card, in which case a specific 403 ("...must have at least one...") will be returned.
+3.  **Attempt on a Non-Protected Entity (User or Product) or their sub-entities:**
     *   Use one of the non-protected users (GraceWilson, HenryMoore) or non-protected products listed above.
-    *   **OR** create a new user/product (e.g., via BFLA if you're a regular user trying to `POST /api/products`) and then target your newly created entity.
-    These actions should succeed and demonstrate the vulnerability fully.
-
-Happy (and safe) demonstrating!
+    *   **OR** create a new user/product (e.g., via BFLA if you're a regular user trying to `POST /api/products`) and then target your newly created entity and its sub-entities.
+    These actions should succeed and demonstrate the vulnerability fully (e.g., deletion, modification without restriction).
