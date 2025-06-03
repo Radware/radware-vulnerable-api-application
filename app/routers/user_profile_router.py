@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from .. import db
 from ..models.user_models import (
+    UserInDBBase, # Added this import
     Address,
     AddressCreate,
     AddressInDBBase,
@@ -58,11 +59,8 @@ async def list_user_addresses(
             detail=f"User with ID {user_id} not found.",
         )
 
-    user_addresses = [
-        Address.model_validate(a)
-        for a in db.db_addresses_by_id.values()
-        if a.user_id == user_id
-    ]
+    user_address_objects = db.db_addresses_by_user_id.get(user_id, [])
+    user_addresses = [Address.model_validate(a) for a in user_address_objects]
     return user_addresses
 
 
@@ -95,9 +93,8 @@ async def create_user_address(
     duplicate = next(
         (
             a
-            for a in db.db_addresses_by_id.values()
-            if a.user_id == user_id
-            and a.street == street
+            for a in db.db_addresses_by_user_id.get(user_id, [])
+            if a.street == street
             and a.city == city
             and a.country == country
             and a.zip_code == zip_code
@@ -122,10 +119,13 @@ async def create_user_address(
         **address_data.model_dump(),
         user_id=user_id,
     )
-    db.db["addresses"].append(new_address_db)
     db.db_addresses_by_id[new_address_db.address_id] = new_address_db
+    db.db_addresses_by_user_id.setdefault(user_id, []).append(new_address_db)
+    # Also add to the old list if it's still being used by any part of the code:
+    db.db["addresses"].append(new_address_db)
 
-    user_addresses = [a for a in db.db_addresses_by_id.values() if a.user_id == user_id]
+
+    user_addresses = db.db_addresses_by_user_id.get(user_id, [])
     if len(user_addresses) == 1:
         new_address_db.is_default = True
 
@@ -159,9 +159,8 @@ async def update_user_address(
     )
 
     address_to_update = db.db_addresses_by_id.get(address_id)
-    if address_to_update and address_to_update.user_id != user_id:
-        address_to_update = None
-    if not address_to_update:
+    # Verify ownership against the user_id from the path
+    if not address_to_update or address_to_update.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Address not found for this user or address ID is incorrect.",
@@ -169,13 +168,11 @@ async def update_user_address(
 
     owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not owner_user:
+        # This check might be redundant if path_user_exists was checked earlier,
+        # but good for direct calls or if user_id could be invalid independently.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
         )
-
-    # If is_default is set to True, all other addresses for this user will be
-    # un-defaulted. Item-level protection flags have been removed so there are no
-    # additional checks here.
 
     update_data_dict = {}
     if street is not None:
@@ -197,9 +194,10 @@ async def update_user_address(
         setattr(address_to_update, key, value)
 
     if is_default is True:
-        for addr_item in db.db_addresses_by_id.values():
-            if addr_item.user_id == user_id and addr_item.address_id != address_id:
+        for addr_item in db.db_addresses_by_user_id.get(user_id, []):
+            if addr_item.address_id != address_id: # Corrected: check against address_id from path
                 addr_item.is_default = False
+        address_to_update.is_default = True # Ensure the target address itself is set to default
 
     address_to_update.updated_at = datetime.now(timezone.utc)
     return Address.model_validate(address_to_update)
@@ -228,11 +226,10 @@ async def delete_user_address(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Address not found for this user or address ID is incorrect.",
         )
-    address_index = db.db["addresses"].index(address_to_delete)
 
     owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [a for a in db.db_addresses_by_id.values() if a.user_id == user_id]
+        remaining = db.db_addresses_by_user_id.get(user_id, [])
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -243,13 +240,22 @@ async def delete_user_address(
             )
 
     was_default = address_to_delete.is_default
-    db.db["addresses"].pop(address_index)
+    
+    # Remove from the old list if it's still maintained
+    if address_to_delete in db.db["addresses"]:
+        db.db["addresses"].remove(address_to_delete)
+
     db.db_addresses_by_id.pop(address_id, None)
+    user_addr_list = db.db_addresses_by_user_id.get(user_id, [])
+    if address_to_delete in user_addr_list:
+        user_addr_list.remove(address_to_delete)
+        # If the list becomes empty for that user, remove the user_id key
+        if not user_addr_list:
+            db.db_addresses_by_user_id.pop(user_id, None)
+
 
     if was_default:
-        remaining_user_addresses = [
-            a for a in db.db_addresses_by_id.values() if a.user_id == user_id
-        ]
+        remaining_user_addresses = db.db_addresses_by_user_id.get(user_id, [])
         if remaining_user_addresses and not any(
             a.is_default for a in remaining_user_addresses
         ):
@@ -284,11 +290,8 @@ async def list_user_credit_cards(
             detail=f"User with ID {user_id} not found.",
         )
 
-    user_cards = [
-        CreditCard.model_validate(cc)
-        for cc in db.db_credit_cards_by_id.values()
-        if cc.user_id == user_id
-    ]
+    user_card_objects = db.db_credit_cards_by_user_id.get(user_id, [])
+    user_cards = [CreditCard.model_validate(cc) for cc in user_card_objects]
     return user_cards
 
 
@@ -321,7 +324,6 @@ async def create_user_credit_card(
             detail=f"User with ID {user_id} not found. Cannot create credit card.",
         )
 
-    # Create a CreditCardCreate instance from query parameters for consistent validation and data processing
     try:
         card_data_from_query = CreditCardCreate(
             cardholder_name=cardholder_name,
@@ -338,9 +340,8 @@ async def create_user_credit_card(
         )
 
     if is_default:
-        for card_item in db.db_credit_cards_by_id.values():
-            if card_item.user_id == user_id:
-                card_item.is_default = False
+        for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
+            card_item.is_default = False
 
     card_last_four_digits = card_data_from_query.card_number[-4:]
     card_number_hash = get_password_hash(card_data_from_query.card_number)
@@ -360,8 +361,10 @@ async def create_user_credit_card(
         cvv_hash=cvv_hash,
         card_last_four=card_last_four_digits,
     )
-    db.db["credit_cards"].append(new_card_db)
     db.db_credit_cards_by_id[new_card_db.card_id] = new_card_db
+    db.db_credit_cards_by_user_id.setdefault(user_id, []).append(new_card_db)
+    # Also add to the old list if it's still being used by any part of the code:
+    db.db["credit_cards"].append(new_card_db)
     return CreditCard.model_validate(new_card_db)
 
 
@@ -373,8 +376,6 @@ async def update_user_credit_card(
     expiry_month: Optional[str] = Query(None, pattern=r"^0[1-9]|1[0-2]$"),
     expiry_year: Optional[str] = Query(None, pattern=r"^20[2-9][0-9]$"),
     is_default: Optional[bool] = Query(None),
-    # Note: Card number and CVV are typically not updated via PUT.
-    # If you need to allow changing them, it's usually via a new card or a separate process.
     current_user: TokenData = Depends(get_current_user),
 ):
     """
@@ -387,9 +388,7 @@ async def update_user_credit_card(
     )
 
     card_to_update = db.db_credit_cards_by_id.get(card_id)
-    if card_to_update and card_to_update.user_id != user_id:
-        card_to_update = None
-    if not card_to_update:
+    if not card_to_update or card_to_update.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
@@ -416,17 +415,15 @@ async def update_user_credit_card(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
-    # If is_default is True, make this card default and un-default all other
-    # cards for the user. Any previous item-level protection restrictions have
-    # been removed.
-
     for key, value in update_data_dict.items():
         setattr(card_to_update, key, value)
 
     if update_data_dict.get("is_default") is True:
-        for card_item in db.db_credit_cards_by_id.values():
-            if card_item.user_id == user_id and card_item.card_id != card_id:
+        for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
+            if card_item.card_id != card_id:
                 card_item.is_default = False
+        card_to_update.is_default = True # Ensure the target card itself is set to default
+
 
     card_to_update.updated_at = datetime.now(timezone.utc)
     return CreditCard.model_validate(card_to_update)
@@ -455,13 +452,10 @@ async def delete_user_credit_card(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
         )
-    card_index = db.db["credit_cards"].index(card_to_delete)
 
     owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining = db.db_credit_cards_by_user_id.get(user_id, [])
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -472,13 +466,21 @@ async def delete_user_credit_card(
             )
 
     was_default = card_to_delete.is_default
-    db.db["credit_cards"].pop(card_index)
+
+    # Remove from the old list if it's still maintained
+    if card_to_delete in db.db["credit_cards"]:
+        db.db["credit_cards"].remove(card_to_delete)
+
     db.db_credit_cards_by_id.pop(card_id, None)
+    user_card_list = db.db_credit_cards_by_user_id.get(user_id, [])
+    if card_to_delete in user_card_list:
+        user_card_list.remove(card_to_delete)
+        if not user_card_list: # If the list for this user becomes empty
+            db.db_credit_cards_by_user_id.pop(user_id, None)
+
 
     if was_default:
-        remaining_user_cards = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
             print(

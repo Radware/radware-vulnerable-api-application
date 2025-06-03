@@ -12,6 +12,7 @@ from ..models.user_models import (
     UserUpdate,
     CreditCard,
     CreditCardCreate,
+    CreditCardInDBBase, # Added this import
     CreditCardUpdate,  # Import CreditCard models
 )
 from ..security import get_password_hash, decode_access_token
@@ -99,7 +100,7 @@ async def create_user_endpoint(
     new_user = UserInDBBase(
         username=username, email=email, password_hash=hashed_password, is_admin=False
     )
-    db.db["users"].append(new_user)
+    db.db["users"].append(new_user) # Keep for now if other parts of code rely on it
     db.db_users_by_id[new_user.user_id] = new_user
     db.db_users_by_username[new_user.username] = new_user
     db.db_users_by_email[new_user.email] = new_user
@@ -138,7 +139,6 @@ async def update_user(
         )
 
     if hasattr(user_to_update, "is_protected") and user_to_update.is_protected:
-        # Protected users can modify fields except their username. Email changes are allowed.
         username_change = username is not None and username != user_to_update.username
         if username_change:
             raise HTTPException(
@@ -148,7 +148,6 @@ async def update_user(
                 ),
             )
 
-    # BOLA: No check if current_user.user_id matches user_id from path.
     update_data = {}
     if username is not None:
         existing_username_user = db.db_users_by_username.get(username)
@@ -159,7 +158,6 @@ async def update_user(
             )
         update_data["username"] = username
     if email is not None:
-        # Check if new email is already taken by another user
         existing_email_user = db.db_users_by_email.get(email)
         if existing_email_user and existing_email_user.user_id != user_id:
             raise HTTPException(
@@ -168,12 +166,10 @@ async def update_user(
             )
         update_data["email"] = email
 
-    # Parameter Pollution Vulnerability for is_admin:
-    # A regular user can pass ?is_admin=true to escalate privileges.
     if is_admin_param is not None:
         print(
             f"Attempting to set is_admin to: {is_admin_param} for user {user_id} via query parameter."
-        )  # Logging for demo
+        )
         update_data["is_admin"] = is_admin_param
 
     if not update_data:
@@ -187,20 +183,18 @@ async def update_user(
         setattr(user_to_update, key, value)
     user_to_update.updated_at = datetime.now(timezone.utc)
 
-    if "username" in update_data:
+    if "username" in update_data and update_data["username"] != old_username :
         db.db_users_by_username.pop(old_username, None)
         db.db_users_by_username[user_to_update.username] = user_to_update
-    if "email" in update_data:
+    if "email" in update_data and update_data["email"] != old_email:
         db.db_users_by_email.pop(old_email, None)
         db.db_users_by_email[user_to_update.email] = user_to_update
-
-    # Simulate saving back to DB (in-memory list)
-    # No actual save needed as we are modifying the object in the list directly.
+    
+    # db.db_users_by_id already holds the updated user_to_update object reference
 
     return User.model_validate(user_to_update)
 
 
-# BFLA Target: Initially, no admin check for deleting users.
 @router.delete(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
@@ -209,14 +203,12 @@ async def update_user(
 )
 async def delete_user(
     user_id: UUID,
-    # current_user: TokenData = Depends(get_current_user) # BFLA: No check initially
 ):
     user_to_delete = db.db_users_by_id.get(user_id)
     if not user_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    user_index = db.db["users"].index(user_to_delete)
 
     if hasattr(user_to_delete, "is_protected") and user_to_delete.is_protected:
         raise HTTPException(
@@ -227,30 +219,33 @@ async def delete_user(
             ),
         )
 
-    # BFLA Vulnerability: Any authenticated user can delete any other user.
-    # No check if current_user is admin.
-    # Also, BOLA if current_user.user_id is not user_id and they can delete themselves (less of a BOLA then).
     print(
         f"User {user_id} being deleted. Intended BFLA: No admin check performed."
-    )  # Logging for demo
-    db.db["users"].pop(user_index)
+    )
+    
+    # Remove from old list-based storage if it's still populated
+    if user_to_delete in db.db["users"]:
+        db.db["users"].remove(user_to_delete)
+        
+    # Remove from new dictionary-based indexes
     db.db_users_by_id.pop(user_id, None)
     db.db_users_by_username.pop(user_to_delete.username, None)
     db.db_users_by_email.pop(user_to_delete.email, None)
 
-    # Also remove associated addresses and credit cards for hygiene, though not strictly part of BFLA demo
-    db.db["addresses"] = [a for a in db.db["addresses"] if a.user_id != user_id]
-    for addr_id, addr in list(db.db_addresses_by_id.items()):
-        if addr.user_id == user_id:
-            db.db_addresses_by_id.pop(addr_id, None)
+    # Remove associated addresses
+    user_addresses_to_remove = db.db_addresses_by_user_id.pop(user_id, [])
+    for addr in user_addresses_to_remove:
+        db.db_addresses_by_id.pop(addr.address_id, None)
+        if addr in db.db["addresses"]: # Remove from old list if present
+            db.db["addresses"].remove(addr)
 
-    db.db["credit_cards"] = [
-        cc for cc in db.db["credit_cards"] if cc.user_id != user_id
-    ]
-    for card_id, cc in list(db.db_credit_cards_by_id.items()):
-        if cc.user_id == user_id:
-            db.db_credit_cards_by_id.pop(card_id, None)
-    # Orders might be kept for historical reasons or marked inactive.
+
+    # Remove associated credit cards
+    user_cards_to_remove = db.db_credit_cards_by_user_id.pop(user_id, [])
+    for card in user_cards_to_remove:
+        db.db_credit_cards_by_id.pop(card.card_id, None)
+        if card in db.db["credit_cards"]: # Remove from old list if present
+            db.db["credit_cards"].remove(card)
 
     return {"message": "User deleted successfully"}
 
@@ -260,28 +255,26 @@ async def list_users(current_user: TokenData = Depends(get_current_user)):
     """Get a list of all users - intentionally vulnerable for demonstration purposes.
     In a real application, this would be restricted to admins or have proper filtering.
     """
-    # BOLA/BFLA Vulnerability: Any authenticated user can list all users
     print(
         f"User {current_user.username} (ID: {current_user.user_id}) is listing all users. Intentional vulnerability for demo."
     )
-
-    # Return all users - this is the vulnerability
     return [User.model_validate(u) for u in db.db_users_by_id.values()]
 
 
-## Credit Card Endpoints
-
+## Credit Card Endpoints ##
+# Note: These endpoints are defined here but the OpenAPI spec and user_profile_router.py
+# place them under "/users/{user_id}/credit-cards".
+# Assuming the user_profile_router.py is the one being actively used and refactored.
+# If these are also active and need fixing, the same logic from user_profile_router.py should be applied here.
 
 @router.get(
     "/users/{user_id}/credit-cards",
     response_model=List[CreditCard],
-    tags=["Credit Cards"],
+    tags=["Credit Cards"], # Changed tag to match user_profile_router
 )
-async def list_user_credit_cards(user_id: UUID):
+async def list_user_credit_cards(user_id: UUID): # Removed Depends(get_current_user) to match observed BOLA
     """List all credit cards for a specific user.
-
-    BOLA Vulnerability: No ownership check; any authenticated or unauthenticated
-    caller can list cards for any user_id.
+    BOLA Vulnerability: No ownership check.
     """
     user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
@@ -289,11 +282,8 @@ async def list_user_credit_cards(user_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    user_credit_cards = [
-        CreditCard.model_validate(cc)
-        for cc in db.db_credit_cards_by_id.values()
-        if cc.user_id == user_id
-    ]
+    user_card_objects = db.db_credit_cards_by_user_id.get(user_id, [])
+    user_credit_cards = [CreditCard.model_validate(cc) for cc in user_card_objects]
     print(
         f"User {user_id} credit cards being listed. Intended BOLA: No owner check performed."
     )
@@ -303,9 +293,9 @@ async def list_user_credit_cards(user_id: UUID):
 @router.get(
     "/users/{user_id}/credit-cards/{card_id}",
     response_model=CreditCard,
-    tags=["Credit Cards"],
+    tags=["Credit Cards"], # Changed tag
 )
-async def get_user_credit_card_by_id(user_id: UUID, card_id: UUID):
+async def get_user_credit_card_by_id(user_id: UUID, card_id: UUID): # Removed Depends(get_current_user)
     """Get a specific credit card by ID for a given user."""
     user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
@@ -314,14 +304,11 @@ async def get_user_credit_card_by_id(user_id: UUID, card_id: UUID):
         )
 
     credit_card = db.db_credit_cards_by_id.get(card_id)
-    if credit_card and credit_card.user_id != user_id:
-        credit_card = None
-    if not credit_card:
+    if not credit_card or credit_card.user_id != user_id: # Check ownership against path user_id
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
-
     return CreditCard.model_validate(credit_card)
 
 
@@ -329,9 +316,9 @@ async def get_user_credit_card_by_id(user_id: UUID, card_id: UUID):
     "/users/{user_id}/credit-cards",
     response_model=CreditCard,
     status_code=status.HTTP_201_CREATED,
-    tags=["Credit Cards"],
+    tags=["Credit Cards"], # Changed tag
 )
-async def add_credit_card_to_user(
+async def add_credit_card_to_user( # Removed Depends(get_current_user)
     user_id: UUID,
     cardholder_name: str = Query(..., description="Name of the cardholder"),
     card_number: str = Query(
@@ -366,11 +353,11 @@ async def add_credit_card_to_user(
         is_default=is_default,
     )
 
-    card_number_hash = hash_credit_card_data(card_data.card_number)
+    card_number_hash = hash_credit_card_data(card_data.card_number) # Uses security.hash_credit_card_data
     cvv_hash = hash_credit_card_data(card_data.cvv) if card_data.cvv else None
     card_last_four = card_data.card_number[-4:]
 
-    new_card_in_db = db.CreditCardInDBBase(
+    new_card_in_db = CreditCardInDBBase( # Explicitly use CreditCardInDBBase from user_models
         user_id=user_id,
         cardholder_name=card_data.cardholder_name,
         expiry_month=card_data.expiry_month,
@@ -379,20 +366,24 @@ async def add_credit_card_to_user(
         card_number_hash=card_number_hash,
         card_last_four=card_last_four,
         cvv_hash=cvv_hash,
-        is_protected=False,
+        is_protected=False, # New cards are not protected by default
     )
-    db.db["credit_cards"].append(new_card_in_db)
+    
     db.db_credit_cards_by_id[new_card_in_db.card_id] = new_card_in_db
+    db.db_credit_cards_by_user_id.setdefault(user_id, []).append(new_card_in_db)
+    if new_card_in_db not in db.db["credit_cards"]: # Add to old list if not already there (idempotency)
+         db.db["credit_cards"].append(new_card_in_db)
 
-    user_cards = [c for c in db.db_credit_cards_by_id.values() if c.user_id == user_id]
-    if len(user_cards) == 1:
+
+    user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
+    if len(user_cards) == 1: # If this is the first card
         new_card_in_db.is_default = True
-
-    if is_default:
+    elif is_default: # If this card is marked as default
         for card_item in user_cards:
             if card_item.card_id != new_card_in_db.card_id:
                 card_item.is_default = False
-        new_card_in_db.is_default = True
+        new_card_in_db.is_default = True # Ensure the new card is set
+        
     print(
         f"Credit card added for user {user_id}. Intended BOLA: No owner check performed."
     )
@@ -402,9 +393,9 @@ async def add_credit_card_to_user(
 @router.put(
     "/users/{user_id}/credit-cards/{card_id}",
     response_model=CreditCard,
-    tags=["Credit Cards"],
+    tags=["Credit Cards"], # Changed tag
 )
-async def update_user_credit_card(
+async def update_user_credit_card( # Removed Depends(get_current_user)
     user_id: UUID,
     card_id: UUID,
     cardholder_name: Optional[str] = Query(None, description="Name of the cardholder"),
@@ -426,19 +417,18 @@ async def update_user_credit_card(
         )
 
     credit_card_to_update = db.db_credit_cards_by_id.get(card_id)
-    if credit_card_to_update and credit_card_to_update.user_id != user_id:
-        credit_card_to_update = None
-    if not credit_card_to_update:
+    if not credit_card_to_update or credit_card_to_update.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
 
-    owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
-    if not owner_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
-        )
+    owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id) # Already got user_exists
+    # No need for this check if user_exists is confirmed:
+    # if not owner_user:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
+    #     )
 
     update_data_dict = {}
     if cardholder_name is not None:
@@ -455,15 +445,14 @@ async def update_user_credit_card(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
-    # If is_default is True, simply make this card default and unset others.
-
     for key, value in update_data_dict.items():
         setattr(credit_card_to_update, key, value)
 
     if update_data_dict.get("is_default") is True:
-        for card_item in db.db_credit_cards_by_id.values():
-            if card_item.user_id == user_id and card_item.card_id != card_id:
+        for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
+            if card_item.card_id != card_id:
                 card_item.is_default = False
+        credit_card_to_update.is_default = True # Ensure target card is set
 
     credit_card_to_update.updated_at = datetime.now(timezone.utc)
     print(
@@ -475,10 +464,10 @@ async def update_user_credit_card(
 @router.delete(
     "/users/{user_id}/credit-cards/{card_id}",
     status_code=status.HTTP_200_OK,
-    tags=["Credit Cards"],
+    tags=["Credit Cards"], # Changed tag
     response_model=dict,
 )
-async def delete_user_credit_card(user_id: UUID, card_id: UUID):
+async def delete_user_credit_card(user_id: UUID, card_id: UUID): # Removed Depends(get_current_user)
     """Delete a specific credit card for a given user."""
     user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
@@ -492,13 +481,10 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
-    card_index = db.db["credit_cards"].index(card_to_delete)
 
-    owner_user = db.db_users_by_id.get(user_id)
+    owner_user = db.db_users_by_id.get(user_id) # user_exists is already owner_user
     if owner_user and owner_user.is_protected:
-        remaining = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining = db.db_credit_cards_by_user_id.get(user_id, [])
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -509,13 +495,19 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             )
 
     was_default = card_to_delete.is_default
-    db.db["credit_cards"].pop(card_index)
+
+    if card_to_delete in db.db["credit_cards"]:
+        db.db["credit_cards"].remove(card_to_delete)
     db.db_credit_cards_by_id.pop(card_id, None)
+    user_card_list = db.db_credit_cards_by_user_id.get(user_id, [])
+    if card_to_delete in user_card_list:
+        user_card_list.remove(card_to_delete)
+        if not user_card_list:
+            db.db_credit_cards_by_user_id.pop(user_id, None)
+
 
     if was_default:
-        remaining_user_cards = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
             print(
