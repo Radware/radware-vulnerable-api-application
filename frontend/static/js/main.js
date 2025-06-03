@@ -614,6 +614,15 @@ function getProductImageFilename(product) {
     return imageMap[product.name] || 'placeholder.png';
 }
 
+// Returns both WebP and PNG paths for a product image
+function getImagePaths(product) {
+    const pngFilename = getProductImageFilename(product);
+    const baseName = pngFilename.replace(/\.[^.]+$/, '');
+    const pngPath = `/static/images/products/${pngFilename}`;
+    const webpPath = `/static/images/products/${baseName}.webp`;
+    return { webpPath, pngPath };
+}
+
 // Page Initialization Functions
 function initHomePage() {
     console.log('Initializing Home Page');
@@ -1847,7 +1856,7 @@ function renderProducts(products) {
                 console.warn(`Failed to fetch stock for product ${product.product_id}: ${error.message}`);
             }
             
-            const imagePath = `/static/images/products/${getProductImageFilename(product)}`;
+            const { webpPath, pngPath } = getImagePaths(product);
             
             // Determine stock status for styling
             let stockClass = 'out-of-stock';
@@ -1872,8 +1881,12 @@ function renderProducts(products) {
                 <article class="product-card" data-product-id="${product.product_id}" data-testid="product-card">
                     <div class="product-card-image">
                         <a href="/products/${product.product_id}.html" class="image-container">
-                            <img src="${imagePath}" alt="${product.name}" class="product-image" loading="lazy"
-                                 onerror="this.onerror=null; this.src='/static/images/placeholder.png';">
+                            <picture>
+                                <source srcset="${webpPath}" type="image/webp">
+                                <source srcset="${pngPath}" type="image/png">
+                                <img src="${pngPath}" alt="${product.name}" class="product-image" loading="lazy"
+                                     onerror="this.onerror=null; this.src='/static/images/placeholder.png';">
+                            </picture>
                             <div class="overlay-icons">
                                 <span class="quick-view-icon" title="Quick View">🔍</span>
                             </div>
@@ -2057,15 +2070,19 @@ function displayCart() {
         
         cart.forEach(item => {
             const itemTotal = item.price * item.quantity;
-            const imagePath = `/static/images/products/${getProductImageFilename({name: item.name, product_id: item.product_id})}`;
+            const { webpPath, pngPath } = getImagePaths({ name: item.name, product_id: item.product_id });
             
             cartItemsHTML += `
                 <tr class="cart-item" data-product-id="${item.product_id}" data-testid="cart-item">
                     <td class="product-info">
                         <div class="cart-product">
                             <div class="cart-product-image">
-                                <img src="${imagePath}" alt="${item.name}" 
-                                     onerror="this.onerror=null; this.src='/static/images/placeholder.png';">
+                                <picture>
+                                    <source srcset="${webpPath}" type="image/webp">
+                                    <source srcset="${pngPath}" type="image/png">
+                                    <img src="${pngPath}" alt="${item.name}"
+                                         onerror="this.onerror=null; this.src='/static/images/placeholder.png';">
+                                </picture>
                             </div>
                             <div class="cart-product-details">
                                 <h4>${item.name}</h4>
@@ -2254,15 +2271,19 @@ async function fetchAndDisplayProductDetail(productId) {
         }
 
         const imageFilename = (typeof getProductImageFilename === 'function') ? getProductImageFilename(product) : 'placeholder.png';
-        const imagePath = `/static/images/products/${imageFilename}`;
-        console.log(`[main.js] Determined image path: ${imagePath}`);
+        const { webpPath, pngPath } = getImagePaths(product);
+        console.log(`[main.js] Determined image path: ${pngPath}`);
 
         productDetailContainer.innerHTML = `
             <div class="product-detail-layout">
                 <div class="product-detail-images">
                     <div class="main-image-container">
-                        <img src="${imagePath}" alt="${product.name || 'Product Image'}" id="product-image-detail" class="main-product-image" 
-                             onerror="this.onerror=null; this.src='/static/images/placeholder.png'; console.error('Failed to load product image: ${imagePath}');">
+                        <picture>
+                            <source srcset="${webpPath}" type="image/webp">
+                            <source srcset="${pngPath}" type="image/png">
+                            <img src="${pngPath}" alt="${product.name || 'Product Image'}" id="product-image-detail" class="main-product-image"
+                                 onerror="this.onerror=null; this.src='/static/images/placeholder.png'; console.error('Failed to load product image: ${pngPath}');">
+                        </picture>
                     </div>
                 </div>
                 <div class="product-detail-info">
