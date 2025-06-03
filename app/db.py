@@ -25,7 +25,9 @@ db_users_by_id: Dict[UUID, UserInDBBase] = {}
 db_users_by_username: Dict[str, UserInDBBase] = {}
 db_users_by_email: Dict[str, UserInDBBase] = {}
 db_addresses_by_id: Dict[UUID, AddressInDBBase] = {}
+db_addresses_by_user_id: Dict[UUID, List[AddressInDBBase]] = {}
 db_credit_cards_by_id: Dict[UUID, CreditCardInDBBase] = {}
+db_credit_cards_by_user_id: Dict[UUID, List[CreditCardInDBBase]] = {}
 db_products_by_id: Dict[UUID, ProductInDBBase] = {}
 db_stock_by_product_id: Dict[UUID, StockInDBBase] = {}
 
@@ -58,7 +60,9 @@ def initialize_database_from_json():
     db_users_by_username.clear()
     db_users_by_email.clear()
     db_addresses_by_id.clear()
+    db_addresses_by_user_id.clear()
     db_credit_cards_by_id.clear()
+    db_credit_cards_by_user_id.clear()
     db_products_by_id.clear()
     db_stock_by_product_id.clear()
 
@@ -110,8 +114,8 @@ def initialize_database_from_json():
                 is_default=addr_data["is_default"],
                 is_protected=addr_data.get("is_protected", False),
             )
-            db["addresses"].append(addr_obj)
             db_addresses_by_id[addr_obj.address_id] = addr_obj
+            db_addresses_by_user_id.setdefault(user_id, []).append(addr_obj)
 
         for card_data in user_data.get("credit_cards", []):
             card_last_four = card_data["card_number_plain"][-4:]
@@ -128,8 +132,8 @@ def initialize_database_from_json():
                 is_default=card_data["is_default"],
                 is_protected=card_data.get("is_protected", False),
             )
-            db["credit_cards"].append(card_obj)
             db_credit_cards_by_id[card_obj.card_id] = card_obj
+            db_credit_cards_by_user_id.setdefault(user_id, []).append(card_obj)
     print(f"Database initialized from {json_file_path}")
 
 
