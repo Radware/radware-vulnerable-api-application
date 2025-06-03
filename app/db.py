@@ -19,7 +19,6 @@ db: Dict[str, List[Any]] = {
     "orders": [],
     "order_items": [],
 }
-
 # Dictionary-based indexes for quick lookups
 db_users_by_id: Dict[UUID, UserInDBBase] = {}
 db_users_by_username: Dict[str, UserInDBBase] = {}
@@ -77,13 +76,13 @@ def initialize_database_from_json():
             category=product_data["category"],
             is_protected=product_data.get("is_protected", False),
         )
-        db["products"].append(product_obj)
+        db["products"].append(product_obj) # Keep populating the old list for now, if any code still uses it directly
         db_products_by_id[product_id] = product_obj
 
         stock_obj = StockInDBBase(
             product_id=product_id, quantity=product_data["stock_quantity"]
         )
-        db["stock"].append(stock_obj)
+        db["stock"].append(stock_obj) # Keep populating the old list for now
         db_stock_by_product_id[product_id] = stock_obj
 
     # Load users, addresses, and credit cards
@@ -98,7 +97,7 @@ def initialize_database_from_json():
             is_admin=user_data["is_admin"],
             is_protected=user_data.get("is_protected", False),
         )
-        db["users"].append(user_obj)
+        db["users"].append(user_obj) # Keep populating the old list for now
         db_users_by_id[user_id] = user_obj
         db_users_by_username[user_obj.username] = user_obj
         db_users_by_email[user_obj.email] = user_obj
@@ -114,6 +113,7 @@ def initialize_database_from_json():
                 is_default=addr_data["is_default"],
                 is_protected=addr_data.get("is_protected", False),
             )
+            db["addresses"].append(addr_obj) # Keep populating the old list for now
             db_addresses_by_id[addr_obj.address_id] = addr_obj
             db_addresses_by_user_id.setdefault(user_id, []).append(addr_obj)
 
@@ -132,6 +132,7 @@ def initialize_database_from_json():
                 is_default=card_data["is_default"],
                 is_protected=card_data.get("is_protected", False),
             )
+            db["credit_cards"].append(card_obj) # Keep populating the old list for now
             db_credit_cards_by_id[card_obj.card_id] = card_obj
             db_credit_cards_by_user_id.setdefault(user_id, []).append(card_obj)
     print(f"Database initialized from {json_file_path}")
