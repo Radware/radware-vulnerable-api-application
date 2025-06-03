@@ -43,20 +43,6 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Show search vulnerability info on search focus
-        const searchInput = document.getElementById('search-term');
-        if (searchInput) {
-            searchInput.addEventListener('focus', function() {
-                document.getElementById('search-info').style.display = 'block';
-            });
-            
-            searchInput.addEventListener('blur', function() {
-                if (this.value === '') {
-                    document.getElementById('search-info').style.display = 'none';
-                }
-            });
-        }
-        
         // Show skeleton loading while products load
         showLoadingSkeletons();
     });
