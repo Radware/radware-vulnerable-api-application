@@ -326,43 +326,36 @@ function hidePageLoader() {
 // Full unabridged function with the specified changes, maintaining original structure for Profile Page logic.
 function updateUIVulnerabilityFeaturesDisplay() {
     console.log(`UI Vulnerability Demos are now: ${uiVulnerabilityFeaturesEnabled ? 'ENABLED' : 'DISABLED'}`);
-    const displayStyleForBlock = uiVulnerabilityFeaturesEnabled ? 'block' : 'none';
-    const displayStyleForFlex = uiVulnerabilityFeaturesEnabled ? 'flex' : 'none'; // Keep this if used elsewhere
-
-    const toggleVisibilityBySelector = (selector, show, defaultDisplay = 'block') => {
-        document.querySelectorAll(selector).forEach(el => {
-            el.style.display = show ? defaultDisplay : 'none';
-        });
-    };
-
-    const toggleVisibilityById = (elementId, show, defaultDisplay = 'block') => {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.style.display = show ? defaultDisplay : 'none';
+    const demoElements = document.querySelectorAll(
+        '.ui-demo-dependant, .ui-demo-dependant-block, .ui-demo-dependant-flex, .ui-demo-dependant-grid, .ui-demo-dependant-inline-block'
+    );
+    demoElements.forEach((el) => {
+        if (uiVulnerabilityFeaturesEnabled) {
+            el.classList.add('demo-visible');
+        } else {
+            el.classList.remove('demo-visible');
         }
-    };
+    });
 
     // --- Home Page (`index.html`) ---
     if (document.getElementById('search-info')) {
         const searchInfoDiv = document.getElementById('search-info');
         const searchTermInput = document.getElementById('search-term');
         if (searchInfoDiv && searchTermInput) {
-            // Remove any existing handlers to avoid duplicates when toggling
             searchTermInput.onfocus = null;
             searchTermInput.onblur = null;
 
             if (uiVulnerabilityFeaturesEnabled) {
                 searchTermInput.onfocus = function () {
-                    searchInfoDiv.style.display = 'block';
+                    searchInfoDiv.classList.add('demo-visible');
                 };
                 searchTermInput.onblur = function () {
                     if (this.value === '') {
-                        searchInfoDiv.style.display = 'none';
+                        searchInfoDiv.classList.remove('demo-visible');
                     }
                 };
-                searchInfoDiv.style.display = 'none';
             } else {
-                searchInfoDiv.style.display = 'none';
+                searchInfoDiv.classList.remove('demo-visible');
             }
         }
     }
@@ -372,16 +365,34 @@ function updateUIVulnerabilityFeaturesDisplay() {
         // Visibility of BOLA Demo Sections (User Discovery, Update Profile for BOLA)
         const profileBolaDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section'))
             .find(section => section.querySelector('#discover-users-btn'));
-        if (profileBolaDemoSection) profileBolaDemoSection.style.display = displayStyleForBlock;
+        if (profileBolaDemoSection) {
+            if (uiVulnerabilityFeaturesEnabled) {
+                profileBolaDemoSection.classList.add('demo-visible');
+            } else {
+                profileBolaDemoSection.classList.remove('demo-visible');
+            }
+        }
         
         const bolaUpdateProfileDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
             .find(h4 => h4.textContent.includes('BOLA Demo: Update Profile'))?.closest('.vulnerability-demo-section');
-        if (bolaUpdateProfileDemoSection) bolaUpdateProfileDemoSection.style.display = displayStyleForBlock;
+        if (bolaUpdateProfileDemoSection) {
+            if (uiVulnerabilityFeaturesEnabled) {
+                bolaUpdateProfileDemoSection.classList.add('demo-visible');
+            } else {
+                bolaUpdateProfileDemoSection.classList.remove('demo-visible');
+            }
+        }
 
         // Visibility of Parameter Pollution Demo Section
         const adminEscalationDemoSection = Array.from(document.querySelectorAll('.vulnerability-demo-section h4'))
             .find(h4 => h4.textContent.includes('Parameter Pollution Demo: Admin Escalation'))?.closest('.vulnerability-demo-section');
-        if (adminEscalationDemoSection) adminEscalationDemoSection.style.display = displayStyleForBlock;
+        if (adminEscalationDemoSection) {
+            if (uiVulnerabilityFeaturesEnabled) {
+                adminEscalationDemoSection.classList.add('demo-visible');
+            } else {
+                adminEscalationDemoSection.classList.remove('demo-visible');
+            }
+        }
 
         // Control visibility of "Currently viewing" indicator
         const profileViewIndicator = document.getElementById('profile-view-indicator');
@@ -395,19 +406,22 @@ function updateUIVulnerabilityFeaturesDisplay() {
                 } else if (currentViewingUsernameSpan && currentUser) { // Fallback if BOLA state vars not fully set yet
                      currentViewingUsernameSpan.textContent = `${currentUser.username}'s Profile`; // Default to own profile text
                 }
-                profileViewIndicator.style.display = 'block';
+                profileViewIndicator.classList.add('demo-visible');
             } else {
-                profileViewIndicator.style.display = 'none';
+                profileViewIndicator.classList.remove('demo-visible');
             }
         }
         
         // BOLA Active Banner (Warns when viewing another user's profile with demos ON)
         const bolaDemoActiveBanner = document.getElementById('bola-demo-active-banner');
-        if (bolaDemoActiveBanner && currentUser) { // Ensure currentUser is available
-             // Show banner only if UI Demos are ON AND viewing another user's profile
-            bolaDemoActiveBanner.style.display = (uiVulnerabilityFeaturesEnabled && typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId !== currentUser.user_id) ? 'block' : 'none';
+        if (bolaDemoActiveBanner && currentUser) {
+            if (uiVulnerabilityFeaturesEnabled && typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId !== currentUser.user_id) {
+                bolaDemoActiveBanner.classList.add('demo-visible');
+            } else {
+                bolaDemoActiveBanner.classList.remove('demo-visible');
+            }
         } else if (bolaDemoActiveBanner) {
-            bolaDemoActiveBanner.style.display = 'none'; // Hide if currentUser isn't defined
+            bolaDemoActiveBanner.classList.remove('demo-visible');
         }
 
         // Logic for "Discover Users" and "Return to My Profile" buttons
@@ -418,14 +432,9 @@ function updateUIVulnerabilityFeaturesDisplay() {
 
         if (!uiVulnerabilityFeaturesEnabled) {
             // UI Demos are OFF
-            if (discoveredUsersContainer) discoveredUsersContainer.style.display = 'none';
-            if (returnBtn) returnBtn.style.display = 'none'; 
-            // The discoverBtn's parent section will be hidden, so discoverBtn will also be hidden.
-            if (profileBolaDemoSection && profileBolaDemoSection.style.display === 'none') {
-                 if (discoverBtn) discoverBtn.style.display = 'none';
-            } else if (discoverBtn) { 
-                 discoverBtn.style.display = 'none';
-            }
+            if (discoveredUsersContainer) discoveredUsersContainer.classList.remove('demo-visible');
+            if (returnBtn) returnBtn.classList.remove('demo-visible');
+            if (discoverBtn) discoverBtn.classList.remove('demo-visible');
 
             // If demos are turned OFF while viewing another user's BOLA profile, revert view to own profile.
             if (currentUser && hiddenUserIdInput && hiddenUserIdInput.value && hiddenUserIdInput.value !== currentUser.user_id) {
@@ -446,13 +455,13 @@ function updateUIVulnerabilityFeaturesDisplay() {
             if (discoverBtn && returnBtn) { 
                 if (currentUser && hiddenUserIdInput && hiddenUserIdInput.value && hiddenUserIdInput.value !== currentUser.user_id) {
                     // Viewing another user's profile (BOLA active)
-                    returnBtn.style.display = 'inline-block';
-                    discoverBtn.style.display = 'none';
-                    if (discoveredUsersContainer) discoveredUsersContainer.style.display = 'none'; 
+                    returnBtn.classList.add('demo-visible');
+                    discoverBtn.classList.remove('demo-visible');
+                    if (discoveredUsersContainer) discoveredUsersContainer.classList.remove('demo-visible');
                 } else {
                     // Viewing own profile or not yet selected a victim
-                    returnBtn.style.display = 'none';
-                    discoverBtn.style.display = 'inline-block'; 
+                    returnBtn.classList.remove('demo-visible');
+                    discoverBtn.classList.add('demo-visible');
                 }
             }
         }
@@ -466,7 +475,13 @@ function updateUIVulnerabilityFeaturesDisplay() {
     // --- Admin Page (`admin_products.html`) ---
     if (document.querySelector('.admin-section h1')?.textContent === 'Admin Dashboard') {
         const ppSection = document.querySelector('.parameter-pollution-controls');
-        if (ppSection) ppSection.style.display = uiVulnerabilityFeaturesEnabled ? 'block' : 'none';
+        if (ppSection) {
+            if (uiVulnerabilityFeaturesEnabled) {
+                ppSection.classList.add('demo-visible');
+            } else {
+                ppSection.classList.remove('demo-visible');
+            }
+        }
 
         if (typeof applyAdminPageDisplay === 'function') {
             applyAdminPageDisplay();
@@ -477,7 +492,11 @@ function updateUIVulnerabilityFeaturesDisplay() {
     if (document.getElementById('product-detail-page-body')) {
         const productPollutionDemoSection = document.querySelector('#product-detail-page-body .vulnerability-demo-section');
         if (productPollutionDemoSection) {
-            productPollutionDemoSection.style.display = displayStyleForBlock;
+            if (uiVulnerabilityFeaturesEnabled) {
+                productPollutionDemoSection.classList.add('demo-visible');
+            } else {
+                productPollutionDemoSection.classList.remove('demo-visible');
+            }
         }
 
         const internalStatusInfoDiv = document.querySelector('.internal-status-badge'); 
@@ -503,32 +522,40 @@ function updateUIVulnerabilityFeaturesDisplay() {
         if (placeOrderBtn) placeOrderBtn.style.display = 'inline-block';
 
         if (uiVulnerabilityFeaturesEnabled) {
-            // Show the main BOLA demo section
-            if (bolaDemoSection) bolaDemoSection.style.display = 'block';
+            if (bolaDemoSection) bolaDemoSection.classList.add('demo-visible');
+            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.classList.add('demo-visible');
 
-            // Show the "Enable BOLA Exploit Mode" checkbox
-            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.style.display = 'flex';
-
-            // Visibility of BOLA input fields and warning depends on the checkbox state
-            if (bolaCheckbox && bolaFields) bolaFields.style.display = bolaCheckbox.checked ? 'block' : 'none';
-            if (bolaCheckbox && bolaWarningContainer) bolaWarningContainer.style.display = bolaCheckbox.checked ? 'block' : 'none';
+            if (bolaCheckbox && bolaFields) {
+                if (bolaCheckbox.checked) {
+                    bolaFields.classList.add('demo-visible');
+                    bolaWarningContainer?.classList.add('demo-visible');
+                } else {
+                    bolaFields.classList.remove('demo-visible');
+                    bolaWarningContainer?.classList.remove('demo-visible');
+                }
+            }
         } else {
-            // Demos are OFF: Hide all BOLA-specific UI elements
-            if (bolaDemoSection) bolaDemoSection.style.display = 'none';
-            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.style.display = 'none';
+            if (bolaDemoSection) bolaDemoSection.classList.remove('demo-visible');
+            if (bolaCheckboxLabelContainer) bolaCheckboxLabelContainer.classList.remove('demo-visible');
             if (bolaCheckbox) bolaCheckbox.checked = false;
-            if (bolaFields) bolaFields.style.display = 'none';
-            if (bolaWarningContainer) bolaWarningContainer.style.display = 'none';
+            if (bolaFields) bolaFields.classList.remove('demo-visible');
+            if (bolaWarningContainer) bolaWarningContainer.classList.remove('demo-visible');
         }
     }
 
     // --- Orders Page (`orders.html`) ---
     if (document.getElementById('orders-container')) {
-         toggleVisibilityBySelector('.vulnerability-demo-section', uiVulnerabilityFeaturesEnabled); 
+        document.querySelectorAll('.vulnerability-demo-section').forEach((el) => {
+            if (uiVulnerabilityFeaturesEnabled) {
+                el.classList.add('demo-visible');
+            } else {
+                el.classList.remove('demo-visible');
+            }
+        });
 
         const currentViewingDivOrders = document.getElementById('current-viewing'); 
         if (!uiVulnerabilityFeaturesEnabled) {
-            if (currentViewingDivOrders) currentViewingDivOrders.style.display = 'none';
+            if (currentViewingDivOrders) currentViewingDivOrders.classList.remove('demo-visible');
             const targetUserIdInputInForm = document.querySelector('#view-orders-form #target-user-id');
             if (targetUserIdInputInForm) targetUserIdInputInForm.value = ''; 
 
@@ -549,10 +576,10 @@ function updateUIVulnerabilityFeaturesDisplay() {
             // If currently viewing another user's orders (BOLA state), ensure the "current-viewing" banner is visible.
             const viewingUserIdHiddenInputOrders = document.getElementById('viewing-user-id-orders');
             if (currentViewingDivOrders && viewingUserIdHiddenInputOrders && currentUser && viewingUserIdHiddenInputOrders.value !== currentUser.user_id) {
-                currentViewingDivOrders.style.display = 'flex'; // Ensure it's flex if BOLA active and demos ON
+                currentViewingDivOrders.classList.add('demo-visible');
                 // The text content of this banner is handled by fetchAndDisplayOrders
             } else if (currentViewingDivOrders) {
-                currentViewingDivOrders.style.display = 'none'; // Hide if viewing own orders
+                currentViewingDivOrders.classList.remove('demo-visible');
             }
         }
     }
@@ -636,16 +663,15 @@ function initHomePage() {
     if (searchInfoDiv && searchTermInput) {
         if (uiVulnerabilityFeaturesEnabled) {
             searchTermInput.addEventListener('focus', function () {
-                searchInfoDiv.style.display = 'block';
+                searchInfoDiv.classList.add('demo-visible');
             });
             searchTermInput.addEventListener('blur', function () {
                 if (this.value === '') {
-                    searchInfoDiv.style.display = 'none';
+                    searchInfoDiv.classList.remove('demo-visible');
                 }
             });
-            searchInfoDiv.style.display = 'none';
         } else {
-            searchInfoDiv.style.display = 'none';
+            searchInfoDiv.classList.remove('demo-visible');
         }
     }
     updateUIVulnerabilityFeaturesDisplay();
@@ -791,13 +817,13 @@ function setupProfilePageEventListeners() {
         }
         
         const discoveredUsersContainer = document.getElementById('discovered-users-container');
-        if(discoveredUsersContainer) discoveredUsersContainer.style.display = 'none';
+        if (discoveredUsersContainer) discoveredUsersContainer.classList.remove('demo-visible');
         
         const returnBtn = document.getElementById('return-to-my-profile-btn');
-        if(returnBtn) returnBtn.style.display = 'none';
+        if (returnBtn) returnBtn.classList.remove('demo-visible');
         
         const discoverBtn = document.getElementById('discover-users-btn');
-        if(discoverBtn) discoverBtn.style.display = 'inline-block';
+        if (discoverBtn) discoverBtn.classList.add('demo-visible');
 
         fetchAndDisplayFullProfile(currentlyViewedUserId);
         displayGlobalMessage('Returned to viewing your own profile.', 'info');

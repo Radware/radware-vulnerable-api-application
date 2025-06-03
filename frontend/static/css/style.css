@@ -5091,3 +5091,30 @@ nav.breadcrumb .current-page {
     margin-top: 5px;
 }
 
+/* Default hidden state for vulnerability demo dependent UI elements */
+.ui-demo-dependant,
+.ui-demo-dependant-block,
+.ui-demo-dependant-flex,
+.ui-demo-dependant-grid,
+.ui-demo-dependant-inline-block {
+    display: none !important;
+}
+
+/* Visible states controlled via JavaScript */
+.ui-demo-dependant.demo-visible,
+.ui-demo-dependant-block.demo-visible {
+    display: block !important;
+}
+
+.ui-demo-dependant-flex.demo-visible {
+    display: flex !important;
+}
+
+.ui-demo-dependant-grid.demo-visible {
+    display: grid !important;
+}
+
+.ui-demo-dependant-inline-block.demo-visible {
+    display: inline-block !important;
+}
+
