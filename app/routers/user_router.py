@@ -239,17 +239,13 @@ async def delete_user(
     db.db_users_by_email.pop(user_to_delete.email, None)
 
     # Also remove associated addresses and credit cards for hygiene, though not strictly part of BFLA demo
-    db.db["addresses"] = [a for a in db.db["addresses"] if a.user_id != user_id]
-    for addr_id, addr in list(db.db_addresses_by_id.items()):
-        if addr.user_id == user_id:
-            db.db_addresses_by_id.pop(addr_id, None)
+    user_addresses = db.db_addresses_by_user_id.pop(user_id, [])
+    for addr in user_addresses:
+        db.db_addresses_by_id.pop(addr.address_id, None)
 
-    db.db["credit_cards"] = [
-        cc for cc in db.db["credit_cards"] if cc.user_id != user_id
-    ]
-    for card_id, cc in list(db.db_credit_cards_by_id.items()):
-        if cc.user_id == user_id:
-            db.db_credit_cards_by_id.pop(card_id, None)
+    user_cards = db.db_credit_cards_by_user_id.pop(user_id, [])
+    for card in user_cards:
+        db.db_credit_cards_by_id.pop(card.card_id, None)
     # Orders might be kept for historical reasons or marked inactive.
 
     return {"message": "User deleted successfully"}
@@ -291,8 +287,7 @@ async def list_user_credit_cards(user_id: UUID):
 
     user_credit_cards = [
         CreditCard.model_validate(cc)
-        for cc in db.db_credit_cards_by_id.values()
-        if cc.user_id == user_id
+        for cc in db.db_credit_cards_by_user_id.get(user_id, [])
     ]
     print(
         f"User {user_id} credit cards being listed. Intended BOLA: No owner check performed."
@@ -381,10 +376,10 @@ async def add_credit_card_to_user(
         cvv_hash=cvv_hash,
         is_protected=False,
     )
-    db.db["credit_cards"].append(new_card_in_db)
     db.db_credit_cards_by_id[new_card_in_db.card_id] = new_card_in_db
+    db.db_credit_cards_by_user_id.setdefault(user_id, []).append(new_card_in_db)
 
-    user_cards = [c for c in db.db_credit_cards_by_id.values() if c.user_id == user_id]
+    user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
     if len(user_cards) == 1:
         new_card_in_db.is_default = True
 
@@ -461,8 +456,8 @@ async def update_user_credit_card(
         setattr(credit_card_to_update, key, value)
 
     if update_data_dict.get("is_default") is True:
-        for card_item in db.db_credit_cards_by_id.values():
-            if card_item.user_id == user_id and card_item.card_id != card_id:
+        for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
+            if card_item.card_id != card_id:
                 card_item.is_default = False
 
     credit_card_to_update.updated_at = datetime.now(timezone.utc)
@@ -492,13 +487,10 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
-    card_index = db.db["credit_cards"].index(card_to_delete)
 
     owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining = db.db_credit_cards_by_user_id.get(user_id, [])
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -509,13 +501,15 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
             )
 
     was_default = card_to_delete.is_default
-    db.db["credit_cards"].pop(card_index)
     db.db_credit_cards_by_id.pop(card_id, None)
+    user_card_list = db.db_credit_cards_by_user_id.get(user_id, [])
+    if card_to_delete in user_card_list:
+        user_card_list.remove(card_to_delete)
+        if not user_card_list:
+            db.db_credit_cards_by_user_id.pop(user_id, None)
 
     if was_default:
-        remaining_user_cards = [
-            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
-        ]
+        remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
             print(
