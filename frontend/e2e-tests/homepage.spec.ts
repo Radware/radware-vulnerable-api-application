@@ -109,4 +109,24 @@ test.describe('Homepage and Product Listing', () => {
 
     expect(desktopGridStyle).not.toBe(mobileGridStyle);
   });
+
+  test('should request product images in webp format when supported', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'WebP check only on Chromium');
+
+    const webpResponses: any[] = [];
+    page.on('response', res => {
+      if (res.url().includes('/static/images/products') && res.url().endsWith('.webp')) {
+        webpResponses.push(res);
+      }
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#loading-indicator')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('article.product-card').first()).toBeVisible({ timeout: 10000 });
+
+    await page.waitForTimeout(1000);
+    expect(webpResponses.length).toBeGreaterThan(0);
+    const contentType = webpResponses[0].headers()['content-type'];
+    expect(contentType).toContain('image/webp');
+  });
 });
