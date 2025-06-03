@@ -6,11 +6,9 @@ const isLocal =
   window.location.hostname === '127.0.0.1';
 
 if (isLocal) {
-  // Dev environment, API likely on port 8000
   API_BASE_URL = 'http://localhost:8000';
 } else {
-  // Deployed environment - ensure protocol matches current page
-  API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
+  API_BASE_URL = window.location.origin;
 }
 console.log(`[main.js] API_BASE_URL set to: ${API_BASE_URL}`); // For debugging
 let authToken = localStorage.getItem('token');
