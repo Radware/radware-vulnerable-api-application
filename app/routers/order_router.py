@@ -22,10 +22,10 @@ router = APIRouter(prefix="/users/{user_id}/orders", tags=["Orders"])  # Common 
 
 # Helper to find product and stock
 def get_product_and_stock(product_id: UUID):
-    product = next((p for p in db.db["products"] if p.product_id == product_id), None)
+    product = db.db_products_by_id.get(product_id)
     if not product:
         return None, None
-    stock = next((s for s in db.db["stock"] if s.product_id == product_id), None)
+    stock = db.db_stock_by_product_id.get(product_id)
     return product, stock
 
 
@@ -39,7 +39,7 @@ async def list_user_orders(
     )
 
     # Check if the user_id from path even exists
-    path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    path_user_exists = db.db_users_by_id.get(user_id)
     if not path_user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -54,14 +54,7 @@ async def list_user_orders(
         ]
         order_response = Order.model_validate(order_db)
         order_response.items = [OrderItem.model_validate(item) for item in items_db]
-        card = next(
-            (
-                cc
-                for cc in db.db["credit_cards"]
-                if cc.card_id == order_db.credit_card_id
-            ),
-            None,
-        )
+        card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
         if card:
             order_response.credit_card_last_four = card.card_last_four
         response_orders.append(order_response)
@@ -107,16 +100,14 @@ async def create_user_order(
     )
 
     # Validate existence of user, address, and credit card (without checking ownership for BOLA demo)
-    target_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    target_user_exists = db.db_users_by_id.get(user_id)
     if not target_user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Target user with ID {user_id} not found.",
         )
 
-    address_exists = next(
-        (a for a in db.db["addresses"] if a.address_id == address_id), None
-    )
+    address_exists = db.db_addresses_by_id.get(address_id)
     if not address_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -124,9 +115,7 @@ async def create_user_order(
         )
     # BOLA: We don't check if address_exists.user_id == user_id or current_user.user_id
 
-    credit_card_exists = next(
-        (cc for cc in db.db["credit_cards"] if cc.card_id == credit_card_id), None
-    )
+    credit_card_exists = db.db_credit_cards_by_id.get(credit_card_id)
     if not credit_card_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -214,14 +203,7 @@ async def create_user_order(
     order_response.items = [
         OrderItem.model_validate(item) for item in created_order_items_db
     ]
-    card = next(
-        (
-            cc
-            for cc in db.db["credit_cards"]
-            if cc.card_id == new_order_db.credit_card_id
-        ),
-        None,
-    )
+    card = db.db_credit_cards_by_id.get(new_order_db.credit_card_id)
     if card:
         order_response.credit_card_last_four = card.card_last_four
 
@@ -246,9 +228,7 @@ async def get_user_order_by_id(
     )
     if not order_db:
         # Check if user exists first to give a more specific error, or if order just doesn't belong to them / doesn't exist
-        path_user_exists = next(
-            (u for u in db.db["users"] if u.user_id == user_id), None
-        )
+        path_user_exists = db.db_users_by_id.get(user_id)
         if not path_user_exists:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -265,10 +245,7 @@ async def get_user_order_by_id(
 
     order_response = Order.model_validate(order_db)
     order_response.items = [OrderItem.model_validate(item) for item in items_db]
-    card = next(
-        (cc for cc in db.db["credit_cards"] if cc.card_id == order_db.credit_card_id),
-        None,
-    )
+    card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
     if card:
         order_response.credit_card_last_four = card.card_last_four
     return order_response

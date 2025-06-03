@@ -24,15 +24,13 @@ async def register_user(
     username: str = Query(...), email: str = Query(...), password: str = Query(...)
 ):
     # Check if user already exists
-    existing_user_by_username = next(
-        (u for u in db.db["users"] if u.username == username), None
-    )
+    existing_user_by_username = db.db_users_by_username.get(username)
     if existing_user_by_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
         )
-    existing_user_by_email = next((u for u in db.db["users"] if u.email == email), None)
+    existing_user_by_email = db.db_users_by_email.get(email)
     if existing_user_by_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
@@ -44,6 +42,9 @@ async def register_user(
         username=username, email=email, password_hash=hashed_password
     )
     db.db["users"].append(user_in_db)
+    db.db_users_by_id[user_in_db.user_id] = user_in_db
+    db.db_users_by_username[user_in_db.username] = user_in_db
+    db.db_users_by_email[user_in_db.email] = user_in_db
     return User.model_validate(user_in_db)  # Convert to User model for response
 
 
@@ -51,7 +52,7 @@ async def register_user(
 async def login_for_access_token(
     username: str = Query(...), password: str = Query(...)
 ):
-    user = next((u for u in db.db["users"] if u.username == username), None)
+    user = db.db_users_by_username.get(username)
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
