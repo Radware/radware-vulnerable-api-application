@@ -25,6 +25,9 @@ test.describe('Homepage and Product Listing', () => {
   });
   
   test('should be able to search for products', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('uiVulnerabilityFeaturesEnabled', 'true');
+    });
     await page.goto('/');
 
     const loading = page.locator('#loading-indicator');
@@ -68,6 +71,9 @@ test.describe('Homepage and Product Listing', () => {
   });
   
   test('should demonstrate potential injection vulnerability in search', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('uiVulnerabilityFeaturesEnabled', 'true');
+    });
     await page.goto('/');
 
     const loading = page.locator('#loading-indicator');

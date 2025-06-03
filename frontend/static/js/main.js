@@ -1,16 +1,16 @@
 // Constants and global variables
 // Derive the API base URL
 let API_BASE_URL;
-if (
+const isLocal =
   window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1'
-) {
+  window.location.hostname === '127.0.0.1';
+
+if (isLocal) {
   // Dev environment, API likely on port 8000
   API_BASE_URL = 'http://localhost:8000';
 } else {
-  // Production or other environments (e.g., Docker with Nginx proxy)
-  // Assumes API is served from the same origin or correctly proxied
-  API_BASE_URL = window.location.origin;
+  // Deployed environment - ensure protocol matches current page
+  API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 }
 console.log(`[main.js] API_BASE_URL set to: ${API_BASE_URL}`); // For debugging
 let authToken = localStorage.getItem('token');
@@ -344,6 +344,31 @@ function updateUIVulnerabilityFeaturesDisplay() {
         }
     };
 
+    // --- Home Page (`index.html`) ---
+    if (document.getElementById('search-info')) {
+        const searchInfoDiv = document.getElementById('search-info');
+        const searchTermInput = document.getElementById('search-term');
+        if (searchInfoDiv && searchTermInput) {
+            // Remove any existing handlers to avoid duplicates when toggling
+            searchTermInput.onfocus = null;
+            searchTermInput.onblur = null;
+
+            if (uiVulnerabilityFeaturesEnabled) {
+                searchTermInput.onfocus = function () {
+                    searchInfoDiv.style.display = 'block';
+                };
+                searchTermInput.onblur = function () {
+                    if (this.value === '') {
+                        searchInfoDiv.style.display = 'none';
+                    }
+                };
+                searchInfoDiv.style.display = 'none';
+            } else {
+                searchInfoDiv.style.display = 'none';
+            }
+        }
+    }
+
     // --- Profile Page (`profile.html`) ---
     if (document.getElementById('profile-page-title')) {
         // Visibility of BOLA Demo Sections (User Discovery, Update Profile for BOLA)
@@ -598,6 +623,23 @@ function initHomePage() {
     const searchForm = document.getElementById('search-form');
     if (searchForm) {
         searchForm.addEventListener('submit', handleProductSearch);
+    }
+    const searchInfoDiv = document.getElementById('search-info');
+    const searchTermInput = document.getElementById('search-term');
+    if (searchInfoDiv && searchTermInput) {
+        if (uiVulnerabilityFeaturesEnabled) {
+            searchTermInput.addEventListener('focus', function () {
+                searchInfoDiv.style.display = 'block';
+            });
+            searchTermInput.addEventListener('blur', function () {
+                if (this.value === '') {
+                    searchInfoDiv.style.display = 'none';
+                }
+            });
+            searchInfoDiv.style.display = 'none';
+        } else {
+            searchInfoDiv.style.display = 'none';
+        }
     }
     updateUIVulnerabilityFeaturesDisplay();
 }
