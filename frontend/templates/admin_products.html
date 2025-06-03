@@ -12,7 +12,7 @@
     <div id="global-success-container"></div>
 
     <!-- BFLA Vulnerability Demo Banner -->
-    <div id="vulnerability-banner-admin" class="vulnerability-warning" style="display: none;">
+    <div id="vulnerability-banner-admin" class="vulnerability-warning ui-demo-dependant">
         <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
         <h3><i class="fas fa-exclamation-triangle"></i> BFLA Vulnerability Demo Active</h3>
         <p>You are currently accessing admin functions with escalated privileges or viewing internal data due to a simulated BFLA condition. This is for demonstration purposes.</p>
@@ -21,7 +21,7 @@
     <h2>Products Management</h2>
 
     <!-- Parameter Pollution Demo Section -->
-    <div class="parameter-pollution-controls vulnerability-demo-section card-style">
+    <div class="parameter-pollution-controls vulnerability-demo-section card-style ui-demo-dependant">
         <h2><i class="fas fa-filter-circle-dollar"></i> Parameter Pollution Demo Options</h2>
         <p>These options demonstrate API parameter pollution vulnerabilities by adding extra query parameters to the product list request. Observe the "Demo URL" to see the effect.</p>
         <div class="form-check">
@@ -50,7 +50,7 @@
         <!-- Products table will be loaded here by admin.js -->
     </div>
 
-        <div class="add-product-section">
+        <div class="add-product-section ui-demo-dependant">
             <h3 id="add-product-header"><span class="exploit-indicator">BFLA</span> Demo: Add New Product</h3>
         <p id="add-product-helper" class="helper-text">This form demonstrates adding a product as a non-admin. If successful, it indicates a BFLA vulnerability.</p>
         <form id="add-product-form">
@@ -83,7 +83,7 @@
         </form>
     </div>
 
-    <div class="update-stock-section" style="margin-top: 30px;">
+    <div class="update-stock-section ui-demo-dependant" style="margin-top: 30px;">
         <h3 id="update-stock-header"><span class="exploit-indicator">BFLA</span> Demo: Update Product Stock</h3>
         <p id="update-stock-helper" class="helper-text">Any user can modify stock quantities without authorization.</p>
         <form id="update-stock-form">
@@ -99,7 +99,7 @@
         </form>
     </div>
 
-    <div class="delete-user-section" style="margin-top: 30px;">
+    <div class="delete-user-section ui-demo-dependant" style="margin-top: 30px;">
         <h3><span class="exploit-indicator">BFLA</span> Demo: Delete User Account</h3>
         <p class="helper-text">Demonstrates deleting any user. This action should be restricted to administrators.</p>
         <form id="delete-user-form">

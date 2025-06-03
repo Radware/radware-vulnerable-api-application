@@ -15,24 +15,24 @@
     </div>
 
     <!-- Indicator for whose profile is being viewed -->
-    <div id="profile-view-indicator" class="current-viewing-indicator" style="display: none;">
+    <div id="profile-view-indicator" class="current-viewing-indicator ui-demo-dependant">
         Currently viewing: <strong id="current-viewing-username-span">Your Profile</strong>
     </div>
-    <div id="bola-demo-active-banner" class="vulnerability-warning" style="display: none;">
+    <div id="bola-demo-active-banner" class="vulnerability-warning ui-demo-dependant">
         <h3><i class="fas fa-exclamation-triangle"></i> BOLA DEMO ACTIVE!</h3>
         <p>You are currently viewing and managing data for another user. Actions taken here will affect the selected victim's account.</p>
     </div>
 
 
     <!-- BOLA Vulnerability Demo Section: User Discovery -->
-    <div class="vulnerability-demo-section card-style">
+    <div class="vulnerability-demo-section card-style ui-demo-dependant">
         <h2>BOLA Vulnerability Demo: Access Other Users</h2>
         <p>Use the button below to discover other users (due to BFLA on <code>GET /api/users</code>). Then, select a user to view and manage their profile information (demonstrating BOLA).</p>
         <div class="demo-actions">
             <button id="discover-users-btn" class="btn btn-warning btn-exploit"><i class="fas fa-users"></i> Discover Other Users (BFLA Exploit)</button>
-            <button id="return-to-my-profile-btn" class="btn btn-secondary" style="display: none;"><i class="fas fa-user-shield"></i> Return to My Profile</button>
+            <button id="return-to-my-profile-btn" class="btn btn-secondary ui-demo-dependant-inline-block"><i class="fas fa-user-shield"></i> Return to My Profile</button>
         </div>
-        <div id="discovered-users-container" style="display: none;" class="mt-3">
+        <div id="discovered-users-container" class="mt-3 ui-demo-dependant">
             <h4>Select a Victim User to Target:</h4>
             <ul id="discovered-users-list" class="list-group">
                 <!-- User list will be populated here -->
@@ -59,13 +59,13 @@
             </form>
         </div>
         <!-- Parameter Pollution Demo: Admin Escalation -->
-        <div class="vulnerability-demo-section" style="margin-top: 20px; padding:15px; background-color: #fff8e1;">
+        <div class="vulnerability-demo-section ui-demo-dependant" style="margin-top: 20px; padding:15px; background-color: #fff8e1;">
             <h4>Parameter Pollution Demo: Admin Escalation</h4>
             <p>Attempt to escalate the privileges of the <strong id="escalation-target-username">currently viewed user</strong> by adding <code>is_admin=true</code> to the update request.</p>
             <button id="attempt-admin-escalation-btn" class="btn btn-danger btn-exploit"><i class="fas fa-user-secret"></i> Attempt Admin Escalation for <span id="escalation-target-btn-username">User</span></button>
         </div>
         <!-- BOLA Demo: Update Profile -->
-        <div class="vulnerability-demo-section" style="margin-top: 20px;">
+        <div class="vulnerability-demo-section ui-demo-dependant" style="margin-top: 20px;">
             <h4>BOLA Demo: Update Profile</h4>
             <p>While viewing another user's profile you can change their username or email.</p>
             <form id="update-profile-form" class="inline-form">
