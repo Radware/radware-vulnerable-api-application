@@ -56,7 +56,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
     else:
         raise credentials_exception
 
-    user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user = db.db_users_by_id.get(user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
@@ -82,15 +82,13 @@ async def create_user_endpoint(
     password: str = Query(...),
     # is_admin: bool = Query(False) # OpenAPI doesn't list is_admin for this initial creation via /users
 ):
-    existing_user_by_username = next(
-        (u for u in db.db["users"] if u.username == username), None
-    )
+    existing_user_by_username = db.db_users_by_username.get(username)
     if existing_user_by_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Username '{username}' already registered",
         )
-    existing_user_by_email = next((u for u in db.db["users"] if u.email == email), None)
+    existing_user_by_email = db.db_users_by_email.get(email)
     if existing_user_by_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -102,6 +100,9 @@ async def create_user_endpoint(
         username=username, email=email, password_hash=hashed_password, is_admin=False
     )
     db.db["users"].append(new_user)
+    db.db_users_by_id[new_user.user_id] = new_user
+    db.db_users_by_username[new_user.username] = new_user
+    db.db_users_by_email[new_user.email] = new_user
     return User.model_validate(new_user)
 
 
@@ -110,7 +111,7 @@ async def get_user_by_id(
     user_id: UUID,
     # current_user: TokenData = Depends(get_current_user) # BOLA: No check initially
 ):
-    user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user = db.db_users_by_id.get(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -130,7 +131,7 @@ async def update_user(
     ),  # Parameter pollution target
     # current_user: TokenData = Depends(get_current_user) # BOLA: No check initially
 ):
-    user_to_update = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_to_update = db.db_users_by_id.get(user_id)
     if not user_to_update:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -150,15 +151,8 @@ async def update_user(
     # BOLA: No check if current_user.user_id matches user_id from path.
     update_data = {}
     if username is not None:
-        existing_username_user = next(
-            (
-                u
-                for u in db.db["users"]
-                if u.username == username and u.user_id != user_id
-            ),
-            None,
-        )
-        if existing_username_user:
+        existing_username_user = db.db_users_by_username.get(username)
+        if existing_username_user and existing_username_user.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Username '{username}' already in use.",
@@ -166,11 +160,8 @@ async def update_user(
         update_data["username"] = username
     if email is not None:
         # Check if new email is already taken by another user
-        existing_email_user = next(
-            (u for u in db.db["users"] if u.email == email and u.user_id != user_id),
-            None,
-        )
-        if existing_email_user:
+        existing_email_user = db.db_users_by_email.get(email)
+        if existing_email_user and existing_email_user.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Email '{email}' already in use.",
@@ -190,9 +181,18 @@ async def update_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
         )
 
+    old_username = user_to_update.username
+    old_email = user_to_update.email
     for key, value in update_data.items():
         setattr(user_to_update, key, value)
     user_to_update.updated_at = datetime.now(timezone.utc)
+
+    if "username" in update_data:
+        db.db_users_by_username.pop(old_username, None)
+        db.db_users_by_username[user_to_update.username] = user_to_update
+    if "email" in update_data:
+        db.db_users_by_email.pop(old_email, None)
+        db.db_users_by_email[user_to_update.email] = user_to_update
 
     # Simulate saving back to DB (in-memory list)
     # No actual save needed as we are modifying the object in the list directly.
@@ -211,18 +211,12 @@ async def delete_user(
     user_id: UUID,
     # current_user: TokenData = Depends(get_current_user) # BFLA: No check initially
 ):
-    user_index = -1
-    user_to_delete = None
-    for i, u in enumerate(db.db["users"]):
-        if u.user_id == user_id:
-            user_index = i
-            user_to_delete = u
-            break
-
-    if user_index == -1 or user_to_delete is None:
+    user_to_delete = db.db_users_by_id.get(user_id)
+    if not user_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+    user_index = db.db["users"].index(user_to_delete)
 
     if hasattr(user_to_delete, "is_protected") and user_to_delete.is_protected:
         raise HTTPException(
@@ -240,12 +234,22 @@ async def delete_user(
         f"User {user_id} being deleted. Intended BFLA: No admin check performed."
     )  # Logging for demo
     db.db["users"].pop(user_index)
+    db.db_users_by_id.pop(user_id, None)
+    db.db_users_by_username.pop(user_to_delete.username, None)
+    db.db_users_by_email.pop(user_to_delete.email, None)
 
     # Also remove associated addresses and credit cards for hygiene, though not strictly part of BFLA demo
     db.db["addresses"] = [a for a in db.db["addresses"] if a.user_id != user_id]
+    for addr_id, addr in list(db.db_addresses_by_id.items()):
+        if addr.user_id == user_id:
+            db.db_addresses_by_id.pop(addr_id, None)
+
     db.db["credit_cards"] = [
         cc for cc in db.db["credit_cards"] if cc.user_id != user_id
     ]
+    for card_id, cc in list(db.db_credit_cards_by_id.items()):
+        if cc.user_id == user_id:
+            db.db_credit_cards_by_id.pop(card_id, None)
     # Orders might be kept for historical reasons or marked inactive.
 
     return {"message": "User deleted successfully"}
@@ -262,7 +266,7 @@ async def list_users(current_user: TokenData = Depends(get_current_user)):
     )
 
     # Return all users - this is the vulnerability
-    return [User.model_validate(u) for u in db.db["users"]]
+    return [User.model_validate(u) for u in db.db_users_by_id.values()]
 
 
 ## Credit Card Endpoints
@@ -279,7 +283,7 @@ async def list_user_credit_cards(user_id: UUID):
     BOLA Vulnerability: No ownership check; any authenticated or unauthenticated
     caller can list cards for any user_id.
     """
-    user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -287,7 +291,7 @@ async def list_user_credit_cards(user_id: UUID):
 
     user_credit_cards = [
         CreditCard.model_validate(cc)
-        for cc in db.db["credit_cards"]
+        for cc in db.db_credit_cards_by_id.values()
         if cc.user_id == user_id
     ]
     print(
@@ -303,20 +307,15 @@ async def list_user_credit_cards(user_id: UUID):
 )
 async def get_user_credit_card_by_id(user_id: UUID, card_id: UUID):
     """Get a specific credit card by ID for a given user."""
-    user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    credit_card = next(
-        (
-            cc
-            for cc in db.db["credit_cards"]
-            if cc.user_id == user_id and cc.card_id == card_id
-        ),
-        None,
-    )
+    credit_card = db.db_credit_cards_by_id.get(card_id)
+    if credit_card and credit_card.user_id != user_id:
+        credit_card = None
     if not credit_card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -352,7 +351,7 @@ async def add_credit_card_to_user(
     ),
 ):
     """Add a new credit card to a user's profile via query parameters."""
-    user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -383,8 +382,9 @@ async def add_credit_card_to_user(
         is_protected=False,
     )
     db.db["credit_cards"].append(new_card_in_db)
+    db.db_credit_cards_by_id[new_card_in_db.card_id] = new_card_in_db
 
-    user_cards = [c for c in db.db["credit_cards"] if c.user_id == user_id]
+    user_cards = [c for c in db.db_credit_cards_by_id.values() if c.user_id == user_id]
     if len(user_cards) == 1:
         new_card_in_db.is_default = True
 
@@ -419,29 +419,22 @@ async def update_user_credit_card(
     ),
 ):
     """Update an existing credit card's details for a user."""
-    user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    credit_card_to_update = next(
-        (
-            cc
-            for cc in db.db["credit_cards"]
-            if cc.user_id == user_id and cc.card_id == card_id
-        ),
-        None,
-    )
+    credit_card_to_update = db.db_credit_cards_by_id.get(card_id)
+    if credit_card_to_update and credit_card_to_update.user_id != user_id:
+        credit_card_to_update = None
     if not credit_card_to_update:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
 
-    owner_user: Optional[UserInDBBase] = next(
-        (u for u in db.db["users"] if u.user_id == user_id), None
-    )
+    owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not owner_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
@@ -468,7 +461,7 @@ async def update_user_credit_card(
         setattr(credit_card_to_update, key, value)
 
     if update_data_dict.get("is_default") is True:
-        for card_item in db.db["credit_cards"]:
+        for card_item in db.db_credit_cards_by_id.values():
             if card_item.user_id == user_id and card_item.card_id != card_id:
                 card_item.is_default = False
 
@@ -487,29 +480,25 @@ async def update_user_credit_card(
 )
 async def delete_user_credit_card(user_id: UUID, card_id: UUID):
     """Delete a specific credit card for a given user."""
-    user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    user_exists = db.db_users_by_id.get(user_id)
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    card_index = -1
-    card_to_delete = None
-    for i, cc in enumerate(db.db["credit_cards"]):
-        if cc.user_id == user_id and cc.card_id == card_id:
-            card_index = i
-            card_to_delete = cc
-            break
-
-    if card_index == -1 or card_to_delete is None:
+    card_to_delete = db.db_credit_cards_by_id.get(card_id)
+    if not card_to_delete or card_to_delete.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user.",
         )
+    card_index = db.db["credit_cards"].index(card_to_delete)
 
-    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [cc for cc in db.db["credit_cards"] if cc.user_id == user_id]
+        remaining = [
+            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
+        ]
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -521,10 +510,11 @@ async def delete_user_credit_card(user_id: UUID, card_id: UUID):
 
     was_default = card_to_delete.is_default
     db.db["credit_cards"].pop(card_index)
+    db.db_credit_cards_by_id.pop(card_id, None)
 
     if was_default:
         remaining_user_cards = [
-            cc for cc in db.db["credit_cards"] if cc.user_id == user_id
+            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
         ]
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True

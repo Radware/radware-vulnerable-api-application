@@ -51,7 +51,7 @@ async def list_user_addresses(
     )
 
     # Check if the user_id from path even exists
-    path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    path_user_exists = db.db_users_by_id.get(user_id)
     if not path_user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -59,7 +59,9 @@ async def list_user_addresses(
         )
 
     user_addresses = [
-        Address.model_validate(a) for a in db.db["addresses"] if a.user_id == user_id
+        Address.model_validate(a)
+        for a in db.db_addresses_by_id.values()
+        if a.user_id == user_id
     ]
     return user_addresses
 
@@ -83,9 +85,7 @@ async def create_user_address(
         f"Creating address for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    path_user: Optional[UserInDBBase] = next(
-        (u for u in db.db["users"] if u.user_id == user_id), None
-    )
+    path_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not path_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -95,7 +95,7 @@ async def create_user_address(
     duplicate = next(
         (
             a
-            for a in db.db["addresses"]
+            for a in db.db_addresses_by_id.values()
             if a.user_id == user_id
             and a.street == street
             and a.city == city
@@ -123,8 +123,9 @@ async def create_user_address(
         user_id=user_id,
     )
     db.db["addresses"].append(new_address_db)
+    db.db_addresses_by_id[new_address_db.address_id] = new_address_db
 
-    user_addresses = [a for a in db.db["addresses"] if a.user_id == user_id]
+    user_addresses = [a for a in db.db_addresses_by_id.values() if a.user_id == user_id]
     if len(user_addresses) == 1:
         new_address_db.is_default = True
 
@@ -157,23 +158,16 @@ async def update_user_address(
         f"Updating address {address_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    address_to_update = next(
-        (
-            a
-            for a in db.db["addresses"]
-            if a.address_id == address_id and a.user_id == user_id
-        ),
-        None,
-    )
+    address_to_update = db.db_addresses_by_id.get(address_id)
+    if address_to_update and address_to_update.user_id != user_id:
+        address_to_update = None
     if not address_to_update:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Address not found for this user or address ID is incorrect.",
         )
 
-    owner_user: Optional[UserInDBBase] = next(
-        (u for u in db.db["users"] if u.user_id == user_id), None
-    )
+    owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not owner_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
@@ -203,7 +197,7 @@ async def update_user_address(
         setattr(address_to_update, key, value)
 
     if is_default is True:
-        for addr_item in db.db["addresses"]:
+        for addr_item in db.db_addresses_by_id.values():
             if addr_item.user_id == user_id and addr_item.address_id != address_id:
                 addr_item.is_default = False
 
@@ -228,23 +222,17 @@ async def delete_user_address(
         f"Deleting address {address_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    address_index = -1
-    address_to_delete = None
-    for i, a in enumerate(db.db["addresses"]):
-        if a.address_id == address_id and a.user_id == user_id:
-            address_index = i
-            address_to_delete = a
-            break
-
-    if address_index == -1 or address_to_delete is None:
+    address_to_delete = db.db_addresses_by_id.get(address_id)
+    if not address_to_delete or address_to_delete.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Address not found for this user or address ID is incorrect.",
         )
+    address_index = db.db["addresses"].index(address_to_delete)
 
-    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [a for a in db.db["addresses"] if a.user_id == user_id]
+        remaining = [a for a in db.db_addresses_by_id.values() if a.user_id == user_id]
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -256,10 +244,11 @@ async def delete_user_address(
 
     was_default = address_to_delete.is_default
     db.db["addresses"].pop(address_index)
+    db.db_addresses_by_id.pop(address_id, None)
 
     if was_default:
         remaining_user_addresses = [
-            a for a in db.db["addresses"] if a.user_id == user_id
+            a for a in db.db_addresses_by_id.values() if a.user_id == user_id
         ]
         if remaining_user_addresses and not any(
             a.is_default for a in remaining_user_addresses
@@ -288,7 +277,7 @@ async def list_user_credit_cards(
         f"Listing credit cards for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check."
     )
 
-    path_user_exists = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    path_user_exists = db.db_users_by_id.get(user_id)
     if not path_user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -297,7 +286,7 @@ async def list_user_credit_cards(
 
     user_cards = [
         CreditCard.model_validate(cc)
-        for cc in db.db["credit_cards"]
+        for cc in db.db_credit_cards_by_id.values()
         if cc.user_id == user_id
     ]
     return user_cards
@@ -325,9 +314,7 @@ async def create_user_credit_card(
         f"Creating credit card for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    path_user: Optional[UserInDBBase] = next(
-        (u for u in db.db["users"] if u.user_id == user_id), None
-    )
+    path_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not path_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -351,7 +338,7 @@ async def create_user_credit_card(
         )
 
     if is_default:
-        for card_item in db.db["credit_cards"]:
+        for card_item in db.db_credit_cards_by_id.values():
             if card_item.user_id == user_id:
                 card_item.is_default = False
 
@@ -374,6 +361,7 @@ async def create_user_credit_card(
         card_last_four=card_last_four_digits,
     )
     db.db["credit_cards"].append(new_card_db)
+    db.db_credit_cards_by_id[new_card_db.card_id] = new_card_db
     return CreditCard.model_validate(new_card_db)
 
 
@@ -398,23 +386,16 @@ async def update_user_credit_card(
         f"Updating credit card {card_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    card_to_update = next(
-        (
-            cc
-            for cc in db.db["credit_cards"]
-            if cc.card_id == card_id and cc.user_id == user_id
-        ),
-        None,
-    )
+    card_to_update = db.db_credit_cards_by_id.get(card_id)
+    if card_to_update and card_to_update.user_id != user_id:
+        card_to_update = None
     if not card_to_update:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
         )
 
-    owner_user: Optional[UserInDBBase] = next(
-        (u for u in db.db["users"] if u.user_id == user_id), None
-    )
+    owner_user: Optional[UserInDBBase] = db.db_users_by_id.get(user_id)
     if not owner_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Owner user not found."
@@ -443,7 +424,7 @@ async def update_user_credit_card(
         setattr(card_to_update, key, value)
 
     if update_data_dict.get("is_default") is True:
-        for card_item in db.db["credit_cards"]:
+        for card_item in db.db_credit_cards_by_id.values():
             if card_item.user_id == user_id and card_item.card_id != card_id:
                 card_item.is_default = False
 
@@ -468,23 +449,19 @@ async def delete_user_credit_card(
         f"Deleting credit card {card_id} for user {user_id} by authenticated user {current_user.user_id}. BOLA: No ownership check."
     )
 
-    card_index = -1
-    card_to_delete = None
-    for i, cc in enumerate(db.db["credit_cards"]):
-        if cc.card_id == card_id and cc.user_id == user_id:
-            card_index = i
-            card_to_delete = cc
-            break
-
-    if card_index == -1 or card_to_delete is None:
+    card_to_delete = db.db_credit_cards_by_id.get(card_id)
+    if not card_to_delete or card_to_delete.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
         )
+    card_index = db.db["credit_cards"].index(card_to_delete)
 
-    owner_user = next((u for u in db.db["users"] if u.user_id == user_id), None)
+    owner_user = db.db_users_by_id.get(user_id)
     if owner_user and owner_user.is_protected:
-        remaining = [cc for cc in db.db["credit_cards"] if cc.user_id == user_id]
+        remaining = [
+            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
+        ]
         if len(remaining) <= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -496,10 +473,11 @@ async def delete_user_credit_card(
 
     was_default = card_to_delete.is_default
     db.db["credit_cards"].pop(card_index)
+    db.db_credit_cards_by_id.pop(card_id, None)
 
     if was_default:
         remaining_user_cards = [
-            cc for cc in db.db["credit_cards"] if cc.user_id == user_id
+            cc for cc in db.db_credit_cards_by_id.values() if cc.user_id == user_id
         ]
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
