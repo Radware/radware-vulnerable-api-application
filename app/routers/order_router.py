@@ -46,14 +46,14 @@ async def list_user_orders(
             detail=f"User with ID {user_id} not found.",
         )
 
-    user_orders_db = [o for o in db.db["orders"] if o.user_id == user_id]
+    user_order_objects = db.db_orders_by_user_id.get(user_id, [])
     response_orders = []
-    for order_db in user_orders_db:
-        items_db = [
-            item for item in db.db["order_items"] if item.order_id == order_db.order_id
-        ]
+    for order_db in user_order_objects:
+        items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
         order_response = Order.model_validate(order_db)
-        order_response.items = [OrderItem.model_validate(item) for item in items_db]
+        order_response.items = [
+            OrderItem.model_validate(item) for item in items_for_this_order
+        ]
         card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
         if card:
             order_response.credit_card_last_four = card.card_last_four
@@ -160,6 +160,10 @@ async def create_user_order(
         credit_card_id=credit_card_id,
     )
     db.db["orders"].append(new_order_db)
+    db.db_orders_by_id[new_order_db.order_id] = new_order_db
+    db.db_orders_by_user_id.setdefault(current_user.user_id, []).append(
+        new_order_db
+    )
 
     created_order_items_db: List[OrderItemInDBBase] = []
     current_total_amount = 0.0
@@ -169,12 +173,22 @@ async def create_user_order(
         if not product:
             # Rollback order creation (simplified: remove order from db)
             db.db["orders"].remove(new_order_db)
+            db.db_orders_by_id.pop(new_order_db.order_id, None)
+            if new_order_db in db.db_orders_by_user_id.get(
+                current_user.user_id, []
+            ):
+                db.db_orders_by_user_id[current_user.user_id].remove(new_order_db)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Product with ID {product_id_key} not found.",
             )
         if not stock or stock.quantity < quantity_val:
             db.db["orders"].remove(new_order_db)
+            db.db_orders_by_id.pop(new_order_db.order_id, None)
+            if new_order_db in db.db_orders_by_user_id.get(
+                current_user.user_id, []
+            ):
+                db.db_orders_by_user_id[current_user.user_id].remove(new_order_db)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Insufficient stock for product {product.name} (ID: {product_id_key}). Available: {stock.quantity if stock else 0}, Requested: {quantity_val}",
@@ -192,6 +206,10 @@ async def create_user_order(
             price_at_purchase=price_at_purchase,
         )
         db.db["order_items"].append(order_item_db)
+        db.db_order_items_by_id[order_item_db.order_item_id] = order_item_db
+        db.db_order_items_by_order_id.setdefault(new_order_db.order_id, []).append(
+            order_item_db
+        )
         created_order_items_db.append(order_item_db)
         current_total_amount += price_at_purchase * quantity_val
 
@@ -222,12 +240,8 @@ async def get_user_order_by_id(
         f"Fetching order {order_id} for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check."
     )
 
-    order_db = next(
-        (o for o in db.db["orders"] if o.order_id == order_id and o.user_id == user_id),
-        None,
-    )
-    if not order_db:
-        # Check if user exists first to give a more specific error, or if order just doesn't belong to them / doesn't exist
+    order_db = db.db_orders_by_id.get(order_id)
+    if not order_db or order_db.user_id != user_id:
         path_user_exists = db.db_users_by_id.get(user_id)
         if not path_user_exists:
             raise HTTPException(
@@ -239,12 +253,12 @@ async def get_user_order_by_id(
             detail=f"Order with ID {order_id} not found for user {user_id}.",
         )
 
-    items_db = [
-        item for item in db.db["order_items"] if item.order_id == order_db.order_id
-    ]
+    items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
 
     order_response = Order.model_validate(order_db)
-    order_response.items = [OrderItem.model_validate(item) for item in items_db]
+    order_response.items = [
+        OrderItem.model_validate(item) for item in items_for_this_order
+    ]
     card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
     if card:
         order_response.credit_card_last_four = card.card_last_four

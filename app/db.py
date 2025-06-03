@@ -2,6 +2,7 @@ from typing import Dict, List, Any
 from uuid import UUID, uuid4
 import json
 import os
+from datetime import datetime, timezone
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
 from .models.product_models import ProductInDBBase, StockInDBBase
 from .models.order_models import OrderInDBBase, OrderItemInDBBase
@@ -29,6 +30,10 @@ db_credit_cards_by_id: Dict[UUID, CreditCardInDBBase] = {}
 db_credit_cards_by_user_id: Dict[UUID, List[CreditCardInDBBase]] = {}
 db_products_by_id: Dict[UUID, ProductInDBBase] = {}
 db_stock_by_product_id: Dict[UUID, StockInDBBase] = {}
+db_orders_by_id: Dict[UUID, OrderInDBBase] = {}
+db_orders_by_user_id: Dict[UUID, List[OrderInDBBase]] = {}
+db_order_items_by_id: Dict[UUID, OrderItemInDBBase] = {}
+db_order_items_by_order_id: Dict[UUID, List[OrderItemInDBBase]] = {}
 
 # Helper functions to simulate DB operations could be added here later if needed,
 # e.g., find_user_by_username, find_product_by_id, etc.
@@ -64,6 +69,10 @@ def initialize_database_from_json():
     db_credit_cards_by_user_id.clear()
     db_products_by_id.clear()
     db_stock_by_product_id.clear()
+    db_orders_by_id.clear()
+    db_orders_by_user_id.clear()
+    db_order_items_by_id.clear()
+    db_order_items_by_order_id.clear()
 
     # Load products and stock
     for product_data in data.get("products", []):
@@ -135,6 +144,46 @@ def initialize_database_from_json():
             db["credit_cards"].append(card_obj) # Keep populating the old list for now
             db_credit_cards_by_id[card_obj.card_id] = card_obj
             db_credit_cards_by_user_id.setdefault(user_id, []).append(card_obj)
+
+    # Load orders and order items if present (future-proofing)
+    for order_data in data.get("orders", []):
+        try:
+            order_obj = OrderInDBBase(
+                order_id=UUID(order_data["order_id"]),
+                user_id=UUID(order_data["user_id"]),
+                address_id=UUID(order_data["address_id"]),
+                credit_card_id=UUID(order_data["credit_card_id"]),
+                status=order_data.get("status", "pending"),
+                total_amount=order_data.get("total_amount", 0.0),
+                created_at=datetime.fromisoformat(order_data["created_at"])
+                if order_data.get("created_at")
+                else datetime.now(timezone.utc),
+                updated_at=datetime.fromisoformat(order_data["updated_at"])
+                if order_data.get("updated_at")
+                else datetime.now(timezone.utc),
+            )
+        except Exception:
+            continue
+        db["orders"].append(order_obj)
+        db_orders_by_id[order_obj.order_id] = order_obj
+        db_orders_by_user_id.setdefault(order_obj.user_id, []).append(order_obj)
+
+    for item_data in data.get("order_items", []):
+        try:
+            order_item_obj = OrderItemInDBBase(
+                order_item_id=UUID(item_data["order_item_id"]),
+                order_id=UUID(item_data["order_id"]),
+                product_id=UUID(item_data["product_id"]),
+                quantity=item_data["quantity"],
+                price_at_purchase=item_data["price_at_purchase"],
+            )
+        except Exception:
+            continue
+        db["order_items"].append(order_item_obj)
+        db_order_items_by_id[order_item_obj.order_item_id] = order_item_obj
+        db_order_items_by_order_id.setdefault(order_item_obj.order_id, []).append(
+            order_item_obj
+        )
     print(f"Database initialized from {json_file_path}")
 
 
