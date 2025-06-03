@@ -190,6 +190,7 @@
             "name": "email",
             "in": "query",
             "required": false,
+            "allowReserved": true,
             "schema": {
               "type": "string",
               "format": "email"
@@ -864,6 +865,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "is_admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set user as admin (Parameter Pollution vulnerability test)"
           }
         ],
         "responses": {
@@ -1071,6 +1081,15 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "is_admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set user as admin (Parameter Pollution vulnerability test)"
           }
         ],
         "responses": {
@@ -1203,6 +1222,15 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "is_admin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set user as admin (Parameter Pollution vulnerability test)"
           }
         ],
         "responses": {
@@ -1371,6 +1399,46 @@
               "format": "uuid"
             },
             "description": "Credit Card ID for payment (Vulnerability: can be another user's card)"
+          },
+          {
+            "name": "product_id_1",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the first product in the order"
+          },
+          {
+            "name": "quantity_1",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Quantity of the first product"
+          },
+          {
+            "name": "product_id_2",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the second product in the order (optional)"
+          },
+          {
+            "name": "quantity_2",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Quantity of the second product (optional)"
           }
         ],
         "responses": {
