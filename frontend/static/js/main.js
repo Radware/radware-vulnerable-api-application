@@ -687,7 +687,7 @@ async function handleProductSearch(e) {
     if (productGrid && !loadingIndicator) productGrid.innerHTML = '<p class="loading-indicator">Searching...</p>';
     
     try {
-        const endpoint = searchTerm ? `/api/products/search/?name=${encodeURIComponent(searchTerm)}` : '/api/products';
+        const endpoint = searchTerm ? `/api/products/search?name=${encodeURIComponent(searchTerm)}` : '/api/products';
         const products = await apiCall(endpoint, 'GET', null, false);
         renderProducts(products);
     } catch (error) {
