@@ -247,6 +247,18 @@ async def delete_user(
         if card in db.db["credit_cards"]: # Remove from old list if present
             db.db["credit_cards"].remove(card)
 
+    # Remove associated orders and order items
+    orders_to_remove = db.db_orders_by_user_id.pop(user_id, [])
+    for order in orders_to_remove:
+        items_of_this_order = db.db_order_items_by_order_id.pop(order.order_id, [])
+        for item in items_of_this_order:
+            db.db_order_items_by_id.pop(item.order_item_id, None)
+            if item in db.db["order_items"]:
+                db.db["order_items"].remove(item)
+        db.db_orders_by_id.pop(order.order_id, None)
+        if order in db.db["orders"]:
+            db.db["orders"].remove(order)
+
     return {"message": "User deleted successfully"}
 
 
