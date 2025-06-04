@@ -332,6 +332,7 @@ function updateVulnerabilityBanner() {
     updateConstructedUrlDisplay();
 }
 
+
 function applyAdminPageDisplay() {
     const isRealAdmin = currentUser && currentUser.is_admin;
     const demosOn = uiVulnerabilityFeaturesEnabled;
@@ -345,10 +346,13 @@ function applyAdminPageDisplay() {
         ppSection.style.display = demosOn ? 'block' : 'none';
     }
 
+    const addSection = document.querySelector('.add-product-section');
     const addHeader = document.getElementById('add-product-header');
     const addHelper = document.getElementById('add-product-helper');
     const addSubmit = document.getElementById('add-product-submit');
-    if (isRealAdmin || !demosOn) {
+
+    if (isRealAdmin) {
+        if (addSection) addSection.style.display = 'block';
         if (addHeader) addHeader.textContent = 'Add New Product';
         if (addHelper) addHelper.textContent = 'Add a new product to the catalog.';
         if (addSubmit) {
@@ -356,19 +360,25 @@ function applyAdminPageDisplay() {
             addSubmit.classList.add('btn-primary');
             addSubmit.textContent = 'Add Product';
         }
-    } else {
+    } else if (demosOn) {
+        if (addSection) addSection.style.display = 'block';
         if (addHeader) addHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Add New Product';
         if (addHelper) addHelper.textContent = 'This form demonstrates adding a product as a non-admin. If successful, it indicates a BFLA vulnerability.';
         if (addSubmit) {
             addSubmit.classList.add('btn-warning', 'btn-exploit');
             addSubmit.textContent = 'Add Product (Demo Exploit)';
         }
+    } else {
+        if (addSection) addSection.style.display = 'none';
     }
 
+    const updateSection = document.querySelector('.update-stock-section');
     const updateHeader = document.getElementById('update-stock-header');
     const updateHelper = document.getElementById('update-stock-helper');
     const updateSubmit = document.getElementById('update-stock-submit');
-    if (isRealAdmin || !demosOn) {
+
+    if (isRealAdmin) {
+        if (updateSection) updateSection.style.display = 'block';
         if (updateHeader) updateHeader.textContent = 'Update Product Stock';
         if (updateHelper) updateHelper.textContent = 'Update stock quantity for a product.';
         if (updateSubmit) {
@@ -376,13 +386,16 @@ function applyAdminPageDisplay() {
             updateSubmit.classList.add('btn-primary');
             updateSubmit.textContent = 'Update Stock';
         }
-    } else {
+    } else if (demosOn) {
+        if (updateSection) updateSection.style.display = 'block';
         if (updateHeader) updateHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Update Product Stock';
         if (updateHelper) updateHelper.textContent = 'Any user can modify stock quantities without authorization.';
         if (updateSubmit) {
             updateSubmit.classList.add('btn-warning', 'btn-exploit');
             updateSubmit.textContent = 'Update Stock (Demo Exploit)';
         }
+    } else {
+        if (updateSection) updateSection.style.display = 'none';
     }
 
     const deleteSection = document.querySelector('.delete-user-section');
