@@ -53,7 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (internalStatusValue) {
                 params.append('internal_status', internalStatusValue);
                 if (typeof displaySuccess === 'function') {
-                    displaySuccess("Parameter Pollution Demo: Adding internal_status parameter to the request!");
+                    const isRealAdmin = currentUser && currentUser.is_admin;
+                    const showDemoMsg = uiVulnerabilityFeaturesEnabled && !isRealAdmin;
+                    const msg = showDemoMsg
+                        ? 'Parameter Pollution Demo: Adding internal_status parameter to the request!'
+                        : 'internal_status parameter added.';
+                    displaySuccess(msg);
                 }
             } else if (revealInternalCheckbox && revealInternalCheckbox.checked) {
                 // Mirror "Show Internal Products" toggle for POST demo consistency
@@ -350,6 +355,7 @@ function applyAdminPageDisplay() {
     const addHeader = document.getElementById('add-product-header');
     const addHelper = document.getElementById('add-product-helper');
     const addSubmit = document.getElementById('add-product-submit');
+    const internalStatusHeader = document.getElementById('internal-status-header');
 
     if (isRealAdmin) {
         if (addSection) addSection.style.display = 'block';
@@ -360,6 +366,7 @@ function applyAdminPageDisplay() {
             addSubmit.classList.add('btn-primary');
             addSubmit.textContent = 'Add Product';
         }
+        if (internalStatusHeader) internalStatusHeader.textContent = 'Set Internal Status on Create';
     } else if (demosOn) {
         if (addSection) addSection.style.display = 'block';
         if (addHeader) addHeader.innerHTML = '<span class="exploit-indicator">BFLA</span> Demo: Add New Product';
@@ -368,6 +375,7 @@ function applyAdminPageDisplay() {
             addSubmit.classList.add('btn-warning', 'btn-exploit');
             addSubmit.textContent = 'Add Product (Demo Exploit)';
         }
+        if (internalStatusHeader) internalStatusHeader.textContent = 'Parameter Pollution Demo: Set Internal Status on Create';
     } else {
         if (addSection) addSection.style.display = 'none';
     }
