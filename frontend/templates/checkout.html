@@ -62,6 +62,14 @@
         <div id="cart-summary">
             <p class="loading-indicator">Loading cart summary...</p>
         </div>
+        <div class="coupon-section" style="margin-top:1rem;">
+            <label for="coupon-code">Coupon Code:</label>
+            <input type="text" id="coupon-code" class="form-control" placeholder="Enter coupon">
+            <button type="button" id="apply-coupon-btn" class="btn btn-secondary" style="margin-top:8px;">Apply Coupon</button>
+            <div id="discount-info" style="display:none; margin-top:8px;">
+                Discounted Total: <span id="discounted-total"></span>
+            </div>
+        </div>
     </div>
     
     <!-- Form now wraps both normal and BOLA fields -->
@@ -178,4 +186,5 @@
     {{ super() }}
     <!-- main.js (via super) calls initCheckoutPage() which sets up the page -->
     <!-- checkout.js (if you have specific BOLA UI helpers not in main.js) could be linked here or also included in main.js -->
+    <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
 {% endblock %}

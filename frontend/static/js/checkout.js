@@ -170,3 +170,50 @@ function showVulnerabilityWarning(type, message, containerId = null) {
     // Fallback to global message
     displayGlobalMessage(`<strong>⚠️ ${type} Vulnerability Demo:</strong> ${message}`, 'warning');
 }
+
+// ---------------- Coupon Handling ----------------
+async function applyCouponToOrder(event) {
+    event.preventDefault();
+    const couponInput = document.getElementById('coupon-code');
+    if (!couponInput) return;
+    const code = couponInput.value.trim();
+    if (!code) {
+        displayError('Please enter a coupon code.');
+        return;
+    }
+
+    const addressId = document.getElementById('address-id')?.value;
+    const creditCardId = document.getElementById('credit-card-id')?.value;
+    if (!addressId || !creditCardId) {
+        displayError('Select shipping and payment details first.');
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('address_id', addressId);
+    params.append('credit_card_id', creditCardId);
+    cart.forEach((item, idx) => {
+        params.append(`product_id_${idx + 1}`, item.product_id);
+        params.append(`quantity_${idx + 1}`, item.quantity);
+    });
+
+    try {
+        const order = await apiCall(`/api/users/${currentUser.user_id}/orders?${params.toString()}`, 'POST', null, true);
+        const endpoint = `/api/users/${currentUser.user_id}/orders/${order.order_id}/apply-coupon?coupon_code=${encodeURIComponent(code)}`;
+        const updated = await apiCall(endpoint, 'POST', null, true);
+
+        const totalEl = document.getElementById('checkout-grand-total');
+        if (totalEl) totalEl.textContent = `$${updated.total_amount.toFixed(2)}`;
+
+        document.getElementById('discounted-total').textContent = `$${updated.total_amount.toFixed(2)}`;
+        document.getElementById('discount-info').style.display = 'block';
+        displaySuccess('Coupon applied successfully!');
+    } catch (err) {
+        displayError(`Failed to apply coupon: ${err.message}`);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('apply-coupon-btn');
+    if (btn) btn.addEventListener('click', applyCouponToOrder);
+});
