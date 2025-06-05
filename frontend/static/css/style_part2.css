@@ -1,0 +1,1036 @@
+
+/* Demo URL display */
+#demo-url {
+    display: block;
+    background-color: #f1f1f1;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+    font-family: monospace;
+    word-break: break-all;
+    border: 1px solid var(--border-color);
+}
+
+/* Copy button */
+#copy-url-btn {
+    margin-top: var(--spacing-sm);
+}
+
+.product-card .out-of-stock {
+    color: var(--danger-color);
+    font-weight: 500;
+}
+
+.product-card .add-to-cart-btn {
+    width: calc(100% - 30px);
+    margin: 0 15px 15px;
+}
+
+/* Product Detail */
+#product-detail-page-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.product-navigation {
+    margin-bottom: 20px;
+}
+
+#product-detail-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+#product-image {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+#product-name {
+    margin-top: 0;
+    color: var (--text-color);
+}
+
+#product-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin: 15px 0;
+}
+
+#product-description {
+    margin-bottom: 20px;
+    line-height: 1.7;
+}
+
+#product-stock {
+    margin-bottom: 20px;
+}
+
+#product-stock.in-stock {
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+#product-stock.out-of-stock {
+    color: var (--danger-color);
+    font-weight: 500;
+}
+
+#add-to-cart-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 20px;
+}
+
+#add-to-cart-form label {
+    margin-bottom: 0;
+}
+
+#add-to-cart-form input {
+    width: 80px;
+    text-align: center;
+}
+
+.internal-status {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: rgba(240, 173, 78, 0.1);
+    border: 1px solid var(--warning-border);
+    border-radius: 4px;
+    color: var(--warning-hover);
+}
+
+/* Vulnerability Demo Sections */
+.vulnerability-demo-section {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: rgba(240, 173, 78, 0.05);
+    border-radius: 8px;
+    border: 1px dashed var(--warning-color);
+}
+
+.vulnerability-demo-section h2 {
+    color: var(--warning-hover);
+    margin-top: 0;
+}
+
+/* Profile and Admin Sections */
+.profile-section, .admin-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.addresses-list, .credit-cards-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.address-card, .credit-card-card {
+    padding: 15px;
+    background-color: var(--body-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.address-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.address-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.address-card .item-card-header h4 {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.address-card .item-card-content p {
+    margin: 5px 0;
+    color: var(--text-color);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: var(--primary-light);
+    color: white;
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background-color: rgba(0,0,0,0.025);
+}
+
+/* Cart Page */
+.cart-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+/* Loading state */
+.loading-indicator {
+    display: inline-block;
+    position: relative;
+    padding-left: 30px;
+    color: var(--text-light);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.loading-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(74, 111, 165, 0.3);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translateY(-50%) rotate(0deg); }
+    100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Modal */
+.modal { 
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.4); 
+}
+
+.modal-content { 
+    background-color: var(--card-bg);
+    margin: 15% auto; 
+    padding: 20px; 
+    border: 1px solid var(--border-color);
+    width: 80%; 
+    max-width: 500px; 
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.close-button { 
+    color: var(--text-light);
+    float: right; 
+    font-size: 28px; 
+    font-weight: bold; 
+    transition: color 0.3s ease;
+}
+
+.close-button:hover, 
+.close-button:focus { 
+    color: var(--text-color);
+    text-decoration: none; 
+    cursor: pointer; 
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    
+    #product-detail-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .addresses-list, .credit-cards-list {
+        grid-template-columns: 1fr;
+    }
+    
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .cart-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    button, input[type="submit"] {
+        width: 100%;
+    }
+
+    /* Mobile navbar adjustments */
+    .nav-content-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    #dynamic-nav-links {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: var(--spacing-sm);
+    }
+
+    #dynamic-nav-links a {
+        margin: 4px 0;
+    }
+
+    /* Ensure navbar elements stack neatly */
+    .brand {
+        margin-right: 0;
+    }
+
+    .ui-vulnerability-features-toggle-container {
+        width: 100%;
+        margin-left: 0;
+        margin-top: var(--spacing-sm);
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+    
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.4rem; }
+    h3 { font-size: 1.2rem; }
+    
+    .product-card {
+        margin: 0 auto;
+        max-width: 300px;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    main.container {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    #navbar {
+        padding: 0.5em;
+    }
+
+    .brand span {
+        font-size: 1.1rem;
+    }
+
+    #dynamic-nav-links a {
+        padding: 10px;
+    }
+
+    .ui-vulnerability-features-toggle-container {
+        padding: 4px 8px;
+    }
+
+    .ui-vulnerability-features-toggle-container label {
+        font-size: 0.75rem;
+    }
+}
+
+/* Page Header for better title separation */
+.page-header {
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+}
+
+.page-header h1 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-dark);
+}
+
+/* Card style for sections */
+.card-style {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--box-shadow);
+}
+
+/* Profile Management Sections Layout */
+.profile-management-sections {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+@media (min-width: 992px) { /* Medium screens and up */
+    .profile-management-sections {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.address-section, .credit-card-section {
+    padding: var(--spacing-lg);
+}
+
+.address-section h2, .credit-card-section h2 {
+    margin-top: 0;
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Item Card (for individual address/credit card) */
+.item-card {
+    background-color: var(--body-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    position: relative;
+}
+
+.item-card p {
+    margin: var(--spacing-xs) 0;
+}
+
+.item-card p:last-child {
+    margin-bottom: var(--spacing-sm);
+}
+
+.item-card small {
+    color: var(--text-light);
+    font-size: 0.8rem;
+}
+
+.item-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-top: var (--spacing-md);
+    padding-top: var(--spacing-sm);
+    border-top: 1px dashed var(--border-color);
+}
+
+.item-actions button {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.item-actions button i {
+    margin-right: 5px;
+}
+
+/* Credit card styling */
+.credit-card-card {
+    background-color: var(--card-bg); /* New light background */
+    color: var(--text-color); /* Default text color to dark */
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); /* Adjusted shadow for lighter card */
+    border: 1px solid var(--border-color); /* Add a border like other cards */
+}
+
+.credit-card-card::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.02); /* Very subtle dark pattern, or remove if not desired */
+    z-index: 0;
+}
+
+.credit-card-card .item-card-content,
+.credit-card-card .item-card-header {
+    position: relative;
+    z-index: 2;
+}
+
+.credit-card-card .item-card-header h4,
+.credit-card-card .item-card-content p {
+    color: var(--text-color); /* Dark text */
+    text-shadow: none; /* Remove text shadow */
+    font-weight: normal; 
+    font-size: 1em; 
+    letter-spacing: normal;
+}
+
+.credit-card-card .item-card-header h4 {
+    font-weight: 600; /* Keep header bold */
+    color: var(--primary-dark); /* Make header color distinct */
+}
+
+.credit-card-card .item-card-content i { /* Icons within content, like calendar, lock */
+    color: var(--text-light); /* Darker icon color */
+    text-shadow: none; 
+}
+
+.credit-card-card .text-muted {
+    color: var(--text-light) !important; 
+    text-shadow: none; 
+    font-weight: normal; 
+}
+
+.credit-card-card .item-actions {
+    border-top: 1px dashed var(--border-color); 
+    margin-top: 12px; 
+    padding-top: 12px; 
+}
+
+.credit-card-card .item-actions button {
+    border: 1px solid var(--border-color); 
+    background-color: var(--body-bg); 
+    color: var(--text-color); 
+    font-weight: 500; 
+    padding: 6px 14px; 
+    margin: 0 5px; 
+    transition: all 0.2s ease;
+    text-shadow: none; 
+}
+
+.credit-card-card .item-actions button.btn-secondary {
+    background-color: #6c757d; 
+    color: white;
+    border: 1px solid #6c757d;
+}
+
+.credit-card-card .item-actions button.btn-danger {
+    background-color: var(--danger-color); 
+    color: white;
+    border: 1px solid var(--danger-color);
+}
+
+.credit-card-card .item-actions button:hover {
+    background-color: #e9ecef; /* Light gray hover for default buttons */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+}
+
+.credit-card-card .item-actions button.btn-secondary:hover {
+    background-color: #5a6268;
+}
+.credit-card-card .item-actions button.btn-danger:hover {
+    background-color: var(--danger-hover);
+}
+
+.credit-card-card .set-default-btn { /* Button inside h4 */
+    background-color: #e9ecef; /* Lighter background */
+    color: var(--text-color); /* Dark text */
+    border: 1px solid var(--border-color);
+    font-weight: 500; 
+    text-shadow: none;
+    padding: 3px 8px;
+    margin-left: 10px;
+}
+
+.credit-card-card .set-default-btn:hover {
+    background-color: #ced4da; 
+}
+
+.credit-card-card .item-badge { /* Badge inside h4, for "Default" */
+    background-color: var(--secondary-color); /* Keep green */
+    color: white; /* White text on green is fine */
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+    display: inline-block;
+}
+
+.card-detail-text { /* Spans for "Expires:" and "Number:" */
+    color: var(--text-color); 
+    font-weight: normal; 
+    font-size: 1em; 
+    letter-spacing: normal;
+}
+
+.credit-card-card::after { /* Decorative chip/logo on top right */
+    content: '';
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 25px;
+    background: linear-gradient(135deg, #e8e8e8 0%, #f5f5f5 100%); /* Subtle light gray */
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Main icon in the card header */
+.credit-card-card .item-card-header i {
+    color: var(--primary-color); 
+    text-shadow: none;
+}
+
+/* Ensure buttons in credit card areas have good visibility */
+.credit-card-card .item-actions button {
+    border: 2px solid white;
+    background-color: rgba(255, 255, 255, 0.3); /* More visible background */
+    color: white;
+    font-weight: 700; /* Extra bold */
+    padding: 6px 14px; /* Larger button */
+    margin: 0 5px; /* Add spacing between buttons */
+    transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.credit-card-card .item-actions button.btn-secondary {
+    background-color: #5d87c5; /* Distinct color for secondary button */
+    border: 2px solid white;
+}
+
+.credit-card-card .item-actions button.btn-danger {
+    background-color: #d9534f; /* Distinct color for danger button */
+    border: 2px solid white;
+}
+
+.credit-card-card .item-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.5); /* More visible hover state */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.credit-card-card .set-default-btn {
+    background-color: #ffc107;
+    color: #212529;
+    border: 1px solid #212529;
+    font-weight: 600;
+    text-shadow: none;
+    padding: 3px 8px;
+    margin-left: 10px;
+}
+
+.credit-card-card .set-default-btn:hover {
+    background-color: #ffca2c;
+}
+
+.credit-card-card .item-badge {
+    background-color: #28a745;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+    display: inline-block;
+}
+
+/* Ensure card details text is styled */
+.card-detail-text {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1.05em;
+    letter-spacing: 0.5px;
+}
+
+/* Animation for toggling sections */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.collapsible-form.open {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* Empty state illustrations */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl) var(--spacing-md);
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: var(--border-radius-md);
+    border: 1px dashed var(--border-color);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--text-light);
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    color: var(--text-light);
+    text-align: center;
+    font-size: 1rem;
+    max-width: 250px;
+    margin: 0 auto;
+}
+
+/* Add/Edit Item Form Styling */
+.add-item-form h3 {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Form group improvements */
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -5px;
+    margin-left: -5px;
+}
+
+.form-row .form-group {
+    padding-right: 5px;
+    padding-left: 5px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Ensure .form-control takes full width in its container */
+.form-control {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+/* Loading indicator for lists */
+.items-list-container .loading-indicator {
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+/* Enhanced Address and Credit Card Items */
+.item-card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    position: relative;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.item-card:hover {
+    box-shadow: var(--box-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.item-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+    gap: var(--spacing-sm);
+}
+
+.item-card-header i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.item-card-header h4 {
+    margin: 0;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.item-card-content {
+    margin-bottom: var(--spacing-sm);
+}
+
+.item-card-content p {
+    margin: var(--spacing-xs) 0;
+    line-height: 1.4;
+}
+
+.default-badge {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+    margin-left: var(--spacing-sm);
+    vertical-align: middle;
+}
+
+/* Toggle form visibility */
+.toggle-form-btn {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-light);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    cursor: pointer;
+    font-weight: 500;
+    gap: var(--spacing-sm);
+}
+
+.toggle-form-btn i {
+    transition: transform 0.3s;
+}
+
+.toggle-form-btn:hover {
+    background-color: var(--primary-color);
+}
+
+.toggle-form-btn.active i {
+    transform: rotate(180deg);
+}
+
+.toggle-form-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.3);
+}
+
+/* Collapsible form */
+.collapsible-form {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md);
+    transition: max-height 0.4s ease-out, padding 0.4s ease, border 0.4s ease;
+}
+
+.collapsible-form.open {
+    max-height: 800px; /* Large enough to contain the form */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    background-color: #f9f9f9;
+}
+
+/* Form in editing mode */
+.edit-mode-indicator {
+    background-color: var(--primary-light);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+    display: none;
+}
+
+.edit-mode-indicator.active {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.edit-mode-indicator i {
+    font-size: 1rem;
+}
+
+/* Improved organization */
+.items-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.items-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--text-light);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    color: var(--border-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Card/Address icons */
+.address-icon, .card-icon {
+    color: var(--primary-color);
+    margin-right: var(--spacing-xs);
+}
+
+.items-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+/* Form cancel button */
+.btn-form-cancel {
+    background-color: #f8f9fa;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn-form-cancel:hover {
+    background-color: #e9ecef;
+}
+
+/* Product Image Styling */
+.product-card img.product-image {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: var(--spacing-md);
+    background-color: #f8f9fa;
+    padding: var(--spacing-md);
+    transition: transform 0.2s ease;
+}
+
+.product-card:hover img.product-image {
+    transform: scale(1.05);
+}
+
+.product-detail-card .product-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.product-detail-card .product-image img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+    .product-detail-card .product-image img {
+        max-height: 300px;
+    }
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-light);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--border-color);
+}
+
+/* Profile Page Enhanced Styles */
+.items-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var (--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.items-section-header h2 {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.items-section-header h2 i {
+    margin-right: var(--spacing-sm);
+    color: var(--primary-color);
+}
+
+.toggle-form-btn {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-light);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-form-btn.active {
+    background-color: var(--primary-dark);
+}
+
+.toggle-form-btn i {
+    margin-right: 5px;
+}
+
+.toggle-form-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.collapsible-form {
+    display: none;
+    padding: var(--spacing-md);
+    background-color: var(--body-bg);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-lg);
+    transition: all 0.3s ease;
+}
+
+.collapsible-form.open {
+    display: block;
+}
+
