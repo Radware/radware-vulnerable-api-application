@@ -538,6 +538,37 @@
         }
       ],
       "is_protected": true
+    },
+    {
+      "user_id": "00000011-0000-0000-0000-000000000011",
+      "username": "KevinHarris",
+      "email": "kevin.harris@example.com",
+      "password_plain": "KevinPass10&",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000011-0001-0000-0000-000000000001",
+          "user_id": "00000011-0000-0000-0000-000000000011",
+          "street": "777 Pinecone Path",
+          "city": "Silver City",
+          "country": "USA",
+          "zip_code": "13579",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000011-0001-0000-0000-000000000001",
+          "user_id": "00000011-0000-0000-0000-000000000011",
+          "cardholder_name": "Kevin Harris",
+          "expiry_month": "07",
+          "expiry_year": "2030",
+          "is_default": true,
+          "card_number_plain": "4234567890123456",
+          "cvv_plain": "321"
+        }
+      ],
+      "is_protected": true
     }
   ]
 }

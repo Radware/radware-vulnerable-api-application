@@ -281,6 +281,23 @@
         ],
         "summary": "List all products",
         "operationId": "listProducts",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "description": "Filter products based on user role (e.g., 'user'). This parameter seems to be sent by the UI.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "admin",
+                "guest"
+              ],
+              "default": "user"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "A list of products",
@@ -1260,7 +1277,7 @@
           "CreditCards"
         ],
         "summary": "Delete a credit card for a user (BOLA Target)",
-        "description": "Deletes a credit card. BOLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can delete any card. Protected cards cannot be deleted.",
+        "description": "Deletes a credit card. BFLA: No ownership check; any user (even unauthenticated for this specific endpoint due to router precedence) can delete any card. Protected cards cannot be deleted.",
         "operationId": "deleteUserCreditCard",
         "parameters": [
           {
