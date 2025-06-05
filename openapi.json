@@ -1978,10 +1978,27 @@
             "format": "uuid",
             "description": "Foreign key to CreditCard used for payment"
           },
+          "applied_coupon_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identifier of the applied coupon, if any",
+            "nullable": true
+          },
+          "applied_coupon_code": {
+            "type": "string",
+            "description": "Code of the applied coupon, if any",
+            "nullable": true
+          },
+          "discount_amount": {
+            "type": "number",
+            "format": "float",
+            "description": "Discount applied to the order",
+            "default": 0.0
+          },
           "total_amount": {
             "type": "number",
             "format": "float",
-            "description": "Total amount of the order",
+            "description": "Total amount of the order after discount",
             "readOnly": true
           },
           "status": {
