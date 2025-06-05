@@ -1,0 +1,1036 @@
+
+.product-detail-info {
+    flex: 1;
+    min-width: 300px;
+}
+
+.product-detail-info h1 {
+    font-size: 28px;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.product-category {
+    color: var(--dark-gray);
+    font-size: 14px;
+}
+
+.product-status-tags {
+    display: flex;
+    gap: 10px;
+}
+
+.stock-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+}
+
+.badge-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.badge-danger {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+}
+
+.internal-status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    background-color: var(--gray-light);
+    color: var(--text-color);
+}
+
+.product-price-container {
+    margin-bottom: 20px;
+}
+
+.product-price {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin: 0;
+}
+
+.product-description-container {
+    margin-bottom: 30px;
+}
+
+.product-description-container h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.product-description {
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.product-actions {
+    margin-bottom: 40px;
+}
+
+.add-to-cart-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.quantity-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.quantity-selector label {
+    font-size: 14px;
+    color: var(--dark-gray);
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.quantity-btn {
+    background: none;
+    border: none;
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.quantity-btn:hover {
+    background-color: var(--gray-light);
+}
+
+.quantity-input {
+    width: 50px;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    padding: 8px 0;
+    outline: none;
+}
+
+.add-to-cart-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+}
+
+.add-to-cart-btn:hover {
+    background-color: var(--secondary-hover);
+}
+
+.add-to-cart-btn.clicked {
+    transform: scale(0.98);
+}
+
+.add-to-cart-btn.clicked .btn-feedback {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    animation: ripple 0.5s;
+}
+
+.add-to-cart-btn.disabled {
+    background-color: var(--gray-light);
+    color: var(--dark-gray);
+    cursor: not-allowed;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.cart-icon {
+    fill: currentColor;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.back-button:hover {
+    color: var(--primary-dark);
+}
+
+.back-button .icon {
+    fill: currentColor;
+}
+
+/* Accordion Styles */
+.accordion {
+    margin-top: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.accordion-item {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.accordion-item:last-child {
+    border-bottom: none;
+}
+
+.accordion-header {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.accordion-header:hover {
+    background-color: var(--gray-light);
+}
+
+.accordion-header.active {
+    background-color: var(--gray-light);
+}
+
+.accordion-icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.accordion-content {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease;
+}
+
+.accordion-content p {
+    margin: 0;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+/* Error State */
+.error-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.error-icon {
+    fill: var (--danger-color);
+    margin-bottom: 20px;
+}
+
+.retry-btn {
+    margin-top: 20px;
+}
+
+/* Parameter Pollution Demo Section */
+.vulnerability-demo-section {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.vulnerability-demo-section h2 {
+    font-size: 20px;
+    color: var (--warning-text);
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.demo-form {
+    margin-top: 20px;
+    max-width: 400px;
+}
+
+.demo-result {
+    margin-top: 20px;
+}
+
+/* Cart Page Styles */
+.cart-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 28px;
+    color: var(--text-color);
+}
+
+.cart-content-wrapper {
+    position: relative;
+    min-height: 200px;
+}
+
+.cart-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+}
+
+.loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.cart-content {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 30px;
+}
+
+@media (max-width: 768px) {
+    .cart-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 60px 20px;
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.empty-cart-icon {
+    fill: var (--dark-gray);
+    margin-bottom: 20px;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-table thead {
+    background-color: #f5f5f5;
+}
+
+.cart-table th {
+    text-align: left;
+    padding: 12px;
+    font-weight: 500;
+    color: var (--dark-gray);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.cart-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.cart-product {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cart-product-image {
+    width: 80px;
+    height: 80px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cart-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.cart-product-details h4 {
+    margin: 0 0 5px;
+    font-size: 16px;
+}
+
+.cart-product-id {
+    margin: 0;
+    color: var (--dark-gray);
+    font-size: 13px;
+}
+
+.cart-quantity-control {
+    width: 120px;
+}
+
+.remove-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #fff;
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.remove-item-btn:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.remove-item-btn svg {
+    fill: currentColor;
+}
+
+.cart-item.updating {
+    background-color: rgba(122, 152, 199, 0.1);
+    transition: background-color 0.3s;
+}
+
+.cart-item.removing {
+    background-color: rgba(217, 83, 79, 0.1);
+    opacity: 0.6;
+    transition: all 0.3s;
+}
+
+.cart-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cart-summary {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.cart-summary h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: var(--text-color);
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 15px;
+}
+
+.summary-line.total {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+    font-size: 18px;
+}
+
+.cart-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.cart-actions a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    padding: 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--gray-light);
+}
+
+.btn-primary.disabled,
+.btn-secondary.disabled {
+    background-color: var(--gray-light);
+    color: var(--dark-gray);
+    border-color: var(--gray);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.cart-promo {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.cart-promo h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.promo-form {
+    display: flex;
+    gap: 10px;
+}
+
+.promo-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .product-detail-layout {
+        flex-direction: column;
+    }
+    
+    .product-detail-images {
+        width: 100%;
+    }
+    
+    .cart-table thead {
+        display: none;
+    }
+    
+    .cart-table, 
+    .cart-table tbody, 
+    .cart-table tr, 
+    .cart-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .cart-item {
+        padding: 15px 0;
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+    }
+    
+    .cart-table td {
+        position: relative;
+        padding: 10px 15px;
+        text-align: right;
+        border-bottom: none;
+    }
+    
+    .cart-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: 50%;
+        font-weight: 500;
+        text-align: left;
+    }
+    
+    .cart-product {
+        justify-content: flex-end;
+    }
+
+    /* Tighter button styling within cart */
+    .cart-table .remove-item-btn,
+    .remove-item-btn {
+        width: auto;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+    }
+
+    .promo-input {
+        flex-grow: 1;
+        padding: 10px 12px;
+    }
+
+    .promo-form button {
+        width: auto;
+        padding: 10px 16px;
+    }
+}
+
+/* Fix for item actions buttons to ensure text is visible */
+.item-card .item-actions button.btn-secondary,
+.item-card .item-actions button.btn-danger {
+    color: #fff !important;
+    text-shadow: none !important;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.item-card .item-actions button.btn-danger {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+.item-card .item-actions button.btn-secondary:hover {
+    background-color: #5a6268 !important;
+    border-color: #545b62 !important;
+}
+
+.item-card .item-actions button.btn-danger:hover {
+    background-color: var(--danger-hover) !important;
+    border-color: var(--danger-hover) !important;
+}
+
+.btn-xs.set-default-btn {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+    border-color: #d3d9df !important;
+}
+
+.btn-xs.set-default-btn:hover {
+    background-color: var(--primary-light) !important;
+    color: white !important;
+    border-color: var(--primary-light) !important;
+}
+
+/* Additional Card Styling Overrides - Fix visibility issues */
+.item-card .item-actions button.btn-secondary,
+.item-card .item-actions button.btn-danger {
+    color: #fff !important;
+    text-shadow: none !important;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    font-weight: 500 !important;
+}
+
+.item-card .item-actions button.btn-danger {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+.credit-card-card .item-card-header h4,
+.credit-card-card .item-card-content p,
+.credit-card-card .card-detail-text {
+    color: var(--text-color) !important;
+    text-shadow: none !important;
+}
+
+.credit-card-card .card-detail-text {
+    color: inherit !important;
+    font-weight: normal !important;
+    font-size: 1em !important;
+    letter-spacing: normal !important;
+}
+
+/* Prevent card text from being white on white background */
+.credit-card-card {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Clear any conflicting decorative elements */
+.credit-card-card::after,
+.credit-card-card::before {
+    display: none !important;
+}
+
+/* Cart Page Specific Enhancements */
+.cart-quantity-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    width: 120px;
+    height: 38px;
+    background-color: white;
+    margin: 0 auto;
+}
+
+.cart-quantity-control .quantity-btn {
+    background-color: #f8f9fa;
+    color: var(--text-color);
+    border: none;
+    padding: 8px;
+    width: 30px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cart-quantity-control .quantity-btn:hover {
+    background-color: var(--border-color);
+}
+
+.cart-quantity-control .quantity-input {
+    width: 60px;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    padding: 8px 0;
+    margin: 0;
+    outline: none;
+    -moz-appearance: textfield; /* Hide spinner arrows in Firefox */
+}
+
+.cart-quantity-control .quantity-input::-webkit-outer-spin-button,
+.cart-quantity-control .quantity-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Make quantity buttons content clearly visible */
+.quantity-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--text-color);
+}
+
+/* Ensure the remove button is clearly visible */
+/* Using a more specific selector for cart context */
+.cart-table .remove-item-btn {
+    background-color: transparent !important;
+    color: var(--danger-color) !important; /* Text color */
+    border: 1px solid var(--danger-color) !important;
+    padding: var(--spacing-xs) var (--spacing-sm) !important;
+    border-radius: var(--border-radius-sm) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--spacing-xs) !important;
+    font-size: var(--font-size-sm) !important;
+    line-height: 1.2 !important; /* Ensure text is not cut off */
+}
+
+.cart-table .remove-item-btn:hover {
+    background-color: var(--danger-color) !important;
+    color: white !important;
+}
+
+.cart-table .remove-item-btn svg {
+    fill: currentColor !important; /* SVG inherits the button's text color (var(--danger-color)) */
+    width: 14px !important;
+    height: 14px !important;
+    vertical-align: middle; /* Align icon better with text */
+}
+
+/* Fallback if currentColor is problematic, though it should work */
+/* .cart-table .remove-item-btn svg {
+    fill: var(--danger-color) !important; 
+}
+.cart-table .remove-item-btn:hover svg {
+    fill: white !important;
+} */
+
+/* Fix for apply button in cart */
+/* This style applies if the button is NOT disabled. */
+/* If it's disabled, the global button:disabled style above will apply. */
+#apply-promo-btn {
+    background-color: var(--text-light) !important;
+    color: white !important;
+    padding: 10px 15px !important;
+    border-radius: var(--border-radius-md) !important;
+    border: none !important;
+    font-weight: 500 !important;
+}
+
+#apply-promo-btn:hover {
+    background-color: var(--primary-color) !important;
+}
+
+/* Styles for .promo-form button (which includes #apply-promo-btn if it's inside .promo-form) */
+/* These are more specific than #apply-promo-btn if the button is a direct child of .promo-form */
+.promo-form button {
+    background-color: var(--primary-color) !important; /* Default blue */
+    color: white !important;
+    padding: 10px 20px !important; /* Overrides #apply-promo-btn padding if more specific */
+    border-radius: var(--border-radius-md) !important;
+    border: none !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.promo-form button:hover {
+    background-color: var(--primary-dark) !important;
+}
+
+/* Disabled state for promo-form button, inherits from global but can be more specific if needed */
+.promo-form button:disabled {
+    /* Uses global button:disabled styles, which we just improved */
+    /* background-color: #cccccc !important; */
+    /* color: var(--text-color) !important; */ /* Already set globally */
+    /* cursor: not-allowed !important; */
+}
+
+/* Ensure the remove button is clearly visible */
+.remove-item-btn {
+    background-color: white !important;
+    color: var(--danger-color) !important;
+    border: 1px solid var(--danger-color) !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    text-shadow: none !important;
+    font-weight: normal !important;
+}
+
+.remove-item-btn:hover {
+    background-color: var(--danger-color) !important;
+    color: white !important;
+}
+
+.remove-item-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* Fix for apply button in cart */
+#apply-promo-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    height: 38px;
+    padding: 0 15px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+#apply-promo-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Cart actions buttons */
+.cart-actions button, 
+.cart-actions a.btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    line-height: 1.5;
+    border-radius: var(--border-radius-sm);
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    text-decoration: none;
+}
+
+/* Override item-card action buttons in cart */
+.cart-table .item-actions button {
+    color: white !important;
+    text-shadow: none !important;
+    font-weight: normal !important;
+}
+
+/* Cart table styling enhancements */
+.cart-table {
+    margin-bottom: 30px;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.cart-table th {
+    background-color: #f8f9fa;
+    color: var(--text-color);
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.cart-table td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Enhance cart image styling */
+.cart-product-image {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.cart-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Cart summary styling */
+.cart-summary {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.summary-line.total {
+    border-top: 1px solid var(--border-color);
+    margin-top: 15px;
+    padding-top: 15px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* Apply promo code form */
+.promo-form {
+    display: flex;
+    margin-top: 15px;
+}
+
+.promo-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+    font-size: 16px;
+}
+
+.promo-form button {
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+/* Product Detail Page Button Enhancements */
+.product-detail-info button,
+.product-actions button,
+.vulnerability-demo-section button {
+    color: #ffffff !important; /* Ensure text is white and visible */
+    text-shadow: none !important; /* Remove any text shadow that could affect visibility */
+    font-weight: 500 !important; /* Make font weight consistent */
+}
+
+/* Ensure Add to Cart button text is visible */
+.product-detail-info .add-to-cart-btn {
+    background-color: var(--secondary-color) !important;
+    color: white !important;
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
