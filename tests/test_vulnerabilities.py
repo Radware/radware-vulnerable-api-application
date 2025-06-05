@@ -536,6 +536,22 @@ def test_bfla_protected_user_deletion_forbidden(
     assert "protected" in resp.json()["detail"]
 
 
+def test_bfla_coupon_creation_by_regular_user(test_client, regular_auth_headers):
+    """Regular user can create coupons via the admin endpoint."""
+    code = f"BFLA{uuid.uuid4().hex[:6]}"
+    resp = test_client.post(
+        f"/api/admin/coupons?code={code}&discount_type=fixed&discount_value=1",
+        headers=regular_auth_headers,
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["code"] == code
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
 # Test for Parameter Pollution vulnerabilities
 
 
