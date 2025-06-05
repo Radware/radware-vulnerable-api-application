@@ -918,6 +918,8 @@ def test_order_creation_and_retrieval(
     assert len(new_order["items"]) == 1
     assert new_order["items"][0]["product_id"] == product["product_id"]
     assert new_order["items"][0]["quantity"] == 1
+    assert new_order["discount_amount"] == 0.0
+    assert new_order["applied_coupon_code"] is None
 
     # Verify enhanced info fields on creation response
     assert isinstance(new_order["created_at"], str)
@@ -940,6 +942,8 @@ def test_order_creation_and_retrieval(
     assert "T" in retrieved_order["created_at"]
     datetime.fromisoformat(retrieved_order["created_at"])
     assert retrieved_order["credit_card_last_four"] == expected_last_four
+    assert retrieved_order["discount_amount"] == 0.0
+    assert retrieved_order["applied_coupon_code"] is None
 
     # List all orders
     list_response = test_client.get(
@@ -953,6 +957,8 @@ def test_order_creation_and_retrieval(
     assert "T" in target_order["created_at"]
     datetime.fromisoformat(target_order["created_at"])
     assert target_order["credit_card_last_four"] == expected_last_four
+    assert target_order["discount_amount"] == 0.0
+    assert target_order["applied_coupon_code"] is None
 
 
 # Test product search functionality
@@ -1132,6 +1138,85 @@ def test_update_stock_product_not_found(test_client):
         params={"quantity": 1},
     )
     assert resp.status_code == 404
+
+
+def test_admin_create_coupon(test_client, admin_auth_headers):
+    """Admin can create a new coupon via the admin endpoint."""
+    code = f"FUNC{uuid.uuid4().hex[:6]}"
+    resp = test_client.post(
+        "/api/admin/coupons",
+        params={
+            "code": code,
+            "discount_type": "fixed",
+            "discount_value": 5,
+        },
+        headers=admin_auth_headers,
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["code"] == code
+    assert data["discount_type"] == "fixed"
+    assert data["discount_value"] == 5
+
+    from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_apply_coupon_to_order(
+    test_client,
+    regular_auth_headers,
+    regular_user_info,
+    test_data,
+    sample_coupon,
+):
+    """Applying a coupon updates the order totals appropriately."""
+    user_id = regular_user_info["user_id"]
+    addr = regular_user_info["addresses"][0]["address_id"]
+    card = regular_user_info["credit_cards"][0]["card_id"]
+    product = test_data["products"][1]
+
+    coupon_code = sample_coupon["code"]
+
+    order_resp = test_client.post(
+        f"/api/users/{user_id}/orders",
+        params={
+            "address_id": addr,
+            "credit_card_id": card,
+            "product_id_1": product["product_id"],
+            "quantity_1": 1,
+        },
+        headers=regular_auth_headers,
+    )
+    assert order_resp.status_code == 201
+    order = order_resp.json()
+    assert order["discount_amount"] == 0.0
+    assert order["applied_coupon_code"] is None
+    total_before = order["total_amount"]
+
+    apply_resp = test_client.post(
+        f"/api/users/{user_id}/orders/{order['order_id']}/apply-coupon",
+        params={"coupon_code": coupon_code},
+        headers=regular_auth_headers,
+    )
+    assert apply_resp.status_code == 200
+    updated = apply_resp.json()
+    if sample_coupon["discount_type"] == "percentage":
+        expected_discount = round(
+            total_before * (sample_coupon["discount_value"] / 100), 2
+        )
+    else:
+        expected_discount = sample_coupon["discount_value"]
+    if expected_discount > total_before:
+        expected_discount = total_before
+    expected_total = round(total_before - expected_discount, 2)
+    assert updated["discount_amount"] == expected_discount
+    assert updated["applied_coupon_code"] == coupon_code
+    assert updated["total_amount"] == expected_total
+
+    from app import db
+
+    db.initialize_database_from_json()
 
 
 # Additional order endpoint tests
