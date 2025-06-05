@@ -28,10 +28,15 @@ class OrderItem(OrderItemInDBBase):
 
 
 class OrderBase(BaseModel):
+    """Base fields shared by order models."""
+
     user_id: UUID  # Will be set from path or JWT
     address_id: UUID  # From query param - BOLA target
     credit_card_id: UUID  # From query param - BOLA target
     status: str = "pending"
+    applied_coupon_id: Optional[UUID] = None
+    applied_coupon_code: Optional[str] = None
+    discount_amount: float = Field(default=0.0, ge=0)
 
 
 class OrderCreate(BaseModel):
@@ -43,8 +48,13 @@ class OrderCreate(BaseModel):
 
 
 class OrderInDBBase(OrderBase):
+    """Representation of an order stored in the database."""
+
     order_id: UUID = Field(default_factory=uuid4)
-    total_amount: float = 0.0  # Will be calculated based on items
+    total_amount: float = Field(
+        default=0.0,
+        description="Final price of the order after applying any discount",
+    )
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -52,6 +62,8 @@ class OrderInDBBase(OrderBase):
 
 
 class Order(OrderInDBBase):
+    """Public facing order model."""
+
     items: List[OrderItem] = []
     credit_card_last_four: Optional[str] = None
 
