@@ -570,6 +570,255 @@
       ],
       "is_protected": true
     }
+,
+    {
+      "user_id": "00000012-0000-0000-0000-000000000012",
+      "username": "LauraScott",
+      "email": "laura.scott@example.com",
+      "password_plain": "LauraPass11!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000012-0001-0000-0000-000000000001",
+          "user_id": "00000012-0000-0000-0000-000000000012",
+          "street": "888 Cypress Hill",
+          "city": "Emerald City",
+          "country": "USA",
+          "zip_code": "24680",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000012-0001-0000-0000-000000000001",
+          "user_id": "00000012-0000-0000-0000-000000000012",
+          "cardholder_name": "Laura Scott",
+          "expiry_month": "09",
+          "expiry_year": "2027",
+          "is_default": true,
+          "card_number_plain": "4343434343434343",
+          "cvv_plain": "432"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000013-0000-0000-0000-000000000013",
+      "username": "MichaelKing",
+      "email": "michael.king@example.com",
+      "password_plain": "MichaelPass12!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000013-0001-0000-0000-000000000001",
+          "user_id": "00000013-0000-0000-0000-000000000013",
+          "street": "111 Larch Loop",
+          "city": "Gateway",
+          "country": "USA",
+          "zip_code": "35791",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000013-0001-0000-0000-000000000001",
+          "user_id": "00000013-0000-0000-0000-000000000013",
+          "cardholder_name": "Michael King",
+          "expiry_month": "04",
+          "expiry_year": "2026",
+          "is_default": true,
+          "card_number_plain": "4353535353535353",
+          "cvv_plain": "543"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000014-0000-0000-0000-000000000014",
+      "username": "NatalieYoung",
+      "email": "natalie.young@example.com",
+      "password_plain": "NataliePass13!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000014-0001-0000-0000-000000000001",
+          "user_id": "00000014-0000-0000-0000-000000000014",
+          "street": "222 Palm Street",
+          "city": "Riverdale",
+          "country": "USA",
+          "zip_code": "46802",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000014-0001-0000-0000-000000000001",
+          "user_id": "00000014-0000-0000-0000-000000000014",
+          "cardholder_name": "Natalie Young",
+          "expiry_month": "12",
+          "expiry_year": "2028",
+          "is_default": true,
+          "card_number_plain": "4363636363636363",
+          "cvv_plain": "654"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000015-0000-0000-0000-000000000015",
+      "username": "OwenHall",
+      "email": "owen.hall@example.com",
+      "password_plain": "OwenPass14!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000015-0001-0000-0000-000000000001",
+          "user_id": "00000015-0000-0000-0000-000000000015",
+          "street": "444 Alder Lane",
+          "city": "Hill Valley",
+          "country": "USA",
+          "zip_code": "57913",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000015-0001-0000-0000-000000000001",
+          "user_id": "00000015-0000-0000-0000-000000000015",
+          "cardholder_name": "Owen Hall",
+          "expiry_month": "05",
+          "expiry_year": "2029",
+          "is_default": true,
+          "card_number_plain": "4373737373737373",
+          "cvv_plain": "765"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000016-0000-0000-0000-000000000016",
+      "username": "PaulaGreen",
+      "email": "paula.green@example.com",
+      "password_plain": "PaulaPass15!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000016-0001-0000-0000-000000000001",
+          "user_id": "00000016-0000-0000-0000-000000000016",
+          "street": "555 Fir Street",
+          "city": "Coastland",
+          "country": "USA",
+          "zip_code": "68024",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000016-0001-0000-0000-000000000001",
+          "user_id": "00000016-0000-0000-0000-000000000016",
+          "cardholder_name": "Paula Green",
+          "expiry_month": "08",
+          "expiry_year": "2027",
+          "is_default": true,
+          "card_number_plain": "4383838383838383",
+          "cvv_plain": "876"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000017-0000-0000-0000-000000000017",
+      "username": "QuinnBaker",
+      "email": "quinn.baker@example.com",
+      "password_plain": "QuinnPass16!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000017-0001-0000-0000-000000000001",
+          "user_id": "00000017-0000-0000-0000-000000000017",
+          "street": "666 Poplar Drive",
+          "city": "Lakeside",
+          "country": "USA",
+          "zip_code": "79135",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000017-0001-0000-0000-000000000001",
+          "user_id": "00000017-0000-0000-0000-000000000017",
+          "cardholder_name": "Quinn Baker",
+          "expiry_month": "03",
+          "expiry_year": "2026",
+          "is_default": true,
+          "card_number_plain": "4393939393939393",
+          "cvv_plain": "987"
+        }
+      ],
+      "is_protected": false
+    },
+    {
+      "user_id": "00000018-0000-0000-0000-000000000018",
+      "username": "RyanCarter",
+      "email": "ryan.carter@example.com",
+      "password_plain": "RyanPass17!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000018-0001-0000-0000-000000000001",
+          "user_id": "00000018-0000-0000-0000-000000000018",
+          "street": "777 Hemlock Rd",
+          "city": "Bayside",
+          "country": "USA",
+          "zip_code": "89246",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000018-0001-0000-0000-000000000001",
+          "user_id": "00000018-0000-0000-0000-000000000018",
+          "cardholder_name": "Ryan Carter",
+          "expiry_month": "06",
+          "expiry_year": "2030",
+          "is_default": true,
+          "card_number_plain": "4404040404040404",
+          "cvv_plain": "098"
+        }
+      ],
+      "is_protected": false
+    },
+    {
+      "user_id": "00000019-0000-0000-0000-000000000019",
+      "username": "SophieAdams",
+      "email": "sophie.adams@example.com",
+      "password_plain": "SophiePass18!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000019-0001-0000-0000-000000000001",
+          "user_id": "00000019-0000-0000-0000-000000000019",
+          "street": "888 Walnut Ave",
+          "city": "River City",
+          "country": "USA",
+          "zip_code": "90357",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000019-0001-0000-0000-000000000001",
+          "user_id": "00000019-0000-0000-0000-000000000019",
+          "cardholder_name": "Sophie Adams",
+          "expiry_month": "11",
+          "expiry_year": "2025",
+          "is_default": true,
+          "card_number_plain": "4414141414141414",
+          "cvv_plain": "109"
+        }
+      ],
+      "is_protected": false
+    }
   ],
   "coupons": [
     {

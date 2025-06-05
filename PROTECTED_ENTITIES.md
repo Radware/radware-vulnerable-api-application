@@ -42,8 +42,14 @@ The following users have `is_protected: true` in `prepopulated_data.json`:
 *   `EveDavis` (ID: `00000006-0000-0000-0000-000000000006`)
 *   `FrankMiller` (ID: `00000007-0000-0000-0000-000000000007`)
 *   `IvyTaylor` (ID: `00000010-0000-0000-0000-000000000010`)
+*   `KevinHarris` (ID: `00000011-0000-0000-0000-000000000011`)
+*   `LauraScott` (ID: `00000012-0000-0000-0000-000000000012`)
+*   `MichaelKing` (ID: `00000013-0000-0000-0000-000000000013`)
+*   `NatalieYoung` (ID: `00000014-0000-0000-0000-000000000014`)
+*   `OwenHall` (ID: `00000015-0000-0000-0000-000000000015`)
+*   `PaulaGreen` (ID: `00000016-0000-0000-0000-000000000016`)
 
-*(GraceWilson and HenryMoore are NOT protected, i.e., their `is_protected` flag is `false`)*
+*(GraceWilson, HenryMoore, QuinnBaker, RyanCarter, and SophieAdams are NOT protected, i.e., their `is_protected` flag is `false`)*
 
 ### User Addresses & Credit Cards:
 
@@ -91,6 +97,5 @@ When testing vulnerabilities that involve deleting or making critical modificati
     *   Setting a new default should succeed.
     *   Deletion should succeed unless it's the user's last address/card, in which case a specific 403 ("...must have at least one...") will be returned.
 3.  **Attempt on a Non-Protected Entity (User or Product) or their sub-entities:**
-    *   Use one of the non-protected users (GraceWilson, HenryMoore) or non-protected products listed above.
-    *   **OR** create a new user/product (e.g., via BFLA if you're a regular user trying to `POST /api/products`) and then target your newly created entity and its sub-entities.
+    *   Use one of the non-protected users (GraceWilson, HenryMoore, QuinnBaker, RyanCarter, SophieAdams) or non-protected products listed above.
     These actions should succeed and demonstrate the vulnerability fully (e.g., deletion, modification without restriction).
