@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Radware Vulnerable E-commerce API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities.\n"
   },
   "tags": [
@@ -33,6 +33,14 @@
     {
       "name": "Auth",
       "description": "Authentication related operations"
+    },
+    {
+      "name": "Coupons",
+      "description": "Operations related to coupons"
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative operations without role verification for demo"
     }
   ],
   "paths": {
@@ -1667,6 +1675,245 @@
                 }
               }
             }
+          }
+        }
+      }
+    }
+    ,
+    "/api/coupons/{coupon_code}": {
+      "get": {
+        "tags": [
+          "Coupons"
+        ],
+        "summary": "Get coupon by code",
+        "description": "Retrieves coupon details. Vulnerability: any authenticated user can query valid codes.",
+        "operationId": "getCouponByCode",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "coupon_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Coupon code to lookup"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Coupon not found"
+          }
+        }
+      }
+    },
+    "/api/admin/coupons": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create a new coupon",
+        "description": "Creates coupon without verifying admin role (BFLA demo).",
+        "operationId": "createCoupon",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique coupon code"
+          },
+          {
+            "name": "discount_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Type of discount: percentage or fixed"
+          },
+          {
+            "name": "discount_value",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "Amount of discount"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Whether coupon is active"
+          },
+          {
+            "name": "usage_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Optional usage limit"
+          },
+          {
+            "name": "expiration_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional ISO timestamp"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Coupon created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or duplicate code"
+          }
+        }
+      }
+    },
+    "/api/admin/coupons/{coupon_code_or_id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete a coupon",
+        "description": "Deletes coupon with no admin verification (BFLA demo).",
+        "operationId": "deleteCoupon",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "coupon_code_or_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Coupon code or ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Coupon protected"
+          },
+          "404": {
+            "description": "Coupon not found"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/orders/{orderId}/apply-coupon": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Apply coupon to order",
+        "description": "Applies a coupon code. Demo vulnerability: coupon codes can be guessed.",
+        "operationId": "applyCouponToOrder",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the order owner"
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the order"
+          },
+          {
+            "name": "coupon_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Coupon code to apply"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order with coupon applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Coupon invalid or order state disallows change"
+          },
+          "403": {
+            "description": "Not authorized for this order"
+          },
+          "404": {
+            "description": "User or Order not found"
           }
         }
       }
