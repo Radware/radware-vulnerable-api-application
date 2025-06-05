@@ -40,6 +40,11 @@ The application simulates basic e-commerce functionalities:
     *   Create an order for a user (`POST /api/users/{user_id}/orders`)
     *   Get orders for a user (`GET /api/users/{user_id}/orders`)
     *   Get specific order details (`GET /api/users/{user_id}/orders/{order_id}`)
+*   **Coupons & Discounts:**
+    *   Look up a coupon (`GET /api/coupons/{coupon_code}`)
+    *   Create coupon (`POST /api/admin/coupons`) – no admin check (BFLA demo)
+    *   Delete coupon (`DELETE /api/admin/coupons/{coupon_code_or_id}`)
+    *   Apply coupon to an order (`POST /api/users/{user_id}/orders/{order_id}/apply-coupon?coupon_code=...`)
 
 ## 3. Technical Details
 
