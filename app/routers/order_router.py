@@ -15,6 +15,7 @@ from ..models.order_models import (
 )
 from ..models.product_models import Product, Stock
 from ..models.user_models import User, Address, CreditCard
+from ..models.coupon_models import Coupon
 from ..routers.user_router import get_current_user  # Reuse the dependency
 
 router = APIRouter(prefix="/users/{user_id}/orders", tags=["Orders"])  # Common prefix
@@ -161,9 +162,7 @@ async def create_user_order(
     )
     db.db["orders"].append(new_order_db)
     db.db_orders_by_id[new_order_db.order_id] = new_order_db
-    db.db_orders_by_user_id.setdefault(current_user.user_id, []).append(
-        new_order_db
-    )
+    db.db_orders_by_user_id.setdefault(current_user.user_id, []).append(new_order_db)
 
     created_order_items_db: List[OrderItemInDBBase] = []
     current_total_amount = 0.0
@@ -174,9 +173,7 @@ async def create_user_order(
             # Rollback order creation (simplified: remove order from db)
             db.db["orders"].remove(new_order_db)
             db.db_orders_by_id.pop(new_order_db.order_id, None)
-            if new_order_db in db.db_orders_by_user_id.get(
-                current_user.user_id, []
-            ):
+            if new_order_db in db.db_orders_by_user_id.get(current_user.user_id, []):
                 db.db_orders_by_user_id[current_user.user_id].remove(new_order_db)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -185,9 +182,7 @@ async def create_user_order(
         if not stock or stock.quantity < quantity_val:
             db.db["orders"].remove(new_order_db)
             db.db_orders_by_id.pop(new_order_db.order_id, None)
-            if new_order_db in db.db_orders_by_user_id.get(
-                current_user.user_id, []
-            ):
+            if new_order_db in db.db_orders_by_user_id.get(current_user.user_id, []):
                 db.db_orders_by_user_id[current_user.user_id].remove(new_order_db)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -252,6 +247,93 @@ async def get_user_order_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Order with ID {order_id} not found for user {user_id}.",
         )
+
+    items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
+
+    order_response = Order.model_validate(order_db)
+    order_response.items = [
+        OrderItem.model_validate(item) for item in items_for_this_order
+    ]
+    card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
+    if card:
+        order_response.credit_card_last_four = card.card_last_four
+    return order_response
+
+
+@router.post("/{order_id}/apply-coupon", response_model=Order)
+async def apply_coupon_to_order(
+    user_id: UUID,
+    order_id: UUID,
+    coupon_code: str = Query(...),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """Apply a coupon to an existing order."""
+    order_db = db.db_orders_by_id.get(order_id)
+    if not order_db or order_db.user_id != user_id:
+        path_user_exists = db.db_users_by_id.get(user_id)
+        if not path_user_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {user_id} not found.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order with ID {order_id} not found for user {user_id}.",
+        )
+
+    if current_user.user_id != order_db.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this order",
+        )
+
+    if order_db.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot apply coupon to a non-pending order",
+        )
+
+    if order_db.applied_coupon_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Coupon already applied to this order",
+        )
+
+    coupon = db.db_coupons_by_code.get(coupon_code)
+    if not coupon or not coupon.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Coupon not found or inactive",
+        )
+
+    if coupon.expiration_date and coupon.expiration_date < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Coupon has expired",
+        )
+
+    if coupon.usage_limit is not None and coupon.usage_count >= coupon.usage_limit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Coupon usage limit reached",
+        )
+
+    if coupon.discount_type == "percentage":
+        discount = round(order_db.total_amount * (coupon.discount_value / 100), 2)
+    else:
+        discount = coupon.discount_value
+
+    if discount > order_db.total_amount:
+        discount = order_db.total_amount
+
+    order_db.total_amount = round(order_db.total_amount - discount, 2)
+    order_db.applied_coupon_id = coupon.coupon_id
+    order_db.applied_coupon_code = coupon.code
+    order_db.discount_amount = round(discount, 2)
+    order_db.updated_at = datetime.now(timezone.utc)
+
+    coupon.usage_count += 1
+    coupon.updated_at = datetime.now(timezone.utc)
 
     items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
 
