@@ -52,13 +52,6 @@
                     </div>
                 </div>
                 
-                <div class="cart-promo">
-                    <h4>Have a Promo Code?</h4>
-                    <form class="promo-form" id="promo-form" data-testid="promo-form">
-                        <input type="text" placeholder="Enter code" class="promo-input" id="promo-code" data-testid="promo-code">
-                        <button type="submit" class="btn-secondary">Apply</button>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
@@ -71,46 +64,6 @@
         // Display cart items
         displayCart();
         
-        // Setup promo code form
-        document.getElementById('promo-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const promoCode = document.getElementById('promo-code').value.trim();
-            if (!promoCode) return;
-            
-            // Simulate promo code application
-            displaySuccess(`Promo code "${promoCode}" applied!`);
-            
-            // In a real app, you'd make an API call here
-            // For demo purposes, just update the display
-            const discount = (Math.random() * 10).toFixed(2);
-            document.getElementById('promo-code').value = '';
-            
-            // Add discount to summary
-            const summaryEl = document.querySelector('.cart-summary');
-            
-            // Remove any existing discount line
-            const existingDiscount = document.querySelector('.summary-line.discount');
-            if (existingDiscount) existingDiscount.remove();
-            
-            // Add new discount line before the total
-            const discountEl = document.createElement('div');
-            discountEl.className = 'summary-line discount';
-            discountEl.innerHTML = `
-                <span>Discount:</span>
-                <span id="cart-discount">-$${discount}</span>
-            `;
-            
-            document.querySelector('.summary-line.total').before(discountEl);
-            
-            // Update total
-            const subtotalStr = document.getElementById('cart-subtotal').textContent;
-            const subtotal = parseFloat(subtotalStr.replace('$', ''));
-            const shippingStr = document.getElementById('cart-shipping').textContent;
-            const shipping = parseFloat(shippingStr.replace('$', ''));
-            const total = subtotal + shipping - parseFloat(discount);
-            
-            document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
-        });
     });
 </script>
 {% endblock %}

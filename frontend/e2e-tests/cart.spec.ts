@@ -99,18 +99,31 @@ test.describe('Shopping Cart', () => {
     await expect(page.locator('#cart-item-count')).toHaveText('0');
   });
 
-  test('should apply valid promo code (UI interaction)', async ({ page }) => {
+  test('should apply valid coupon during checkout', async ({ page }) => {
     await addProduct(page);
-    await page.goto('/cart');
-    await expect(page.locator('#cart-total')).not.toHaveText('$0.00');
-    const initialTotal = await getMoney(page, '#cart-total');
-    await page.fill('#promo-code', 'TESTCODE');
-    await page.locator('#promo-form button[type="submit"]').click();
+    await page.goto('/checkout');
+    await page.waitForSelector('#address-id option[value]:not([value=""])', {
+      state: 'attached',
+      timeout: 30000,
+    });
+    await page.waitForSelector('#credit-card-id option[value]:not([value=""])', {
+      state: 'attached',
+      timeout: 30000,
+    });
+    await page.evaluate(() => {
+      const addr = document.querySelector<HTMLSelectElement>('#address-id');
+      if (addr) addr.selectedIndex = 1;
+      const card = document.querySelector<HTMLSelectElement>('#credit-card-id');
+      if (card) card.selectedIndex = 1;
+    });
+    const initialTotal = await getMoney(page, '#checkout-grand-total');
+    await page.fill('#coupon-code', 'TESTCODE');
+    await page.locator('#apply-coupon-btn').click();
     await expect(
       page.locator('#global-message-container .global-message.success-message')
     ).toBeVisible();
-    await expect(page.locator('.summary-line.discount')).toBeVisible();
-    const finalTotal = await getMoney(page, '#cart-total');
+    await expect(page.locator('#discount-info')).toBeVisible();
+    const finalTotal = await getMoney(page, '#checkout-grand-total');
     expect(finalTotal).toBeLessThan(initialTotal);
   });
 
