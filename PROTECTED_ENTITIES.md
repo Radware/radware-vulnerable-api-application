@@ -75,6 +75,13 @@ The following products are **NOT protected** (i.e., `is_protected: false` in `pr
 *   `Projector Mini HD`
 *   `Desk Lamp LED`
 
+### Protected Coupons:
+
+Coupons can also be flagged with `is_protected: true` in `prepopulated_data.json`.
+These coupons cannot be deleted via the `/api/admin/coupons/{coupon_code_or_id}`
+endpoint; attempting to do so returns **HTTP 403 Forbidden**.  No protected
+coupons ship by default, but the flag is respected if added for demos.
+
 ## Testing Vulnerabilities
 
 When testing vulnerabilities that involve deleting or making critical modifications:

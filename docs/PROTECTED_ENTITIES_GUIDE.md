@@ -53,4 +53,8 @@ When tests attempt destructive actions (such as deleting a user or product) agai
 
 Stock quantity changes for protected products are allowed but a log entry is generated noting the update. This keeps demo flows stable while highlighting that a protected item was modified.
 
+Coupons may also be marked with `is_protected: true`. A protected coupon cannot
+be deleted via `/api/admin/coupons/{coupon_code_or_id}` and the API will return
+**403 Forbidden** if such a deletion is attempted.
+
 Refer to [PROTECTED_ENTITIES.md](../PROTECTED_ENTITIES.md) for the complete list of protected records and tips on choosing non‑protected items for your tests.
