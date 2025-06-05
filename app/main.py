@@ -116,7 +116,11 @@ app.include_router(user_router.router, prefix="/api", tags=["Users"])
 app.include_router(product_router.router, prefix="/api", tags=["Products", "Stock"])
 app.include_router(user_profile_router.router, prefix="/api")
 app.include_router(order_router.router, prefix="/api", tags=["Orders"])
-app.include_router(coupon_router.router, prefix="/api")
+app.include_router(
+    coupon_router.router,
+    prefix="/api",
+    tags=["Coupons", "Admin"],
+)
 
 @app.get("/")
 async def root():
