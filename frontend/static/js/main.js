@@ -3516,7 +3516,7 @@ function displayCheckoutItems() {
             <tfoot>
                 <tr>
                     <td colspan="3" class="text-right"><strong>Grand Total</strong></td>
-                    <td class="text-right"><strong>$${cartTotal.toFixed(2)}</strong></td>
+                    <td class="text-right"><strong id="checkout-grand-total">$${cartTotal.toFixed(2)}</strong></td>
                 </tr>
             </tfoot>
         </table>
