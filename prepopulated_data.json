@@ -840,6 +840,49 @@
       "usage_limit": 100,
       "expiration_date": null,
       "is_protected": false
+    },
+    {
+      "coupon_id": "11111111-1111-1111-1111-111111111111",
+      "code": "TESTERCODE",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": false
+    },
+    {
+      "coupon_id": "c0000001-0000-0000-0000-000000000001",
+      "code": "MEGAOFF50",
+      "discount_type": "percentage",
+      "discount_value": 50,
+      "is_active": true,
+      "usage_limit": 1,
+      "usage_count": 0,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c0000002-0000-0000-0000-000000000002",
+      "code": "SAVE10",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "is_active": true,
+      "usage_limit": null,
+      "usage_count": 0,
+      "expiration_date": null,
+      "is_protected": false
+    },
+    {
+      "coupon_id": "c0000003-0000-0000-0000-000000000003",
+      "code": "SAVEBIG3",
+      "discount_type": "percentage",
+      "discount_value": 3,
+      "is_active": true,
+      "usage_limit": null,
+      "usage_count": 0,
+      "expiration_date": null,
+      "is_protected": false
     }
   ]
 }
