@@ -2594,6 +2594,7 @@ async function fetchAndDisplayOrders() {
 }
 
 function renderOrders(orders, container) {
+    orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Sort orders: newest first
     if (!orders || orders.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><p>No orders found.</p></div>';
         return;
