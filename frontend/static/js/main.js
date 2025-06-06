@@ -2468,7 +2468,7 @@ async function fetchAndDisplayProductDetail(productId) {
                 if (content) { 
                     if (!isExpanded) { 
                         content.style.padding = "15px";
-                        content.style.maxHeight = content.scrollHeight + "px";
+                        content.style.maxHeight = Math.round(content.scrollHeight * 1.67) + "px"; // 54 * 1.67 ≈ 90
                     } else { 
                         content.style.maxHeight = null;
                         setTimeout(() => { content.style.padding = "0 15px"; }, 300); 

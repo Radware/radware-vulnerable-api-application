@@ -1,4 +1,3 @@
-
 .product-detail-info {
     flex: 1;
     min-width: 300px;
@@ -234,7 +233,7 @@
     background: none;
     border: none;
     text-align: left;
-    padding: 15px;
+    padding: 15px 20px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
@@ -242,6 +241,7 @@
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .accordion-header:hover {
@@ -253,8 +253,17 @@
 }
 
 .accordion-icon {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
+    line-height: 1;
+    color: var(--primary-color);
+    margin-left: 10px;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .accordion-content {
@@ -262,12 +271,18 @@
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out, padding 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+.accordion-content.active {
+    max-height: 200px;
+    padding: 20px;
 }
 
 .accordion-content p {
     margin: 0;
-    padding: 15px;
-    background-color: #f9f9f9;
+    line-height: 1.6;
+    color: var(--text-color);
 }
 
 /* Error State */
@@ -446,7 +461,37 @@
 }
 
 .cart-quantity-control {
-    width: 120px;
+    display: flex;
+    flex-direction: row; /* Changed from column to row */
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    width: 120px; /* Keep existing width */
+}
+
+.quantity-btn {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    flex: 0 0 auto; /* Prevent buttons from growing/shrinking */
+}
+
+.quantity-input {
+    width: 40px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 16px;
+    padding: 8px 0;
+    outline: none;
+    flex: 0 0 auto; /* Prevent input from growing/shrinking */
 }
 
 .remove-item-btn {
@@ -549,11 +594,13 @@
 .btn-secondary {
     background-color: white;
     color: var(--primary-color);
-    border: 1px solid var(--primary-color);
+    border: 2px solid var(--primary-color);
 }
 
 .btn-secondary:hover {
-    background-color: var(--gray-light);
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 .btn-primary.disabled,
@@ -565,472 +612,393 @@
     pointer-events: none;
 }
 
+/* Cart Promo Section - Enhanced for Checkout */
 .cart-promo {
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 20px;
+    border-radius: var(--border-radius-lg);
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
 }
 
 .cart-promo h4 {
     margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 16px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
+.cart-promo h4:before {
+    content: '🎫';
+    font-size: 20px;
+}
+
+/* Promo Form - Fixed Layout and Styling */
 .promo-form {
     display: flex;
-    gap: 10px;
+    gap: 0;
+    margin-top: 15px;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid var(--border-color);
 }
 
 .promo-input {
     flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 14px;
+    padding: 14px 16px;
+    border: none;
+    font-size: 16px;
+    background-color: white;
+    color: var(--text-color);
+    outline: none;
+    min-width: 0; /* Prevents flex item from overflowing */
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .product-detail-layout {
-        flex-direction: column;
-    }
-    
-    .product-detail-images {
-        width: 100%;
-    }
-    
-    .cart-table thead {
-        display: none;
-    }
-    
-    .cart-table, 
-    .cart-table tbody, 
-    .cart-table tr, 
-    .cart-table td {
-        display: block;
-        width: 100%;
-    }
-    
-    .cart-item {
-        padding: 15px 0;
-        margin-bottom: 15px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-    }
-    
-    .cart-table td {
-        position: relative;
-        padding: 10px 15px;
-        text-align: right;
-        border-bottom: none;
-    }
-    
-    .cart-table td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 15px;
-        width: 50%;
-        font-weight: 500;
-        text-align: left;
-    }
-    
-    .cart-product {
-        justify-content: flex-end;
-    }
-
-    /* Tighter button styling within cart */
-    .cart-table .remove-item-btn,
-    .remove-item-btn {
-        width: auto;
-        padding: 4px 8px;
-        font-size: 0.85rem;
-    }
-
-    .promo-input {
-        flex-grow: 1;
-        padding: 10px 12px;
-    }
-
-    .promo-form button {
-        width: auto;
-        padding: 10px 16px;
-    }
+.promo-input::placeholder {
+    color: var(--text-light);
 }
 
-/* Fix for item actions buttons to ensure text is visible */
-.item-card .item-actions button.btn-secondary,
-.item-card .item-actions button.btn-danger {
-    color: #fff !important;
-    text-shadow: none !important;
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
+.promo-input:focus {
+    background-color: #fafafa;
 }
 
-.item-card .item-actions button.btn-danger {
-    background-color: var(--danger-color) !important;
-    border-color: var(--danger-color) !important;
-}
-
-.item-card .item-actions button.btn-secondary:hover {
-    background-color: #5a6268 !important;
-    border-color: #545b62 !important;
-}
-
-.item-card .item-actions button.btn-danger:hover {
-    background-color: var(--danger-hover) !important;
-    border-color: var(--danger-hover) !important;
-}
-
-.btn-xs.set-default-btn {
-    background-color: #f8f9fa !important;
-    color: #212529 !important;
-    border-color: #d3d9df !important;
-}
-
-.btn-xs.set-default-btn:hover {
-    background-color: var(--primary-light) !important;
+/* Promo Button - Enhanced Styling */
+.promo-form button,
+#apply-promo-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%) !important;
     color: white !important;
-    border-color: var(--primary-light) !important;
-}
-
-/* Additional Card Styling Overrides - Fix visibility issues */
-.item-card .item-actions button.btn-secondary,
-.item-card .item-actions button.btn-danger {
-    color: #fff !important;
+    border: none !important;
+    padding: 14px 24px !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
     text-shadow: none !important;
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
-    font-weight: 500 !important;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 120px; /* Ensure minimum button width */
+    flex-shrink: 0; /* Prevent button from shrinking */
 }
 
-.item-card .item-actions button.btn-danger {
-    background-color: var(--danger-color) !important;
-    border-color: var(--danger-color) !important;
+.promo-form button:before,
+#apply-promo-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: left 0.3s ease;
 }
 
-.credit-card-card .item-card-header h4,
-.credit-card-card .item-card-content p,
-.credit-card-card .card-detail-text {
-    color: var(--text-color) !important;
-    text-shadow: none !important;
+.promo-form button:hover,
+#apply-promo-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #2c4a6b 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(74, 111, 165, 0.3) !important;
 }
 
-.credit-card-card .card-detail-text {
-    color: inherit !important;
-    font-weight: normal !important;
-    font-size: 1em !important;
-    letter-spacing: normal !important;
+.promo-form button:hover:before,
+#apply-promo-btn:hover:before {
+    left: 100%;
 }
 
-/* Prevent card text from being white on white background */
-.credit-card-card {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
+.promo-form button:active,
+#apply-promo-btn:active {
+    transform: translateY(0) !important;
 }
 
-/* Clear any conflicting decorative elements */
-.credit-card-card::after,
-.credit-card-card::before {
-    display: none !important;
+.promo-form button:disabled,
+#apply-promo-btn:disabled {
+    background: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
-/* Cart Page Specific Enhancements */
-.cart-quantity-control {
-    display: flex;
-    align-items: center;
+/* Checkout Page Specific Overrides */
+.checkout-page .cart-promo {
+    margin: 20px 0;
+    padding: 30px;
+}
+
+.checkout-page .promo-form {
+    border: 2px solid var(--primary-light);
+    background-color: white;
+}
+
+.checkout-page .promo-form:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.1);
+}
+
+/* Coupon Section Alternative Layout */
+.coupon-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 25px;
+    margin: 20px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.coupon-section label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    display: block;
+    font-size: 16px;
+}
+
+.coupon-input-group {
+    display: flex;
+    gap: 0;
     border-radius: var(--border-radius-md);
     overflow: hidden;
-    width: 120px;
-    height: 38px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid var(--border-color);
+}
+
+.coupon-input-group input {
+    flex: 1;
+    padding: 14px 16px;
+    border: none;
+    font-size: 16px;
     background-color: white;
+    color: var(--text-color);
+    outline: none;
+}
+
+.coupon-input-group input:focus {
+    background-color: #fafafa;
+}
+
+.coupon-apply-btn,
+.apply-coupon-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 14px 24px !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    text-shadow: none !important;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.coupon-apply-btn:hover,
+.apply-coupon-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #2c4a6b 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(74, 111, 165, 0.3) !important;
+}
+
+.coupon-apply-btn:disabled,
+.apply-coupon-btn:disabled {
+    background: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Product Detail Image Fixes */
+.main-image-container {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.main-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+/* This is the main fix - apply grid layout to product-detail-layout */
+.product-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: flex-start;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
-.cart-quantity-control .quantity-btn {
-    background-color: #f8f9fa;
-    color: var(--text-color);
-    border: none;
-    padding: 8px;
-    width: 30px;
-    height: 38px;
+.product-detail-page .product-detail-container {
+    display: block; /* Override previous grid setting */
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.product-detail-images {
+    flex: 1;
+    max-width: 500px;
+}
+
+.product-detail-info {
+    flex: 1;
+    min-width: 300px;
+}
+
+@media (max-width: 768px) {
+    .product-detail-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-detail-page .product-detail-image {
+        max-width: 100%;
+        max-height: 350px;
+    }
+    
+    .product-detail-page .add-to-cart-form {
+        flex-wrap: wrap;
+    }
+}
+
+/* Product Actions Layout Fixes */
+.product-detail-page .product-actions {
+    margin-bottom: 25px;
+    margin-top: 25px;
+}
+
+.product-detail-page .add-to-cart-form {
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
+    gap: 15px;
+    margin-top: 20px;
 }
 
-.cart-quantity-control .quantity-btn:hover {
-    background-color: var(--border-color);
+/* Adjust accordion position in side-by-side layout */
+.product-detail-page .accordion {
+    margin-top: 25px;
+    width: 100%;
 }
 
-.cart-quantity-control .quantity-input {
-    width: 60px;
-    border: none;
-    text-align: center;
-    font-size: 16px;
-    padding: 8px 0;
-    margin: 0;
-    outline: none;
-    -moz-appearance: textfield; /* Hide spinner arrows in Firefox */
+/* Make sure demo sections appear below the product detail grid */
+.product-detail-page .vulnerability-demo-section {
+    margin-top: 40px;
+    grid-column: 1 / -1;
 }
 
-.cart-quantity-control .quantity-input::-webkit-outer-spin-button,
-.cart-quantity-control .quantity-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Make quantity buttons content clearly visible */
-.quantity-btn svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--text-color);
-}
-
-/* Ensure the remove button is clearly visible */
-/* Using a more specific selector for cart context */
-.cart-table .remove-item-btn {
-    background-color: transparent !important;
-    color: var(--danger-color) !important; /* Text color */
-    border: 1px solid var(--danger-color) !important;
-    padding: var(--spacing-xs) var (--spacing-sm) !important;
-    border-radius: var(--border-radius-sm) !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--spacing-xs) !important;
-    font-size: var(--font-size-sm) !important;
-    line-height: 1.2 !important; /* Ensure text is not cut off */
-}
-
-.cart-table .remove-item-btn:hover {
-    background-color: var(--danger-color) !important;
-    color: white !important;
-}
-
-.cart-table .remove-item-btn svg {
-    fill: currentColor !important; /* SVG inherits the button's text color (var(--danger-color)) */
-    width: 14px !important;
-    height: 14px !important;
-    vertical-align: middle; /* Align icon better with text */
-}
-
-/* Fallback if currentColor is problematic, though it should work */
-/* .cart-table .remove-item-btn svg {
-    fill: var(--danger-color) !important; 
-}
-.cart-table .remove-item-btn:hover svg {
-    fill: white !important;
-} */
-
-/* Fix for apply button in cart */
-/* This style applies if the button is NOT disabled. */
-/* If it's disabled, the global button:disabled style above will apply. */
-#apply-promo-btn {
-    background-color: var(--text-light) !important;
-    color: white !important;
-    padding: 10px 15px !important;
-    border-radius: var(--border-radius-md) !important;
-    border: none !important;
-    font-weight: 500 !important;
-}
-
-#apply-promo-btn:hover {
-    background-color: var(--primary-color) !important;
-}
-
-/* Styles for .promo-form button (which includes #apply-promo-btn if it's inside .promo-form) */
-/* These are more specific than #apply-promo-btn if the button is a direct child of .promo-form */
-.promo-form button {
-    background-color: var(--primary-color) !important; /* Default blue */
-    color: white !important;
-    padding: 10px 20px !important; /* Overrides #apply-promo-btn padding if more specific */
-    border-radius: var(--border-radius-md) !important;
-    border: none !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    transition: background-color 0.2s ease !important;
-}
-
-.promo-form button:hover {
-    background-color: var(--primary-dark) !important;
-}
-
-/* Disabled state for promo-form button, inherits from global but can be more specific if needed */
-.promo-form button:disabled {
-    /* Uses global button:disabled styles, which we just improved */
-    /* background-color: #cccccc !important; */
-    /* color: var(--text-color) !important; */ /* Already set globally */
-    /* cursor: not-allowed !important; */
-}
-
-/* Ensure the remove button is clearly visible */
-.remove-item-btn {
-    background-color: white !important;
-    color: var(--danger-color) !important;
-    border: 1px solid var(--danger-color) !important;
-    padding: 6px 12px !important;
-    font-size: 14px !important;
+/* More specific selectors for product detail page add-to-cart button */
+body .add-to-cart-btn,
+#product-detail-container .add-to-cart-btn,
+.product-detail-container .add-to-cart-btn,
+[id*="product"] .add-to-cart-btn {
+    height: 38px !important;
+    padding: 0 20px !important;
+    margin-top: 28px !important;
+    background: white !important;
+    color: var(--primary-color) !important;
+    border: 2px solid var(--primary-color) !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    gap: 10px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 5px !important;
-    text-shadow: none !important;
-    font-weight: normal !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 
-.remove-item-btn:hover {
-    background-color: var(--danger-color) !important;
+body .add-to-cart-btn:hover,
+#product-detail-container .add-to-cart-btn:hover,
+.product-detail-container .add-to-cart-btn:hover,
+[id*="product"] .add-to-cart-btn:hover {
+    background: var(--primary-color) !important;
     color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(74, 111, 165, 0.25) !important;
 }
 
-.remove-item-btn svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
+body .add-to-cart-btn:active,
+#product-detail-container .add-to-cart-btn:active,
+.product-detail-container .add-to-cart-btn:active,
+[id*="product"] .add-to-cart-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(74, 111, 165, 0.15) !important;
 }
 
-/* Fix for apply button in cart */
-#apply-promo-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    height: 38px;
-    padding: 0 15px;
-    border-radius: var(--border-radius-sm);
-    font-size: 14px;
-    font-weight: 500;
+/* Regular add to cart button (for product cards on homepage) */
+.product-card .add-to-cart-btn {
+    background: white !important;
+    color: var(--primary-color) !important;
+    border: 2px solid var(--primary-color) !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    margin-top: 12px !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
 
-#apply-promo-btn:hover {
-    background-color: var(--primary-dark);
-}
-
-/* Cart actions buttons */
-.cart-actions button, 
-.cart-actions a.btn {
-    padding: 12px 20px;
-    font-size: 16px;
-    font-weight: 500;
-    display: inline-block;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    user-select: none;
-    border: 1px solid transparent;
-    line-height: 1.5;
-    border-radius: var(--border-radius-sm);
-    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    text-decoration: none;
-}
-
-/* Override item-card action buttons in cart */
-.cart-table .item-actions button {
+.product-card .add-to-cart-btn:hover {
+    background: var(--primary-color) !important;
     color: white !important;
-    text-shadow: none !important;
-    font-weight: normal !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(74, 111, 165, 0.25) !important;
 }
 
-/* Cart table styling enhancements */
-.cart-table {
-    margin-bottom: 30px;
-    border-collapse: separate;
-    border-spacing: 0;
-    width: 100%;
+.product-card .add-to-cart-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(74, 111, 165, 0.15) !important;
 }
 
-.cart-table th {
-    background-color: #f8f9fa;
-    color: var(--text-color);
-    font-weight: 600;
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 2px solid var(--border-color);
-}
-
-.cart-table td {
-    padding: 15px;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-color);
-}
-
-/* Enhance cart image styling */
-.cart-product-image {
-    width: 80px;
-    height: 80px;
-    border-radius: var(--border-radius-sm);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-}
-
-.cart-product-image img {
+.product-card .add-to-cart-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.6s;
 }
 
-/* Cart summary styling */
-.cart-summary {
-    background-color: #f8f9fa;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    padding: 20px;
+.product-card .add-to-cart-btn:hover::after {
+    left: 100%;
 }
 
-.summary-line {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
+.product-card .add-to-cart-btn.disabled {
+    opacity: 0.6 !important;
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
 }
 
-.summary-line.total {
-    border-top: 1px solid var(--border-color);
-    margin-top: 15px;
-    padding-top: 15px;
-    font-weight: bold;
-    font-size: 18px;
+/* Keep cart icon color matching text color */
+.add-to-cart-btn .cart-icon {
+    fill: currentColor !important;
 }
-
-/* Apply promo code form */
-.promo-form {
-    display: flex;
-    margin-top: 15px;
-}
-
-.promo-input {
-    flex-grow: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
-    font-size: 16px;
-}
-
-.promo-form button {
-    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
-}
-
-/* Product Detail Page Button Enhancements */
-.product-detail-info button,
-.product-actions button,
-.vulnerability-demo-section button {
-    color: #ffffff !important; /* Ensure text is white and visible */
-    text-shadow: none !important; /* Remove any text shadow that could affect visibility */
-    font-weight: 500 !important; /* Make font weight consistent */
-}
-
-/* Ensure Add to Cart button text is visible */
-.product-detail-info .add-to-cart-btn {
-    background-color: var(--secondary-color) !important;
-    color: white !important;
-    border: none;
-    padding: 12px 20px;
-    font-size: 16px;
-    font-weight: 600 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;

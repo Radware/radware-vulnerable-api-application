@@ -1,5 +1,3 @@
-}
-
 .product-detail-info .add-to-cart-btn:hover {
     background-color: var(--secondary-hover) !important;
 }
@@ -255,7 +253,7 @@
 
 #product-detail-page-body .accordion-header.active .accordion-icon {
     color: white !important;
-    transform: rotate(45deg) !important; /* Rotates '+' to 'x' like */
+    transform: rotate(360deg) !important; /* Rotates '+' to 'x' like */
 }
 
 
@@ -926,6 +924,109 @@
 .selected-victim-item {
     background-color: var(--warning-bg);
     border-color: var(--warning-color);
+}
+
+/* UI Vulnerability Features Toggle - Navbar Integration */
+.ui-vulnerability-features-toggle-container {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-left: 15px !important;
+    padding: 6px 12px !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: var(--border-radius-md) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    transition: all 0.3s ease !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    height: 36px !important; /* Fixed height to match other nav elements */
+    box-sizing: border-box !important;
+}
+
+.ui-vulnerability-features-toggle-container:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.ui-vulnerability-features-toggle-container label {
+    color: white !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    line-height: 1 !important;
+}
+
+.ui-vulnerability-features-toggle-container input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+}
+
+/* Ensure demo toggle doesn't affect navbar height on mobile */
+@media (max-width: 768px) {
+    .ui-vulnerability-features-toggle-container {
+        font-size: 0.8rem !important;
+        padding: 4px 8px !important;
+        height: 32px !important;
+        gap: 6px !important;
+    }
+    
+    .ui-vulnerability-features-toggle-container label {
+        font-size: 0.75rem !important;
+    }
+    
+    .ui-vulnerability-features-toggle-container input[type="checkbox"] {
+        width: 14px !important;
+        height: 14px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .ui-vulnerability-features-toggle-container {
+        display: none !important; /* Hide on very small screens to prevent overflow */
+    }
+    
+    /* Alternative: show as icon only */
+    .ui-vulnerability-features-toggle-container.icon-only {
+        display: inline-flex !important;
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+    
+    .ui-vulnerability-features-toggle-container.icon-only label {
+        display: none !important;
+    }
+}
+
+/* Ensure demo features work with side-by-side layout */
+#product-detail-page-body .vulnerability-demo-section {
+    margin-top: 30px;
+    width: 100%;
+    clear: both;
+}
+
+/* Make parameter pollution form work in side-by-side layout */
+#parameter-pollution-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+#parameter-pollution-form .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+#parameter-pollution-form button {
+    align-self: flex-end;
+    margin-bottom: var(--spacing-md);
 }
 
 /* ...existing code... */
