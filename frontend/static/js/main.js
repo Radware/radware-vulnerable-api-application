@@ -3575,195 +3575,55 @@ async function populateCreditCardDropdown() {
     }
 }
 
+
 async function handleOrderSubmission(e) {
     e.preventDefault();
-    
-    const errorContainer = document.getElementById('checkout-error');
-    if (errorContainer) {
-        errorContainer.style.display = 'none';
-        errorContainer.innerHTML = '';
-    }
-
     const submitButton = document.getElementById('place-order-btn');
-    if (!submitButton) {
-        console.error("Place order button not found!");
-        return;
-    }
-    const originalButtonText = submitButton.textContent; 
+    const originalButtonText = submitButton.textContent;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     submitButton.disabled = true;
 
-    const normalAddressIdEl = document.getElementById('address-id');
-    const normalCreditCardIdEl = document.getElementById('credit-card-id');
-    const normalAddressId = normalAddressIdEl?.value || '';
-    const normalCreditCardId = normalCreditCardIdEl?.value || '';
-
-    const bolaCheckbox = document.getElementById('order-for-other-user');
-    const targetUserIdInput = document.getElementById('target-user-id');
-    const targetAddressIdInput = document.getElementById('target-address-id');
-    const targetCreditCardIdInput = document.getElementById('target-credit-card-id');
-
-    // The order record should always be created for the authenticated user.
-    let userIdForOrder = currentUser.user_id;
-    let addressIdForOrder = normalAddressId;
-    let creditCardIdForOrder = normalCreditCardId;
-    
-    let victimUserNameForMessage = ''; // User whose resources are being targeted or whose card is used
-    let isBOLAExploitActive = bolaCheckbox && bolaCheckbox.checked;
-    let wasPaymentTheftAttempted = false; // Specifically for using another's card for current user's order
-
-    if (isBOLAExploitActive) {
-        const victimUserIdValue = targetUserIdInput?.value?.trim(); // User ID entered in BOLA field
-        const victimAddressIdValue = targetAddressIdInput?.value?.trim();
-        const victimCreditCardIdValue = targetCreditCardIdInput?.value?.trim();
-
-        if (victimUserIdValue) { // Target user ID provided (victim whose data is reused)
-            try {
-                const victimInfo = await apiCall(`/api/users/${victimUserIdValue}`, 'GET', null, true);
-                if (victimInfo) victimUserNameForMessage = victimInfo.username;
-            } catch (err) { console.warn("Could not fetch victim user info:", err); victimUserNameForMessage = "Target User"; }
-        } else {
-            // No BOLA target user ID, so order is for currentUser.
-            // victimUserNameForMessage will be populated later if a victim's card is used.
-        }
-        
-        if (victimAddressIdValue) { 
-            addressIdForOrder = victimAddressIdValue;
-        } else if (userIdForOrder === currentUser.user_id && !normalAddressId) { 
-            // BOLA mode, order for self, target BOLA address blank, normal address dropdown also blank
-            // -> try to use current user's default address
-            try {
-                const addresses = await apiCall(`/api/users/${currentUser.user_id}/addresses`, 'GET', null, true);
-                const defaultAddr = addresses.find(a => a.is_default) || (addresses.length > 0 ? addresses[0] : null);
-                if (defaultAddr) addressIdForOrder = defaultAddr.address_id;
-            } catch (err) { console.warn("BOLA (ship to self): Could not fetch current user's addresses.", err); }
-        }
-        // If victimAddressIdValue is blank, and order is for self, addressIdForOrder remains normalAddressId.
-        // If victimAddressIdValue is blank, and order is FOR another user (victimUserIdValue is set), 
-        // then addressIdForOrder (which was defaulted to normalAddressId) might be the attacker's address. This is another BOLA vector.
-
-        if (victimCreditCardIdValue) { 
-            creditCardIdForOrder = victimCreditCardIdValue; // Use the card ID from BOLA input
-            if (userIdForOrder === currentUser.user_id && creditCardIdForOrder !== normalCreditCardId) {
-                // If order is for current user, but the BOLA card is different from their normally selected card
-                wasPaymentTheftAttempted = true;
-                // Try to get the name of the owner of the stolen card for the message
-                const cardOwnerUserId = targetUserIdInput?.value?.trim() || currentUser.user_id; // If target user for order is blank, card might still belong to another target user whose cards were searched
-                if (cardOwnerUserId !== currentUser.user_id) { // If card owner is not current user
-                     try {
-                        const cardOwnerInfo = await apiCall(`/api/users/${cardOwnerUserId}`, 'GET', null, true);
-                        if (cardOwnerInfo) victimUserNameForMessage = cardOwnerInfo.username; else victimUserNameForMessage = "Another User";
-                    } catch(e) { victimUserNameForMessage = "Another User"; }
-                } else if (!victimUserNameForMessage) { // If order is for self, card owner must be someone else for theft
-                    victimUserNameForMessage = "Another User (Card Owner)"; // Generic if we couldn't get target user's name earlier
-                }
-            } else if (userIdForOrder !== currentUser.user_id) {
-                // Order is FOR another user, and we are using a card from BOLA fields (could be theirs, could be yet another's)
-                wasPaymentTheftAttempted = true; // Count this as attempted theft scenario for messaging
-                // victimUserNameForMessage should already be set from victimUserIdValue block
-            }
-        } else { 
-            displayGlobalMessage('BOLA Exploit: Target Credit Card ID is required if BOLA mode is enabled.', 'error');
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-            return;
-        }
-    } else { // Normal Checkout (BOLA checkbox not checked)
-        if (!addressIdForOrder) {
-            displayGlobalMessage('Please select a shipping address.', 'error');
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-            return;
-        }
-        if (!creditCardIdForOrder) {
-            displayGlobalMessage('Please select a payment method.', 'error');
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-            return;
-        }
-    }
-
-    // Final validation checks
-    if (!addressIdForOrder) {
-        displayGlobalMessage('A shipping address ID is required. Please select one or add one to your profile.', 'error');
-        submitButton.innerHTML = originalButtonText;
-        submitButton.disabled = false;
-        return;
-    }
-    if (!creditCardIdForOrder) {
-        displayGlobalMessage('A credit card ID is required for payment. Please select one or add one.', 'error');
-        submitButton.innerHTML = originalButtonText;
-        submitButton.disabled = false;
-        return;
-    }
-    if (cart.length === 0) {
-        displayGlobalMessage('Your cart is empty. Cannot place an order.', 'error');
-        submitButton.innerHTML = originalButtonText;
-        submitButton.disabled = false;
-        return;
-    }
-
     try {
-        let orderEndpoint = `/api/users/${userIdForOrder}/orders?address_id=${addressIdForOrder}&credit_card_id=${creditCardIdForOrder}`;
+        // Get user's selected address and card
+        const addressId = document.getElementById('address-id')?.value;
+        const creditCardId = document.getElementById('credit-card-id')?.value;
+
+        if (!addressId || !creditCardId) {
+            throw new Error('Please select a shipping address and payment method.');
+        }
+
+        // Build the base order creation endpoint
+        let orderEndpoint = `/api/users/${currentUser.user_id}/orders?address_id=${addressId}&credit_card_id=${creditCardId}`;
         cart.forEach((item, index) => {
             orderEndpoint += `&product_id_${index + 1}=${item.product_id}&quantity_${index + 1}=${item.quantity}`;
         });
-        
-        console.log("Placing order with endpoint:", orderEndpoint); // For debugging
-        const newOrder = await apiCall(orderEndpoint, 'POST', null, true); 
-        
-        const orderIdShort = newOrder.order_id.substring(0,8);
-        cart = []; 
-        saveCart(); 
-        
-        let successMessageText = `Order ${orderIdShort}... placed successfully!`;
-        let messageType = 'success';
-        let redirectDelay = 3000;
 
-        // Set user context for the orders page redirect
-        // Default to the user FOR whom the order was placed.
-        sessionStorage.setItem('view_orders_for_user_id', userIdForOrder); 
-        sessionStorage.setItem('view_orders_for_username', victimUserNameForMessage || "User"); // Use username if available
+        // 1. Create the order first
+        const newOrder = await apiCall(orderEndpoint, 'POST', null, true);
+        let finalOrder = newOrder;
 
-        if (isBOLAExploitActive) {
-            if (wasPaymentTheftAttempted && userIdForOrder === currentUser.user_id) {
-                // SCENARIO: Current user (attacker) orders for themselves, shipping to their own address, but using VICTIM's card.
-                successMessageText = `BOLA EXPLOIT: Order ${orderIdShort} (for you, ${currentUser.username}) charged to ${victimUserNameForMessage}'s card!`;
-                messageType = 'warning'; 
-                redirectDelay = 7000; 
-                // For the orders page, we'll still show the current user's orders, as the order belongs to them.
-                // The exploit was the payment method.
-                sessionStorage.setItem('view_orders_for_user_id', currentUser.user_id); 
-                sessionStorage.setItem('view_orders_for_username', currentUser.username);
-            } else if (userIdForOrder !== currentUser.user_id) {
-                // SCENARIO: Order placed FOR/AS another user.
-                successMessageText = `BOLA EXPLOIT: Order ${orderIdShort} placed FOR ${victimUserNameForMessage || 'target user'}!`;
-                messageType = 'warning';
-                redirectDelay = 7000;
-                // Session storage is already set to userIdForOrder (the victim) in this case.
-            }
+        // 2. If a coupon was staged, apply it now to the newly created order
+        if (appliedCouponCode) {
+            console.log(`Applying staged coupon '${appliedCouponCode}' to new order ${newOrder.order_id}`);
+            const couponEndpoint = `/api/users/${currentUser.user_id}/orders/${newOrder.order_id}/apply-coupon?coupon_code=${appliedCouponCode}`;
+            finalOrder = await apiCall(couponEndpoint, 'POST', null, true);
         }
-        
-        displayGlobalMessage(successMessageText, messageType, redirectDelay - 500); 
-        
-        if (submitButton) {
-            submitButton.className = 'btn btn-success btn-lg'; 
-            submitButton.innerHTML = '<i class="fas fa-check-circle"></i> Order Placed!';
-        }
-        
-        setTimeout(() => {
-            window.location.href = '/orders'; 
-        }, redirectDelay);
+
+        // Success
+        displayGlobalMessage(`Order ${finalOrder.order_id.substring(0,8)}... placed successfully!`, 'success');
+        cart = [];
+        saveCart();
+        appliedCouponCode = null; // Reset coupon after successful order
+
+        submitButton.innerHTML = '<i class="fas fa-check-circle"></i> Order Placed!';
+        setTimeout(() => { window.location.href = '/orders'; }, 2000);
 
     } catch (error) {
         displayGlobalMessage(`Failed to place order: ${error.message}`, 'error');
-        if (submitButton) {
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-        }
+        submitButton.innerHTML = originalButtonText;
+        submitButton.disabled = false;
     }
 }
-
 
 // Admin page functions
 function setupAdminInterface() {
