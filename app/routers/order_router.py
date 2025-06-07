@@ -397,15 +397,6 @@ async def apply_coupon_to_order(
     order_db.updated_at = datetime.now(timezone.utc)
 
     coupon.usage_count += 1
-    if (
-        coupon.is_protected
-        and coupon.usage_limit is not None
-        and coupon.usage_count >= coupon.usage_limit
-    ):
-        print(
-            f"INFO: Protected coupon '{coupon.code}' reached its usage limit. Resetting usage count to 0 for demo stability."
-        )
-        coupon.usage_count = 0
     coupon.updated_at = datetime.now(timezone.utc)
 
     items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
