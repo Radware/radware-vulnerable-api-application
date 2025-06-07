@@ -1,6 +1,8 @@
 /**
  * Sets up BOLA vulnerability demonstration for checkout page
  */
+// Stores a coupon code that has been validated but not yet finalized
+let appliedCouponCode = null;
 function setupCheckoutBOLADemo() {
     const targetUserCheckbox = document.getElementById('order-for-other-user');
     if (targetUserCheckbox) {
@@ -175,41 +177,49 @@ function showVulnerabilityWarning(type, message, containerId = null) {
 async function applyCouponToOrder(event) {
     event.preventDefault();
     const couponInput = document.getElementById('coupon-code');
-    if (!couponInput) return;
+    const totalEl = document.getElementById('checkout-grand-total');
+    const discountInfoEl = document.getElementById('discount-info');
+    const discountedTotalEl = document.getElementById('discounted-total');
+
+    if (!couponInput || !totalEl || !discountInfoEl || !discountedTotalEl) return;
+
     const code = couponInput.value.trim();
     if (!code) {
-        displayError('Please enter a coupon code.');
+        displayGlobalMessage('Please enter a coupon code.', 'error');
         return;
     }
-
-    const addressId = document.getElementById('address-id')?.value;
-    const creditCardId = document.getElementById('credit-card-id')?.value;
-    if (!addressId || !creditCardId) {
-        displayError('Select shipping and payment details first.');
-        return;
-    }
-
-    const params = new URLSearchParams();
-    params.append('address_id', addressId);
-    params.append('credit_card_id', creditCardId);
-    cart.forEach((item, idx) => {
-        params.append(`product_id_${idx + 1}`, item.product_id);
-        params.append(`quantity_${idx + 1}`, item.quantity);
-    });
 
     try {
-        const order = await apiCall(`/api/users/${currentUser.user_id}/orders?${params.toString()}`, 'POST', null, true);
-        const endpoint = `/api/users/${currentUser.user_id}/orders/${order.order_id}/apply-coupon?coupon_code=${encodeURIComponent(code)}`;
-        const updated = await apiCall(endpoint, 'POST', null, true);
+        const coupon = await apiCall(`/api/coupons/${code}`);
 
-        const totalEl = document.getElementById('checkout-grand-total');
-        if (totalEl) totalEl.textContent = `$${updated.total_amount.toFixed(2)}`;
+        const orders = await apiCall(`/api/users/${currentUser.user_id}/orders`);
+        const alreadyUsed = orders.some(o => o.applied_coupon_code === code && coupon.usage_limit === 1);
 
-        document.getElementById('discounted-total').textContent = `$${updated.total_amount.toFixed(2)}`;
-        document.getElementById('discount-info').style.display = 'block';
-        displaySuccess('Coupon applied successfully!');
+        if (alreadyUsed) {
+            throw new Error('Coupon usage limit reached for your account.');
+        }
+
+        const originalTotalText = totalEl.textContent || '$0.00';
+        const originalTotal = parseFloat(originalTotalText.replace('$', ''));
+        let discount = 0;
+
+        if (coupon.discount_type === 'percentage') {
+            discount = originalTotal * (coupon.discount_value / 100);
+        } else {
+            discount = coupon.discount_value;
+        }
+
+        const newTotal = originalTotal - discount;
+
+        discountedTotalEl.textContent = `$${newTotal.toFixed(2)}`;
+        discountInfoEl.style.display = 'block';
+        appliedCouponCode = code;
+
+        displayGlobalMessage(`Coupon '${code}' applied successfully! The discount will be finalized when you place the order.`, 'success');
     } catch (err) {
-        displayError(`Failed to apply coupon: ${err.message}`);
+        displayGlobalMessage(`Failed to apply coupon: ${err.message}`, 'error');
+        appliedCouponCode = null;
+        discountInfoEl.style.display = 'none';
     }
 }
 
