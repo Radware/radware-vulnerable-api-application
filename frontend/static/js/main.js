@@ -1347,7 +1347,9 @@ function initCheckoutPage() {
 
     if (bolaCheckbox) {
         bolaCheckbox.addEventListener('change', function() {
-            if (bolaFields) bolaFields.style.display = this.checked ? 'block' : 'none';
+            if (bolaFields) {
+                bolaFields.classList.toggle('demo-visible', this.checked);
+            }
             
             if (targetUserIdInput) {
                 targetUserIdInput.disabled = !this.checked;
@@ -1363,18 +1365,18 @@ function initCheckoutPage() {
             }
             
             if (bolaWarningContainerOnCheckout) {
-                 bolaWarningContainerOnCheckout.style.display = this.checked ? 'block' : 'none';
-                 if(this.checked) {
+                 bolaWarningContainerOnCheckout.classList.toggle('demo-visible', this.checked);
+                 if (this.checked) {
                     bolaWarningContainerOnCheckout.innerHTML = `
                         <h3>⚠️ BOLA Vulnerability Exploit Mode Active!</h3>
-                        <p>You are now configuring an order that may use another user's details or payment methods. 
+                        <p>You are now configuring an order that may use another user's details or payment methods.
                            Proceed with caution for demonstration purposes.</p>
                         <p>If Target User ID is left blank, the order will be placed for <strong>you (${currentUser.username})</strong>.</p>
                         <p>If Target Address ID is left blank, your selected/default address will be used for shipping.</p>
                         <p><strong>You MUST select/enter a Target Credit Card ID to demonstrate payment theft.</strong></p>
                     `;
                  } else {
-                    bolaWarningContainerOnCheckout.innerHTML = ''; 
+                    bolaWarningContainerOnCheckout.innerHTML = '';
                  }
             }
 
