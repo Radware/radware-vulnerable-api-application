@@ -51,8 +51,13 @@ The following users have `is_protected: true` in `prepopulated_data.json`:
 *   `ThomasWright` (ID: `00000020-0000-0000-0000-000000000020`)
 *   `UmaTurner` (ID: `00000021-0000-0000-0000-000000000021`)
 *   `VictorZhang` (ID: `00000022-0000-0000-0000-000000000022`)
+*   `WendyClark` (ID: `00000023-0000-0000-0000-000000000023`)
+*   `XavierLopez` (ID: `00000024-0000-0000-0000-000000000024`)
+*   `YvonneMartinez` (ID: `00000025-0000-0000-0000-000000000025`)
+*   `ZacharyNolan` (ID: `00000026-0000-0000-0000-000000000026`)
+*   `AlyssaPark` (ID: `00000027-0000-0000-0000-000000000027`)
 
-*(GraceWilson, HenryMoore, QuinnBaker, RyanCarter, and SophieAdams are NOT protected, i.e., their `is_protected` flag is `false`)*
+*(GraceWilson, HenryMoore, QuinnBaker, RyanCarter, SophieAdams, BrianQuincy, and CynthiaReed are NOT protected, i.e., their `is_protected` flag is `false`)*
 
 ### User Addresses & Credit Cards:
 
@@ -100,5 +105,5 @@ When testing vulnerabilities that involve deleting or making critical modificati
     *   Setting a new default should succeed.
     *   Deletion should succeed unless it's the user's last address/card, in which case a specific 403 ("...must have at least one...") will be returned.
 3.  **Attempt on a Non-Protected Entity (User or Product) or their sub-entities:**
-    *   Use one of the non-protected users (GraceWilson, HenryMoore, QuinnBaker, RyanCarter, SophieAdams) or non-protected products listed above.
+    *   Use one of the non-protected users (GraceWilson, HenryMoore, QuinnBaker, RyanCarter, SophieAdams, BrianQuincy, CynthiaReed) or non-protected products listed above.
     These actions should succeed and demonstrate the vulnerability fully (e.g., deletion, modification without restriction).

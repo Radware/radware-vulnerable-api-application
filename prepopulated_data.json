@@ -911,6 +911,223 @@
         }
       ],
       "is_protected": true
+    },
+    {
+      "user_id": "00000023-0000-0000-0000-000000000023",
+      "username": "WendyClark",
+      "email": "wendy.clark@example.com",
+      "password_plain": "WendyPass22!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000023-0001-0000-0000-000000000001",
+          "user_id": "00000023-0000-0000-0000-000000000023",
+          "street": "123 Market Street",
+          "city": "Exampleburg",
+          "country": "USA",
+          "zip_code": "11123",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000023-0001-0000-0000-000000000001",
+          "user_id": "00000023-0000-0000-0000-000000000023",
+          "cardholder_name": "Wendy Clark",
+          "expiry_month": "03",
+          "expiry_year": "2029",
+          "is_default": true,
+          "card_number_plain": "4500000000000000",
+          "cvv_plain": "111"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000024-0000-0000-0000-000000000024",
+      "username": "XavierLopez",
+      "email": "xavier.lopez@example.com",
+      "password_plain": "XavierPass23!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000024-0001-0000-0000-000000000001",
+          "user_id": "00000024-0000-0000-0000-000000000024",
+          "street": "234 Elm Street",
+          "city": "Exampletown",
+          "country": "USA",
+          "zip_code": "22234",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000024-0001-0000-0000-000000000001",
+          "user_id": "00000024-0000-0000-0000-000000000024",
+          "cardholder_name": "Xavier Lopez",
+          "expiry_month": "06",
+          "expiry_year": "2030",
+          "is_default": true,
+          "card_number_plain": "4510000000000000",
+          "cvv_plain": "222"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000025-0000-0000-0000-000000000025",
+      "username": "YvonneMartinez",
+      "email": "yvonne.martinez@example.com",
+      "password_plain": "YvonnePass24!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000025-0001-0000-0000-000000000001",
+          "user_id": "00000025-0000-0000-0000-000000000025",
+          "street": "345 Oak Avenue",
+          "city": "Sample City",
+          "country": "USA",
+          "zip_code": "33345",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000025-0001-0000-0000-000000000001",
+          "user_id": "00000025-0000-0000-0000-000000000025",
+          "cardholder_name": "Yvonne Martinez",
+          "expiry_month": "09",
+          "expiry_year": "2031",
+          "is_default": true,
+          "card_number_plain": "4520000000000000",
+          "cvv_plain": "333"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000026-0000-0000-0000-000000000026",
+      "username": "ZacharyNolan",
+      "email": "zachary.nolan@example.com",
+      "password_plain": "ZacharyPass25!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000026-0001-0000-0000-000000000001",
+          "user_id": "00000026-0000-0000-0000-000000000026",
+          "street": "456 Pine Road",
+          "city": "Demo Town",
+          "country": "USA",
+          "zip_code": "44456",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000026-0001-0000-0000-000000000001",
+          "user_id": "00000026-0000-0000-0000-000000000026",
+          "cardholder_name": "Zachary Nolan",
+          "expiry_month": "12",
+          "expiry_year": "2032",
+          "is_default": true,
+          "card_number_plain": "4530000000000000",
+          "cvv_plain": "444"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000027-0000-0000-0000-000000000027",
+      "username": "AlyssaPark",
+      "email": "alyssa.park@example.com",
+      "password_plain": "AlyssaPass26!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000027-0001-0000-0000-000000000001",
+          "user_id": "00000027-0000-0000-0000-000000000027",
+          "street": "567 Birch Lane",
+          "city": "Demo City",
+          "country": "USA",
+          "zip_code": "55567",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000027-0001-0000-0000-000000000001",
+          "user_id": "00000027-0000-0000-0000-000000000027",
+          "cardholder_name": "Alyssa Park",
+          "expiry_month": "02",
+          "expiry_year": "2033",
+          "is_default": true,
+          "card_number_plain": "4540000000000000",
+          "cvv_plain": "555"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000028-0000-0000-0000-000000000028",
+      "username": "BrianQuincy",
+      "email": "brian.quincy@example.com",
+      "password_plain": "BrianPass27!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000028-0001-0000-0000-000000000001",
+          "user_id": "00000028-0000-0000-0000-000000000028",
+          "street": "678 Cedar Court",
+          "city": "Example City",
+          "country": "USA",
+          "zip_code": "66678",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000028-0001-0000-0000-000000000001",
+          "user_id": "00000028-0000-0000-0000-000000000028",
+          "cardholder_name": "Brian Quincy",
+          "expiry_month": "05",
+          "expiry_year": "2031",
+          "is_default": true,
+          "card_number_plain": "4550000000000000",
+          "cvv_plain": "666"
+        }
+      ],
+      "is_protected": false
+    },
+    {
+      "user_id": "00000029-0000-0000-0000-000000000029",
+      "username": "CynthiaReed",
+      "email": "cynthia.reed@example.com",
+      "password_plain": "CynthiaPass28!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000029-0001-0000-0000-000000000001",
+          "user_id": "00000029-0000-0000-0000-000000000029",
+          "street": "789 Spruce Street",
+          "city": "Sampleton",
+          "country": "USA",
+          "zip_code": "77789",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000029-0001-0000-0000-000000000001",
+          "user_id": "00000029-0000-0000-0000-000000000029",
+          "cardholder_name": "Cynthia Reed",
+          "expiry_month": "07",
+          "expiry_year": "2032",
+          "is_default": true,
+          "card_number_plain": "4560000000000000",
+          "cvv_plain": "777"
+        }
+      ],
+      "is_protected": false
     }
   ],
   "coupons": [
