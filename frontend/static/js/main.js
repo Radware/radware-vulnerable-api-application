@@ -1378,7 +1378,7 @@ function initCheckoutPage() {
                  }
             }
 
-            if (!this.checked) { 
+            if (!this.checked) {
                 const userSearchResults = document.getElementById('user-search-results');
                 if (userSearchResults) userSearchResults.style.display = 'none';
                 
@@ -1392,6 +1392,10 @@ function initCheckoutPage() {
                 if (theftPreview) {
                     theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Enable BOLA exploit and select a target card to see preview.</div>';
                 }
+            }
+
+            if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
+                updateUIVulnerabilityFeaturesDisplay();
             }
         });
     }
