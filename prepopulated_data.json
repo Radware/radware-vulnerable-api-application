@@ -818,6 +818,99 @@
         }
       ],
       "is_protected": false
+    },
+    {
+      "user_id": "00000020-0000-0000-0000-000000000020",
+      "username": "ThomasWright",
+      "email": "thomas.wright@example.com",
+      "password_plain": "ThomasPass19!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000020-0001-0000-0000-000000000001",
+          "user_id": "00000020-0000-0000-0000-000000000020",
+          "street": "999 Redwood Street",
+          "city": "ExampleCity",
+          "country": "USA",
+          "zip_code": "91011",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000020-0001-0000-0000-000000000001",
+          "user_id": "00000020-0000-0000-0000-000000000020",
+          "cardholder_name": "Thomas Wright",
+          "expiry_month": "09",
+          "expiry_year": "2030",
+          "is_default": true,
+          "card_number_plain": "4424242424242424",
+          "cvv_plain": "210"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000021-0000-0000-0000-000000000021",
+      "username": "UmaTurner",
+      "email": "uma.turner@example.com",
+      "password_plain": "UmaPass20!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000021-0001-0000-0000-000000000001",
+          "user_id": "00000021-0000-0000-0000-000000000021",
+          "street": "1010 Pearl Lane",
+          "city": "ExampleTown",
+          "country": "USA",
+          "zip_code": "92112",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000021-0001-0000-0000-000000000001",
+          "user_id": "00000021-0000-0000-0000-000000000021",
+          "cardholder_name": "Uma Turner",
+          "expiry_month": "12",
+          "expiry_year": "2031",
+          "is_default": true,
+          "card_number_plain": "4434343434343434",
+          "cvv_plain": "321"
+        }
+      ],
+      "is_protected": true
+    },
+    {
+      "user_id": "00000022-0000-0000-0000-000000000022",
+      "username": "VictorZhang",
+      "email": "victor.zhang@example.com",
+      "password_plain": "VictorPass21!",
+      "is_admin": false,
+      "addresses": [
+        {
+          "address_id": "ad000022-0001-0000-0000-000000000001",
+          "user_id": "00000022-0000-0000-0000-000000000022",
+          "street": "1111 Myrtle Court",
+          "city": "ExampleVille",
+          "country": "USA",
+          "zip_code": "93213",
+          "is_default": true
+        }
+      ],
+      "credit_cards": [
+        {
+          "card_id": "cc000022-0001-0000-0000-000000000001",
+          "user_id": "00000022-0000-0000-0000-000000000022",
+          "cardholder_name": "Victor Zhang",
+          "expiry_month": "06",
+          "expiry_year": "2032",
+          "is_default": true,
+          "card_number_plain": "4444444444444449",
+          "cvv_plain": "432"
+        }
+      ],
+      "is_protected": true
     }
   ],
   "coupons": [

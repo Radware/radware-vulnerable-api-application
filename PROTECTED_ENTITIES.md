@@ -48,6 +48,9 @@ The following users have `is_protected: true` in `prepopulated_data.json`:
 *   `NatalieYoung` (ID: `00000014-0000-0000-0000-000000000014`)
 *   `OwenHall` (ID: `00000015-0000-0000-0000-000000000015`)
 *   `PaulaGreen` (ID: `00000016-0000-0000-0000-000000000016`)
+*   `ThomasWright` (ID: `00000020-0000-0000-0000-000000000020`)
+*   `UmaTurner` (ID: `00000021-0000-0000-0000-000000000021`)
+*   `VictorZhang` (ID: `00000022-0000-0000-0000-000000000022`)
 
 *(GraceWilson, HenryMoore, QuinnBaker, RyanCarter, and SophieAdams are NOT protected, i.e., their `is_protected` flag is `false`)*
 
