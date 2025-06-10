@@ -15,6 +15,7 @@ let authToken = localStorage.getItem('token');
 let isHandlingSessionExpiration = false; // Prevent multiple simultaneous logout triggers
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+let appliedCouponCode = null; // Holds coupon code staged during checkout
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
 
 // DOM content loaded event to setup initial UI
