@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+import os
 from .routers import (
     auth_router,
     user_router,
@@ -17,6 +18,7 @@ from pydantic import BaseModel
 
 # Provide compatibility with Pydantic v1 by aliasing model_validate and model_dump
 if not hasattr(BaseModel, "model_validate"):
+
     def _model_validate(cls, obj):
         if isinstance(obj, cls):
             return obj
@@ -29,6 +31,7 @@ if not hasattr(BaseModel, "model_validate"):
     BaseModel.model_validate = classmethod(_model_validate)
 
 if not hasattr(BaseModel, "model_dump"):
+
     def _model_dump(self, *args, **kwargs):
         return self.dict(*args, **kwargs)
 
@@ -41,6 +44,7 @@ if not hasattr(BaseModel, "model_dump"):
 # This logger will be configured in log_conf.json
 custom_access_logger = logging.getLogger("app.access")
 
+
 # --- Custom Middleware to Capture Request Details ---
 class CustomAccessLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -49,8 +53,10 @@ class CustomAccessLogMiddleware(BaseHTTPMiddleware):
         # Extract headers and client IP directly from the Request object
         # Request.headers provides a MultiDict of headers
         headers = request.headers
-        
-        authorization_header = headers.get("authorization") # FastAPI/Starlette headers are already lowercase
+
+        authorization_header = headers.get(
+            "authorization"
+        )  # FastAPI/Starlette headers are already lowercase
         x_rdwr_ip = headers.get("x-rdwr-ip")
         x_forwarded_for = headers.get("x-forwarded-for")
 
@@ -60,7 +66,7 @@ class CustomAccessLogMiddleware(BaseHTTPMiddleware):
             client_ip = x_rdwr_ip
         elif x_forwarded_for:
             # X-Forwarded-For can be a comma-separated list, take the first one
-            client_ip = x_forwarded_for.split(',')[0].strip()
+            client_ip = x_forwarded_for.split(",")[0].strip()
         elif request.client and request.client.host:
             client_ip = request.client.host
         else:
@@ -70,17 +76,17 @@ class CustomAccessLogMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         process_time = time.time() - start_time
-        
+
         # Prepare the log data as a dictionary
         log_data = {
-            "request_id": str(time.time()), # Simple request ID for correlation
+            "request_id": str(time.time()),  # Simple request ID for correlation
             "client_ip": client_ip,
             "request_method": request.method,
             "request_path": request.url.path,
             "request_query_string": str(request.url.query),
             "response_status": response.status_code,
             "response_time_ms": round(process_time * 1000, 2),
-            "authorization": authorization_header, # Will be None if header not present
+            "authorization": authorization_header,  # Will be None if header not present
             # Add any other headers you want to log explicitly here
             # "user_agent": headers.get("user-agent"),
         }
@@ -92,15 +98,17 @@ class CustomAccessLogMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
 # Your FastAPI app definition
 app = FastAPI(
     title="Radware Vulnerable E-commerce API",
     description="An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add the custom middleware to your FastAPI app
-app.add_middleware(CustomAccessLogMiddleware)
+if os.getenv("ENABLE_ACCESS_LOG", "false").lower() == "true":
+    app.add_middleware(CustomAccessLogMiddleware)
 
 # Add CORS middleware (keep this as it's part of your app's functionality)
 app.add_middleware(
@@ -121,6 +129,7 @@ app.include_router(
     prefix="/api",
     tags=["Coupons", "Admin"],
 )
+
 
 @app.get("/")
 async def root():

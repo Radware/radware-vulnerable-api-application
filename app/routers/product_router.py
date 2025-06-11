@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Query, Depends
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
+import logging
 
 from .. import db
 from ..models.product_models import (
@@ -20,6 +21,8 @@ from ..routers.user_router import (
     get_current_user,
 )  # Re-use existing dependency for consistency
 from ..models.order_models import TokenData  # Ensure TokenData is imported
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -54,9 +57,10 @@ async def create_new_product(
     Create a new product.
     Intended BFLA: No admin check performed, allowing any authenticated user to create products.
     """
-    print(
-        f"Creating new product '{name}'. Intended BFLA: No admin check performed."
-    )  # Logging for demo
+    logger.info(
+        "Creating new product '%s'. Intended BFLA: No admin check performed.",
+        name,
+    )
     new_product_data = ProductCreate(
         name=name, price=price, description=description, category=category
     )
@@ -80,8 +84,9 @@ async def search_products_by_name(name: str = Query(...)):
     Search for products by name (case-insensitive substring match).
     Intended Injection Target: Simulates vulnerability where 'name' could be unsafely used in a backend query.
     """
-    print(
-        f"Searching for product with name containing: '{name}'. Intended Injection Target."
+    logger.info(
+        "Searching for product with name containing: '%s'. Intended Injection Target.",
+        name,
     )
     # VULNERABILITY: Naive string matching, simulating how a direct query concatenation might behave.
     # In a real SQL/NoSQL scenario, `name` would be unsafely injected into a query.
@@ -97,7 +102,7 @@ async def search_products_by_name(name: str = Query(...)):
         "'" in name or ";" in name or "--" in name
     ):  # Very basic check for typical SQL injection characters
         # This is a placeholder. In a real app, this might cause a DB error or return unintended data.
-        print(f"Potential injection characters detected in search term: {name}")
+        logger.info("Potential injection characters detected in search term: %s", name)
         # To make it more demonstrative for testing, if it looks like an attack, return empty or error.
         # raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Simulated query error due to suspicious input.")
 
@@ -176,8 +181,10 @@ async def update_existing_product(
         ):  # Ensure we only update fields that were actually passed (excluding unset)
             setattr(product_to_update, key, value)
             if key == "internal_status":
-                print(
-                    f"Product {product_id} internal_status being set to '{value}' via query param. Parameter Pollution Target."
+                logger.info(
+                    "Product %s internal_status being set to '%s' via query param. Parameter Pollution Target.",
+                    product_id,
+                    value,
                 )
 
     product_to_update.updated_at = datetime.now(timezone.utc)
@@ -220,9 +227,10 @@ async def delete_existing_product(
             ),
         )
 
-    print(
-        f"Deleting product {product_id}. Intended BFLA: No admin check performed."
-    )  # Logging for demo
+    logger.info(
+        "Deleting product %s. Intended BFLA: No admin check performed.",
+        product_id,
+    )
     db.db["products"].pop(product_index)
     # Also remove associated stock
     db.db["stock"] = [s for s in db.db["stock"] if s.product_id != product_id]
@@ -279,8 +287,10 @@ async def update_product_stock_quantity(
         )
 
     if product_exists.is_protected:
-        print(
-            f"Stock update attempted on protected product {product_exists.name} ({product_id})."
+        logger.info(
+            "Stock update attempted on protected product %s (%s).",
+            product_exists.name,
+            product_id,
         )
 
         if quantity < PROTECTED_STOCK_MINIMUM:
@@ -295,14 +305,16 @@ async def update_product_stock_quantity(
 
     if not stock_to_update:
         # If product exists but stock record doesn't, create it (could happen if product was added without stock init)
-        print(f"Stock record for product {product_id} not found. Creating one.")
+        logger.info("Stock record for product %s not found. Creating one.", product_id)
         stock_to_update = StockInDBBase(product_id=product_id, quantity=quantity)
         db.db["stock"].append(stock_to_update)
     else:
         stock_to_update.quantity = quantity
 
     stock_to_update.last_updated = datetime.now(timezone.utc)
-    print(
-        f"Updating stock for product {product_id} to quantity {quantity}. Intended BFLA: No admin/owner check performed."
-    )  # Logging for demo
+    logger.info(
+        "Updating stock for product %s to quantity %s. Intended BFLA: No admin/owner check performed.",
+        product_id,
+        quantity,
+    )
     return Stock.model_validate(stock_to_update)

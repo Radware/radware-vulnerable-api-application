@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Query, Depends, Request
 from typing import List, Optional, Dict
 from uuid import UUID
 from datetime import datetime, timezone
+import logging
 
 from .. import db
 from ..models.order_models import (
@@ -23,6 +24,8 @@ from ..routers.user_router import get_current_user  # Reuse the dependency
 pending_coupons_cache: Dict[UUID, str] = {}
 # --- END VULNERABILITY INJECTION ---
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/users/{user_id}/orders", tags=["Orders"])  # Common prefix
 
 
@@ -40,8 +43,10 @@ async def list_user_orders(
     user_id: UUID, current_user: TokenData = Depends(get_current_user)
 ):
     # BOLA Vulnerability: Authenticated, but no check if current_user.user_id matches path user_id.
-    print(
-        f"Listing orders for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check."
+    logger.info(
+        "Listing orders for user %s. Authenticated user: %s. BOLA: No ownership check.",
+        user_id,
+        current_user.user_id,
     )
 
     # Check if the user_id from path even exists
@@ -75,8 +80,10 @@ async def create_user_order(
 ):
     # BOLA Vulnerability for user_id in path:
     # No check if current_user.user_id matches path user_id.
-    print(
-        f"Attempting to create order for user {user_id} by authenticated user {current_user.user_id}. BOLA on user_id in path."
+    logger.info(
+        "Attempting to create order for user %s by authenticated user %s. BOLA on user_id in path.",
+        user_id,
+        current_user.user_id,
     )
 
     query_params = request.query_params
@@ -101,8 +108,12 @@ async def create_user_order(
     # BOLA Vulnerability for address_id and credit_card_id from query:
     # The system does not validate if the provided address_id and credit_card_id belong to the user_id in the path OR the authenticated user.
     # An attacker could use another user's address_id or credit_card_id if known/guessable.
-    print(
-        f"Order creation using address_id: {address_id} and credit_card_id: {credit_card_id}. BOLA on these IDs if not owned by user {user_id} or {current_user.user_id}."
+    logger.info(
+        "Order creation using address_id: %s and credit_card_id: %s. BOLA on these IDs if not owned by user %s or %s.",
+        address_id,
+        credit_card_id,
+        user_id,
+        current_user.user_id,
     )
 
     # Validate existence of user, address, and credit card (without checking ownership for BOLA demo)
@@ -224,8 +235,10 @@ async def create_user_order(
         )  # Get and remove from cache
         coupon = db.db_coupons_by_code.get(coupon_code_to_apply)
         if coupon:
-            print(
-                f"VULNERABILITY: Found and applying cached coupon '{coupon.code}' to new order {new_order_db.order_id}."
+            logger.info(
+                "VULNERABILITY: Found and applying cached coupon '%s' to new order %s.",
+                coupon.code,
+                new_order_db.order_id,
             )
 
             # Re-apply the coupon logic here
@@ -264,8 +277,11 @@ async def create_user_order(
     if card:
         order_response.credit_card_last_four = card.card_last_four
 
-    print(
-        f"Order {new_order_db.order_id} created successfully for user {user_id} with total {new_order_db.total_amount}."
+    logger.info(
+        "Order %s created successfully for user %s with total %s.",
+        new_order_db.order_id,
+        user_id,
+        new_order_db.total_amount,
     )
     return order_response
 
@@ -275,8 +291,11 @@ async def get_user_order_by_id(
     user_id: UUID, order_id: UUID, current_user: TokenData = Depends(get_current_user)
 ):
     # BOLA Vulnerability: No check if current_user.user_id matches path user_id.
-    print(
-        f"Fetching order {order_id} for user {user_id}. Authenticated user: {current_user.user_id}. BOLA: No ownership check."
+    logger.info(
+        "Fetching order %s for user %s. Authenticated user: %s. BOLA: No ownership check.",
+        order_id,
+        user_id,
+        current_user.user_id,
     )
 
     order_db = db.db_orders_by_id.get(order_id)
@@ -330,8 +349,11 @@ async def apply_coupon_to_order(
         # VULNERABILITY: Order does not exist. Instead of failing, we cache the coupon.
         coupon = db.db_coupons_by_code.get(coupon_code)
         if coupon and coupon.is_active:
-            print(
-                f"VULNERABILITY: Order {order_id} not found. Caching coupon '{coupon_code}' for user {user_id}."
+            logger.info(
+                "VULNERABILITY: Order %s not found. Caching coupon '%s' for user %s.",
+                order_id,
+                coupon_code,
+                user_id,
             )
             pending_coupons_cache[user_id] = coupon_code
             # Lie to the attacker and pretend it worked by returning a fake, minimal order object.
