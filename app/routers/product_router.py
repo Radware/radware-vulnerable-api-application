@@ -66,12 +66,14 @@ async def create_new_product(
     )
     product_in_db = ProductInDBBase(**new_product_data.model_dump())
     db.db["products"].append(product_in_db)
+    db.db_products_by_id[product_in_db.product_id] = product_in_db
 
     # Initialize stock for the new product
     initial_stock = StockInDBBase(
         product_id=product_in_db.product_id, quantity=0
     )  # Default to 0 stock
     db.db["stock"].append(initial_stock)
+    db.db_stock_by_product_id[product_in_db.product_id] = initial_stock
 
     return Product.model_validate(product_in_db)
 
@@ -118,7 +120,7 @@ async def get_product_by_id(product_id: UUID):
     """
     Get a product by its unique ID.
     """
-    product = next((p for p in db.db["products"] if p.product_id == product_id), None)
+    product = db.db_products_by_id.get(product_id)
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
@@ -144,9 +146,7 @@ async def update_existing_product(
     Intended Parameter Pollution Target: 'internal_status' can be set by unprivileged users.
     Intended BFLA: No admin/owner check performed.
     """
-    product_to_update = next(
-        (p for p in db.db["products"] if p.product_id == product_id), None
-    )
+    product_to_update = db.db_products_by_id.get(product_id)
     if not product_to_update:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
@@ -206,18 +206,11 @@ async def delete_existing_product(
     Delete an existing product.
     Intended BFLA: No admin check performed, allowing any authenticated user to delete products.
     """
-    product_index = -1
-    for i, p in enumerate(db.db["products"]):
-        if p.product_id == product_id:
-            product_index = i
-            break
-
-    if product_index == -1:
+    product_to_delete = db.db_products_by_id.get(product_id)
+    if not product_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
-
-    product_to_delete = db.db["products"][product_index]
     if product_to_delete.is_protected:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -231,9 +224,12 @@ async def delete_existing_product(
         "Deleting product %s. Intended BFLA: No admin check performed.",
         product_id,
     )
-    db.db["products"].pop(product_index)
+    if product_to_delete in db.db["products"]:
+        db.db["products"].remove(product_to_delete)
+    db.db_products_by_id.pop(product_id, None)
     # Also remove associated stock
     db.db["stock"] = [s for s in db.db["stock"] if s.product_id != product_id]
+    db.db_stock_by_product_id.pop(product_id, None)
     # Consider implications for orders with this product (e.g., mark as unavailable, don't delete from historical orders)
     return {"message": "Product deleted successfully"}
 
@@ -243,10 +239,8 @@ async def get_product_stock_info(product_id: UUID):
     """
     Get stock information for a specific product.
     """
-    stock_info = next((s for s in db.db["stock"] if s.product_id == product_id), None)
-    product_exists = next(
-        (p for p in db.db["products"] if p.product_id == product_id), None
-    )
+    stock_info = db.db_stock_by_product_id.get(product_id)
+    product_exists = db.db_products_by_id.get(product_id)
 
     if not product_exists:
         raise HTTPException(
@@ -273,12 +267,8 @@ async def update_product_stock_quantity(
     Update the stock quantity for a product.
     Intended BFLA: No admin/owner check performed, allowing any authenticated user to modify stock.
     """
-    stock_to_update = next(
-        (s for s in db.db["stock"] if s.product_id == product_id), None
-    )
-    product_exists = next(
-        (p for p in db.db["products"] if p.product_id == product_id), None
-    )
+    stock_to_update = db.db_stock_by_product_id.get(product_id)
+    product_exists = db.db_products_by_id.get(product_id)
 
     if not product_exists:
         raise HTTPException(
@@ -308,6 +298,7 @@ async def update_product_stock_quantity(
         logger.info("Stock record for product %s not found. Creating one.", product_id)
         stock_to_update = StockInDBBase(product_id=product_id, quantity=quantity)
         db.db["stock"].append(stock_to_update)
+        db.db_stock_by_product_id[product_id] = stock_to_update
     else:
         stock_to_update.quantity = quantity
 
