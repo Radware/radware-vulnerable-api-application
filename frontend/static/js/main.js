@@ -15,7 +15,7 @@ let authToken = localStorage.getItem('token');
 let isHandlingSessionExpiration = false; // Prevent multiple simultaneous logout triggers
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-let appliedCouponCode = null; // Holds coupon code staged during checkout
+var appliedCouponCode = null; // Holds coupon code staged during checkout
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
 
 // DOM content loaded event to setup initial UI
@@ -3610,7 +3610,7 @@ async function handleOrderSubmission(e) {
         let finalOrder = newOrder;
 
         // 2. If a coupon was staged, apply it now to the newly created order
-        if (appliedCouponCode) {
+        if (typeof appliedCouponCode !== 'undefined' && appliedCouponCode) {
             console.log(`Applying staged coupon '${appliedCouponCode}' to new order ${newOrder.order_id}`);
             const couponEndpoint = `/api/users/${currentUser.user_id}/orders/${newOrder.order_id}/apply-coupon?coupon_code=${appliedCouponCode}`;
             finalOrder = await apiCall(couponEndpoint, 'POST', null, true);
