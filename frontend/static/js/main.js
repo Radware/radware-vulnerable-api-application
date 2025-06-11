@@ -603,7 +603,7 @@ function getProductImageFilename(product) {
     // Map product names to image files
     const imageMap = {
         // Original product names from prepopulated_data.json
-        'Laptop Pro 15': 'laptop 15.png',
+        'Laptop Pro 15': 'laptop-15.png',
         'Wireless Mouse': 'ergo-mouse.png',
         'Mechanical Keyboard': 'mech-keyboard.png',
         '4K Monitor 27 inch': 'screen-27.png',
