@@ -1,8 +1,10 @@
 import pytest
 import uuid
+import time
 from jose import jwt
 from app.security import RSA_PUBLIC_KEY
 from app.routers.product_router import PROTECTED_STOCK_MINIMUM
+from app.models.product_models import ProductInDBBase
 
 
 # Test authentication functionality
@@ -593,6 +595,95 @@ def test_protected_bob_card_general_update(
     assert body["expiry_year"] == "2032"
 
     from app import db
+
+    db.initialize_database_from_json()
+
+
+def test_products_cache_expiry(test_client, monkeypatch):
+    from app import db
+    from app.routers import product_router as pr
+
+    pr.cache.clear()
+    monkeypatch.setattr(pr, "CACHE_TTL", 1)
+
+    resp1 = test_client.get("/api/products")
+    assert resp1.status_code == 200
+    initial_count = len(resp1.json())
+
+    new_prod = ProductInDBBase(name="CacheP", price=1.0)
+    db.db["products"].append(new_prod)
+    db.db_products_by_id[new_prod.product_id] = new_prod
+
+    resp_cached = test_client.get("/api/products")
+    assert resp_cached.status_code == 200
+    assert len(resp_cached.json()) == initial_count
+
+    time.sleep(1.1)
+    resp_after = test_client.get("/api/products")
+    assert resp_after.status_code == 200
+    assert len(resp_after.json()) == initial_count + 1
+
+    db.initialize_database_from_json()
+
+
+def test_products_cache_invalidation_on_modify(test_client, monkeypatch):
+    from app import db
+    from app.routers import product_router as pr
+
+    pr.cache.clear()
+    monkeypatch.setattr(pr, "CACHE_TTL", 60)
+
+    resp = test_client.get("/api/products")
+    count = len(resp.json())
+
+    create = test_client.post(
+        "/api/products",
+        params={"name": "InvProd", "price": 2.0},
+    )
+    assert create.status_code == 201
+    pid = create.json()["product_id"]
+
+    resp2 = test_client.get("/api/products")
+    assert len(resp2.json()) == count + 1
+
+    update = test_client.put(f"/api/products/{pid}", params={"price": 5.0})
+    assert update.status_code == 200
+    resp3 = test_client.get("/api/products")
+    prod = next(p for p in resp3.json() if p["product_id"] == pid)
+    assert prod["price"] == 5.0
+
+    delete = test_client.delete(f"/api/products/{pid}")
+    assert delete.status_code == 200
+    resp4 = test_client.get("/api/products")
+    assert len(resp4.json()) == count
+
+    db.initialize_database_from_json()
+
+
+def test_product_search_cache_expiry(test_client, monkeypatch):
+    from app import db
+    from app.routers import product_router as pr
+
+    pr.cache.clear()
+    monkeypatch.setattr(pr, "CACHE_TTL", 1)
+    query = "CacheSearch"
+
+    resp = test_client.get("/api/products/search", params={"name": query})
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+    new_p = ProductInDBBase(name=query, price=3.0)
+    db.db["products"].append(new_p)
+    db.db_products_by_id[new_p.product_id] = new_p
+
+    resp_cached = test_client.get("/api/products/search", params={"name": query})
+    assert resp_cached.status_code == 200
+    assert resp_cached.json() == []
+
+    time.sleep(1.1)
+    resp_after = test_client.get("/api/products/search", params={"name": query})
+    assert resp_after.status_code == 200
+    assert len(resp_after.json()) == 1
 
     db.initialize_database_from_json()
 
