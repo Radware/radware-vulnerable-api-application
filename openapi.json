@@ -131,7 +131,7 @@
         }
       }
     },
-    "/api/users/{userId}": {
+    "/api/users/{user_id}": {
       "get": {
         "tags": [
           "Users"
@@ -141,7 +141,7 @@
         "operationId": "getUserByUserId",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -176,7 +176,7 @@
         "operationId": "updateUserByUserId",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -246,7 +246,7 @@
         "operationId": "deleteUserByUserId",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -385,7 +385,7 @@
         }
       }
     },
-    "/api/products/{productId}": {
+    "/api/products/{product_id}": {
       "get": {
         "tags": [
           "Products"
@@ -394,7 +394,7 @@
         "operationId": "getProductById",
         "parameters": [
           {
-            "name": "productId",
+            "name": "product_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -429,7 +429,7 @@
         "operationId": "updateProductById",
         "parameters": [
           {
-            "name": "productId",
+            "name": "product_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -517,7 +517,7 @@
         "operationId": "deleteProductById",
         "parameters": [
           {
-            "name": "productId",
+            "name": "product_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -592,7 +592,7 @@
         }
       }
     },
-    "/api/products/{productId}/stock": {
+    "/api/products/{product_id}/stock": {
       "get": {
         "tags": [
           "Stock"
@@ -601,7 +601,7 @@
         "operationId": "getProductStock",
         "parameters": [
           {
-            "name": "productId",
+            "name": "product_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -636,7 +636,7 @@
         "operationId": "updateProductStock",
         "parameters": [
           {
-            "name": "productId",
+            "name": "product_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -679,7 +679,7 @@
         }
       }
     },
-    "/api/users/{userId}/addresses": {
+    "/api/users/{user_id}/addresses": {
       "get": {
         "tags": [
           "Addresses"
@@ -694,7 +694,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -740,7 +740,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -817,7 +817,7 @@
         }
       }
     },
-    "/api/users/{userId}/addresses/{addressId}": {
+    "/api/users/{user_id}/addresses/{address_id}": {
       "put": {
         "tags": [
           "Addresses"
@@ -832,7 +832,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -842,7 +842,7 @@
             "description": "ID of the user"
           },
           {
-            "name": "addressId",
+            "name": "address_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -940,7 +940,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -950,7 +950,7 @@
             "description": "ID of the user"
           },
           {
-            "name": "addressId",
+            "name": "address_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -989,7 +989,7 @@
         }
       }
     },
-    "/api/users/{userId}/credit-cards": {
+    "/api/users/{user_id}/credit-cards": {
       "get": {
         "tags": [
           "CreditCards"
@@ -999,7 +999,7 @@
         "operationId": "listUserCreditCards",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1037,7 +1037,7 @@
         "operationId": "createUserCreditCard",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1140,7 +1140,7 @@
         }
       }
     },
-    "/api/users/{userId}/credit-cards/{cardId}": {
+    "/api/users/{user_id}/credit-cards/{card_id}": {
       "get": {
         "tags": [
           "CreditCards"
@@ -1150,7 +1150,7 @@
         "operationId": "getUserCreditCard",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1160,7 +1160,7 @@
             "description": "ID of the user"
           },
           {
-            "name": "cardId",
+            "name": "card_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1195,7 +1195,7 @@
         "operationId": "updateUserCreditCard",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1205,7 +1205,7 @@
             "description": "ID of the user"
           },
           {
-            "name": "cardId",
+            "name": "card_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1289,7 +1289,7 @@
         "operationId": "deleteUserCreditCard",
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1299,7 +1299,7 @@
             "description": "ID of the user"
           },
           {
-            "name": "cardId",
+            "name": "card_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1335,7 +1335,7 @@
         }
       }
     },
-    "/api/users/{userId}/orders": {
+    "/api/users/{user_id}/orders": {
       "get": {
         "tags": [
           "Orders"
@@ -1350,7 +1350,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1396,7 +1396,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1489,7 +1489,7 @@
         }
       }
     },
-    "/api/users/{userId}/orders/{orderId}": {
+    "/api/users/{user_id}/orders/{order_id}": {
       "get": {
         "tags": [
           "Orders"
@@ -1504,7 +1504,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1514,7 +1514,7 @@
             "description": "ID of the user (BOLA: can be changed)"
           },
           {
-            "name": "orderId",
+            "name": "order_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1678,8 +1678,7 @@
           }
         }
       }
-    }
-    ,
+    },
     "/api/coupons/{coupon_code}": {
       "get": {
         "tags": [
@@ -1851,7 +1850,7 @@
         }
       }
     },
-    "/api/users/{userId}/orders/{orderId}/apply-coupon": {
+    "/api/users/{user_id}/orders/{order_id}/apply-coupon": {
       "post": {
         "tags": [
           "Orders"
@@ -1866,7 +1865,7 @@
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1876,7 +1875,7 @@
             "description": "ID of the order owner"
           },
           {
-            "name": "orderId",
+            "name": "order_id",
             "in": "path",
             "required": true,
             "schema": {
