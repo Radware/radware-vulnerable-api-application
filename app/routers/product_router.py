@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Query, Depends
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 from uuid import UUID
 from datetime import datetime, timezone
 import logging
@@ -30,13 +30,41 @@ router = APIRouter()
 # endpoint. Regular purchasing can still reduce stock normally.
 PROTECTED_STOCK_MINIMUM = 500_000
 
+# Simple in-memory cache for product listings and searches
+CACHE_TTL = 30  # seconds
+cache: Dict[str, Tuple[datetime, Any]] = {}
+
+
+def _get_cached(key: str):
+    entry = cache.get(key)
+    if entry:
+        ts, data = entry
+        if (datetime.now(timezone.utc) - ts).total_seconds() < CACHE_TTL:
+            return data
+        cache.pop(key, None)
+    return None
+
+
+def _set_cached(key: str, data: Any) -> None:
+    cache[key] = (datetime.now(timezone.utc), data)
+
+
+def _invalidate_cache() -> None:
+    cache.clear()
+
 
 @router.get("/products", response_model=List[Product], tags=["Products"])
 async def list_all_products():
     """
     List all available products.
     """
-    return [Product.model_validate(p) for p in db.db["products"]]
+    cached = _get_cached("all_products")
+    if cached is not None:
+        return cached
+
+    products = [Product.model_validate(p) for p in db.db["products"]]
+    _set_cached("all_products", products)
+    return products
 
 
 # BFLA Target: No admin check initially. Data via query parameters.
@@ -75,6 +103,7 @@ async def create_new_product(
     db.db["stock"].append(initial_stock)
     db.db_stock_by_product_id[product_in_db.product_id] = initial_stock
 
+    _invalidate_cache()
     return Product.model_validate(product_in_db)
 
 
@@ -93,6 +122,11 @@ async def search_products_by_name(name: str = Query(...)):
     # VULNERABILITY: Naive string matching, simulating how a direct query concatenation might behave.
     # In a real SQL/NoSQL scenario, `name` would be unsafely injected into a query.
     # For our in-memory store, we just do a simple substring match, but the intent is to show the input point.
+    cache_key = f"search:{name.lower()}"
+    cached = _get_cached(cache_key)
+    if cached is not None:
+        return cached
+
     results = [
         Product.model_validate(p)
         for p in db.db["products"]
@@ -112,6 +146,8 @@ async def search_products_by_name(name: str = Query(...)):
         # To make it clear if a search yields nothing vs. an error for the demo
         # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found matching your query.")
         pass  # Allow empty results
+
+    _set_cached(cache_key, results)
     return results
 
 
@@ -188,6 +224,7 @@ async def update_existing_product(
                 )
 
     product_to_update.updated_at = datetime.now(timezone.utc)
+    _invalidate_cache()
     return Product.model_validate(product_to_update)
 
 
@@ -231,6 +268,7 @@ async def delete_existing_product(
     db.db["stock"] = [s for s in db.db["stock"] if s.product_id != product_id]
     db.db_stock_by_product_id.pop(product_id, None)
     # Consider implications for orders with this product (e.g., mark as unavailable, don't delete from historical orders)
+    _invalidate_cache()
     return {"message": "Product deleted successfully"}
 
 
