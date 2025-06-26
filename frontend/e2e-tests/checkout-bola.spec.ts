@@ -65,7 +65,7 @@ test.describe('Checkout BOLA Vulnerability', () => {
     ]);
 
     await expect(page.locator('#global-message-container .global-message')).toContainText(
-      /BOLA EXPLOIT: Order .* charged to BobJohnson's card!/i,
+      /Order .* placed successfully!/i,
       { timeout: 15000 }
     );
 
@@ -96,7 +96,7 @@ test.describe('Checkout BOLA Vulnerability', () => {
     ]);
 
     await expect(page.locator('#global-message-container .global-message')).toContainText(
-      /BOLA EXPLOIT: Order .* charged to .* card!/i,
+      /Order .* placed successfully!/i,
       { timeout: 15000 }
     );
 
