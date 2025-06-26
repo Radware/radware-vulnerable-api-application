@@ -879,7 +879,7 @@ async function listAvailableVictims() {
                 listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
                 listItem.innerHTML = `
                     <span>${user.username} (ID: <code>${user.user_id.substring(0,8)}...</code>)</span>
-                    <button class="btn btn-sm btn-outline-danger select-victim-btn" data-victim-id="${user.user_id}" data-victim-name="${user.username}">
+                    <button type="button" class="btn btn-sm btn-outline-danger select-victim-btn" data-victim-id="${user.user_id}" data-victim-name="${user.username}">
                         <i class="fas fa-eye"></i> View Profile (BOLA Exploit)
                     </button>
                 `;
@@ -887,7 +887,9 @@ async function listAvailableVictims() {
             });
 
             document.querySelectorAll('.select-victim-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
                     const victimId = this.dataset.victimId;
                     const victimName = this.dataset.victimName;
                     
@@ -1336,7 +1338,14 @@ function initCheckoutPage() {
     
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
-        checkoutForm.addEventListener('submit', handleOrderSubmission);
+        checkoutForm.addEventListener('submit', function (e) {
+            if (e.submitter && e.submitter.id !== 'place-order-btn') {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            handleOrderSubmission(e);
+        });
     }
     
     const bolaCheckbox = document.getElementById('order-for-other-user');
@@ -1438,8 +1447,8 @@ async function searchUsers() {
                         <strong>${user.username}</strong><br>
                         <small>ID: <code>${user.user_id.substring(0,8)}...</code></small>
                     </div>
-                    <button class="btn btn-sm btn-outline-primary select-user-btn" 
-                            data-user-id="${user.user_id}" 
+                    <button type="button" class="btn btn-sm btn-outline-primary select-user-btn"
+                            data-user-id="${user.user_id}"
                             data-username="${user.username}">Select User</button>
                 </li>`;
         });
@@ -1447,7 +1456,9 @@ async function searchUsers() {
         userList.innerHTML = usersHTML;
         
         document.querySelectorAll('.select-user-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 document.getElementById('target-user-id').value = this.getAttribute('data-user-id');
                 displayGlobalMessage(`Target user set to: ${this.getAttribute('data-username')}`, 'info');
                 document.getElementById('search-addresses-btn')?.click();
@@ -1515,7 +1526,7 @@ async function searchCreditCards() {
                         <small>Card: •••• ${card.card_last_four} | Expires: ${card.expiry_month}/${card.expiry_year.substring(2)}</small><br>
                         <small>ID: <code>${card.card_id.substring(0,8)}...</code></small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger select-card-btn" 
+                    <button type="button" class="btn btn-sm btn-outline-danger select-card-btn"
                             data-card-id="${card.card_id}"
                             data-last-four="${card.card_last_four}"
                             data-cardholder-name="${card.cardholder_name}"
@@ -1678,7 +1689,7 @@ async function searchAddressesForBola() {
                         <small>${addr.country}, ${addr.zip_code}</small><br>
                         <small>ID: <code>${addr.address_id.substring(0,8)}...</code></small>
                     </div>
-                    <button class="btn btn-sm btn-outline-warning select-address-btn" 
+                    <button type="button" class="btn btn-sm btn-outline-warning select-address-btn"
                             data-address-id="${addr.address_id}">Use This Address</button>
                 </li>`;
         });
@@ -1788,6 +1799,8 @@ function initOrdersPage() {
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.select-user-for-orders-bola-btn');
         if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
         const selectedUserId = btn.dataset.userId;
         const selectedUsername = btn.dataset.username;
         if (targetUserIdFieldOnPage) targetUserIdFieldOnPage.value = selectedUserId;
@@ -2656,6 +2669,7 @@ async function listUsersForOrders() {
             li.innerHTML = `<span>${u.username} (ID: <code>${u.user_id}</code>)</span>`;
             if (!currentUser || u.user_id !== currentUser.user_id) {
                 const btn = document.createElement('button');
+                btn.type = 'button';
                 btn.className = 'btn btn-sm btn-outline-primary select-user-for-orders-bola-btn';
                 btn.dataset.userId = u.user_id;
                 btn.dataset.username = u.username;
