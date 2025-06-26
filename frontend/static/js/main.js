@@ -887,7 +887,9 @@ async function listAvailableVictims() {
             });
 
             document.querySelectorAll('.select-victim-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
                     const victimId = this.dataset.victimId;
                     const victimName = this.dataset.victimName;
                     
@@ -1449,6 +1451,7 @@ async function searchUsers() {
         document.querySelectorAll('.select-user-btn').forEach(btn => {
             btn.addEventListener('click', function(event) {
                 event.preventDefault();
+                event.stopPropagation();
                 document.getElementById('target-user-id').value = this.getAttribute('data-user-id');
                 displayGlobalMessage(`Target user set to: ${this.getAttribute('data-username')}`, 'info');
                 document.getElementById('search-addresses-btn')?.click();
@@ -1790,6 +1793,7 @@ function initOrdersPage() {
         const btn = e.target.closest('.select-user-for-orders-bola-btn');
         if (!btn) return;
         e.preventDefault();
+        e.stopPropagation();
         const selectedUserId = btn.dataset.userId;
         const selectedUsername = btn.dataset.username;
         if (targetUserIdFieldOnPage) targetUserIdFieldOnPage.value = selectedUserId;
