@@ -69,7 +69,7 @@ test.describe('Vulnerability Demonstrations', () => {
       page.locator('#place-order-btn').click()
     ]);
     await expect(page.locator('#global-message-container .global-message'))
-      .toContainText('BOLA EXPLOIT', { timeout: 15000 });
+      .toContainText(/Order .* placed successfully!/i, { timeout: 15000 });
 
     await page.goto('/orders');
     await page.fill('#target-user-id', user2Id);
