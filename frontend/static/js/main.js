@@ -1338,7 +1338,14 @@ function initCheckoutPage() {
     
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
-        checkoutForm.addEventListener('submit', handleOrderSubmission);
+        checkoutForm.addEventListener('submit', function (e) {
+            if (e.submitter && e.submitter.id !== 'place-order-btn') {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            handleOrderSubmission(e);
+        });
     }
     
     const bolaCheckbox = document.getElementById('order-for-other-user');
