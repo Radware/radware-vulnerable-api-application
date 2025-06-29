@@ -3606,15 +3606,37 @@ async function handleOrderSubmission(e) {
 
     try {
         // Get user's selected address and card
-        const addressId = document.getElementById('address-id')?.value;
-        const creditCardId = document.getElementById('credit-card-id')?.value;
+        let addressId = document.getElementById('address-id')?.value;
+        let creditCardId = document.getElementById('credit-card-id')?.value;
+
+        // --- BOLA Demo Elements ---
+        const bolaMode = document.getElementById('order-for-other-user')?.checked;
+        const targetUserId = document.getElementById('target-user-id')?.value.trim();
+        const targetAddressId = document.getElementById('target-address-id')?.value.trim();
+        const targetCardId = document.getElementById('target-credit-card-id')?.value.trim();
+
+        let pathUserId = currentUser.user_id;
+
+        if (bolaMode) {
+            if (!targetCardId) {
+                displayGlobalMessage('Target Credit Card ID is required for BOLA exploit.', 'error');
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+                return;
+            }
+
+            // For demo purposes we keep the path user ID as the current user.
+            // Swap to `targetUserId` here if the demo expects path tampering.
+            if (targetAddressId) addressId = targetAddressId;
+            creditCardId = targetCardId;
+        }
 
         if (!addressId || !creditCardId) {
             throw new Error('Please select a shipping address and payment method.');
         }
 
         // Build the base order creation endpoint
-        let orderEndpoint = `/api/users/${currentUser.user_id}/orders?address_id=${addressId}&credit_card_id=${creditCardId}`;
+        let orderEndpoint = `/api/users/${pathUserId}/orders?address_id=${addressId}&credit_card_id=${creditCardId}`;
         cart.forEach((item, index) => {
             orderEndpoint += `&product_id_${index + 1}=${item.product_id}&quantity_${index + 1}=${item.quantity}`;
         });
@@ -3626,7 +3648,7 @@ async function handleOrderSubmission(e) {
         // 2. If a coupon was staged, apply it now to the newly created order
         if (typeof appliedCouponCode !== 'undefined' && appliedCouponCode) {
             console.log(`Applying staged coupon '${appliedCouponCode}' to new order ${newOrder.order_id}`);
-            const couponEndpoint = `/api/users/${currentUser.user_id}/orders/${newOrder.order_id}/apply-coupon?coupon_code=${appliedCouponCode}`;
+            const couponEndpoint = `/api/users/${pathUserId}/orders/${newOrder.order_id}/apply-coupon?coupon_code=${appliedCouponCode}`;
             finalOrder = await apiCall(couponEndpoint, 'POST', null, true);
         }
 
