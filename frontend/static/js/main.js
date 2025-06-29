@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initAdminPage();
     }
 
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 });
 
 // Helper Functions
@@ -325,7 +325,7 @@ function hidePageLoader() {
 }
 
 // Full unabridged function with the specified changes, maintaining original structure for Profile Page logic.
-function updateUIVulnerabilityFeaturesDisplay() {
+function updateUIVulnerabilityFeaturesDisplay(skipProfileRefetch = false) {
     console.log(`UI Vulnerability Demos are now: ${uiVulnerabilityFeaturesEnabled ? 'ENABLED' : 'DISABLED'}`);
     const demoElements = document.querySelectorAll(
         '.ui-demo-dependant, .ui-demo-dependant-block, .ui-demo-dependant-flex, .ui-demo-dependant-grid, .ui-demo-dependant-inline-block'
@@ -467,7 +467,7 @@ function updateUIVulnerabilityFeaturesDisplay() {
             }
         }
         // Re-fetch profile to ensure all text (like escalation demo) and indicators are correct after toggle.
-        if (typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId && typeof fetchAndDisplayFullProfile === "function") {
+        if (!skipProfileRefetch && typeof currentlyViewedUserId !== 'undefined' && currentlyViewedUserId && typeof fetchAndDisplayFullProfile === "function") {
             fetchAndDisplayFullProfile(currentlyViewedUserId);
         }
 
@@ -675,7 +675,7 @@ function initHomePage() {
             searchInfoDiv.classList.remove('demo-visible');
         }
     }
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 }
 
 async function handleProductSearch(e) {
@@ -742,7 +742,7 @@ function initProductDetailPage() {
     
     // Update visibility of UI demo features based on toggle
     if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
-        updateUIVulnerabilityFeaturesDisplay();
+        updateUIVulnerabilityFeaturesDisplay(true);
     } else {
         console.warn("[main.js] updateUIVulnerabilityFeaturesDisplay function not found.");
     }
@@ -802,7 +802,7 @@ function initProfilePage() {
 
     fetchAndDisplayFullProfile(currentlyViewedUserId);
     setupProfilePageEventListeners();
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 }
 
 
@@ -1407,7 +1407,7 @@ function initCheckoutPage() {
             }
 
             if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
-                updateUIVulnerabilityFeaturesDisplay();
+                updateUIVulnerabilityFeaturesDisplay(true);
             }
         });
     }
@@ -1420,7 +1420,7 @@ function initCheckoutPage() {
     if (theftPreview) {
         theftPreview.innerHTML = '<div class="no-theft-selected alert alert-secondary">Enable BOLA exploit and select a target card to see preview.</div>';
     }
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 }
 
 async function searchUsers() {
@@ -1832,7 +1832,7 @@ function initOrdersPage() {
 
     document.getElementById('list-users-btn')?.addEventListener('click', listUsersForOrders);
     document.getElementById('order-detail-form')?.addEventListener('submit', fetchOrderDetail);
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 }
 
 function initAdminPage() {
@@ -1842,7 +1842,7 @@ function initAdminPage() {
         return;
     }
     setupAdminInterface();
-    updateUIVulnerabilityFeaturesDisplay();
+    updateUIVulnerabilityFeaturesDisplay(true);
 }
 
 // Product handling functions
