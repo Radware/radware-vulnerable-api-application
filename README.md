@@ -161,9 +161,10 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
     ```
     The API will be accessible at `http://localhost:8000`.
 
-    Set `UVICORN_WORKERS` to control the number of worker processes:
+    The container defaults to a single Uvicorn worker. Set `UVICORN_WORKERS`
+    if you need additional workers:
     ```sh
-    docker run -d -p 8000:80 -e UVICORN_WORKERS=4 \
+    docker run -d -p 8000:80 -e UVICORN_WORKERS=2 \
       --name radware-vuln-api vulnerable-ecommerce-api
     ```
 

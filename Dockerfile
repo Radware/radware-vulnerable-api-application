@@ -34,7 +34,7 @@ EXPOSE 80
 # Define environment variable
 ENV PYTHONPATH=/app
 # Default worker count can be overridden at runtime
-ENV UVICORN_WORKERS=4
+ENV UVICORN_WORKERS=1
 
 # Command to run supervisor, which will manage both services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
