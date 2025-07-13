@@ -17,6 +17,7 @@ from sqlalchemy import (
     create_engine,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.exc import IntegrityError
 
 from .db_base import DatabaseBackend
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
@@ -145,7 +146,9 @@ class SQLiteBackend(DatabaseBackend):
             db_path = DB_SQLITE_PATH
             os.makedirs(os.path.dirname(db_path), exist_ok=True)
             database_url = f"sqlite:///{db_path}"
-        connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+        connect_args = (
+            {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+        )
         self.engine = create_engine(database_url, connect_args=connect_args)
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
         Base.metadata.create_all(self.engine)
@@ -218,7 +221,9 @@ class SQLiteBackend(DatabaseBackend):
                     card = CreditCardModel(
                         card_id=card_data["card_id"],
                         user_id=user_data["user_id"],
-                        card_number_hash=get_password_hash(card_data["card_number_plain"]),
+                        card_number_hash=get_password_hash(
+                            card_data["card_number_plain"]
+                        ),
                         cvv_hash=get_password_hash(card_data["cvv_plain"]),
                         card_last_four=card_data["card_number_plain"][-4:],
                         cardholder_name=card_data["cardholder_name"],
@@ -263,7 +268,11 @@ class SQLiteBackend(DatabaseBackend):
                     is_protected=coupon_data.get("is_protected", False),
                 )
                 session.add(coupon)
-            session.commit()
+                try:
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+
         print(f"Database initialized from {prepopulated_path}")
 
     def initialize_database_from_json(self) -> None:
@@ -373,7 +382,9 @@ class SQLiteBackend(DatabaseBackend):
             rows = session.query(CreditCardModel).filter_by(user_id=str(user_id)).all()
             return [CreditCardInDBBase.model_validate(r) for r in rows]
 
-    def update_credit_card(self, card_id: UUID, update_data: dict) -> CreditCardInDBBase:
+    def update_credit_card(
+        self, card_id: UUID, update_data: dict
+    ) -> CreditCardInDBBase:
         with self._session() as session:
             row = session.get(CreditCardModel, str(card_id))
             for k, v in update_data.items():
