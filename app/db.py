@@ -5,10 +5,12 @@ from typing import Any
 
 from .db_base import DatabaseBackend
 from .db_memory import MemoryBackend
+from .db_sqlite import SQLiteBackend
 
 # Map supported backend modes to their implementations
 _BACKENDS = {
     "memory": MemoryBackend,
+    "sqlite": SQLiteBackend,
 }
 
 _db_mode = os.getenv("DB_MODE", "memory").lower()
