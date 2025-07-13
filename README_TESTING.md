@@ -108,6 +108,19 @@ Run with verbose output:
 pytest tests/ -v
 ```
 
+### Using the SQLite Backend
+
+The default tests use the in‑memory database. To exercise the
+SQLite backend, set ``DB_MODE=sqlite`` before running pytest. Optionally
+point ``DB_SQLITE_PATH`` at an empty file location:
+
+```sh
+DB_MODE=sqlite DB_SQLITE_PATH=/tmp/test_db.sqlite pytest tests/test_functional.py
+```
+
+The ``sqlite_test_client`` fixture in ``tests/conftest.py`` can also be
+used for custom scenarios.
+
 ### Automated Verification
 
 A verification script is provided to automate the testing process:
