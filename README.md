@@ -145,6 +145,16 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 *   Python 3.9+ (if running locally without Docker)
 *   Git (for cloning, though not strictly necessary if files are manually downloaded)
 
+### Configuration via Environment Variables
+
+The application selects its database backend based on environment variables:
+
+* `DB_MODE` – one of `memory` (default), `sqlite`, or `external`.
+* `DB_URL` – used only when `DB_MODE=external`. Provide a full SQLAlchemy
+  connection string. If the URL points to a SQLite file the built-in SQLite
+  backend is reused. For other databases (e.g., PostgreSQL/MySQL) make sure the
+  appropriate drivers are installed.
+
 ### Instructions
 
 #### Using Docker (Recommended)

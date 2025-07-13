@@ -13,12 +13,18 @@ _BACKENDS = {
     "sqlite": SQLiteBackend,
 }
 
+# Determine backend based on DB_MODE
 _db_mode = os.getenv("DB_MODE", "memory").lower()
-_backend_cls = _BACKENDS.get(_db_mode)
-if _backend_cls is None:
-    raise ValueError(f"Unsupported DB_MODE '{_db_mode}'")
-
-_backend: DatabaseBackend = _backend_cls()
+if _db_mode == "external":
+    db_url = os.getenv("DB_URL")
+    if not db_url:
+        raise ValueError("DB_URL must be set when DB_MODE=external")
+    _backend = SQLiteBackend(db_url)
+else:
+    _backend_cls = _BACKENDS.get(_db_mode)
+    if _backend_cls is None:
+        raise ValueError(f"Unsupported DB_MODE '{_db_mode}'")
+    _backend = _backend_cls()
 # initialize using default prepopulated data if available
 if hasattr(_backend, "initialize_database_from_json"):
     _backend.initialize_database_from_json()

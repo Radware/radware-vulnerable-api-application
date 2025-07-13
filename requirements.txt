@@ -12,3 +12,5 @@ supervisor==4.2.2
 python-json-logger
 Werkzeug==2.0.3
 SQLAlchemy
+psycopg2-binary
+pymysql

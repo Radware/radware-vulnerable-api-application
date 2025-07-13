@@ -132,13 +132,21 @@ class CouponModel(Base):
 
 
 class SQLiteBackend(DatabaseBackend):
-    """SQLite implementation of :class:`DatabaseBackend`."""
+    """SQLAlchemy implementation of :class:`DatabaseBackend`.
 
-    def __init__(self) -> None:
-        os.makedirs(os.path.dirname(DB_SQLITE_PATH), exist_ok=True)
-        self.engine = create_engine(
-            f"sqlite:///{DB_SQLITE_PATH}", connect_args={"check_same_thread": False}
-        )
+    The name is kept for backward compatibility, but this class can now
+    connect to any database supported by SQLAlchemy. If ``database_url`` is
+    not provided, it falls back to using the ``DB_SQLITE_PATH`` location and
+    SQLite.
+    """
+
+    def __init__(self, database_url: str | None = None) -> None:
+        if database_url is None:
+            db_path = DB_SQLITE_PATH
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            database_url = f"sqlite:///{db_path}"
+        connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+        self.engine = create_engine(database_url, connect_args=connect_args)
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
         Base.metadata.create_all(self.engine)
         self._initialize_if_empty()
