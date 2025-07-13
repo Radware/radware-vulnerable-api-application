@@ -130,6 +130,14 @@ app.include_router(
     tags=["Coupons", "Admin"],
 )
 
+from . import sync
+
+
+@app.on_event("startup")
+async def start_sync_service() -> None:
+    """Start background DB sync if configured."""
+    sync.start_background_sync()
+
 
 @app.get("/")
 async def root():
