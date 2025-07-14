@@ -150,10 +150,46 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 The application selects its database backend based on environment variables:
 
 * `DB_MODE` – one of `memory` (default), `sqlite`, or `external`.
+* `DB_SQLITE_PATH` – location for the SQLite file when using `DB_MODE=sqlite`.
+  Defaults to `/app/data/db.sqlite` in the container.
 * `DB_URL` – used only when `DB_MODE=external`. Provide a full SQLAlchemy
   connection string. If the URL points to a SQLite file the built-in SQLite
   backend is reused. For other databases (e.g., PostgreSQL/MySQL) make sure the
   appropriate drivers are installed.
+* `DB_SYNC_PEER` – optional base URL of another instance for database
+  synchronization.
+* `DB_SYNC_INTERVAL` – polling interval in seconds when `DB_SYNC_PEER` is set
+  (default: 60).
+
+#### Example Configurations
+
+**SQLite inside the container**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_MODE=sqlite \
+  -e DB_SQLITE_PATH=/data/db.sqlite \
+  -v $(pwd)/data:/data \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+This stores the SQLite database in `./data/db.sqlite` on the host.
+
+**External database**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_MODE=external \
+  -e DB_URL=postgresql+psycopg2://user:pass@dbserver/dbname \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+Replace the connection string with one appropriate for your database engine.
+
+**Peer sync**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_SYNC_PEER=http://other-instance:8000 \
+  -e DB_SYNC_INTERVAL=30 \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+The service will periodically push and pull data with the peer.
 
 ### Instructions
 
