@@ -1,6 +1,5 @@
 import pytest
 import uuid
-import time
 from jose import jwt
 from app.security import RSA_PUBLIC_KEY
 from app.routers.product_router import PROTECTED_STOCK_MINIMUM
@@ -599,15 +598,8 @@ def test_protected_bob_card_general_update(
     db.initialize_database_from_json()
 
 
-def test_products_cache_expiry(test_client, monkeypatch):
+def test_products_refresh_after_modification(test_client):
     from app import db
-    from app.routers import product_router as pr
-
-    if not hasattr(pr, "cache"):
-        pytest.skip("product caching not implemented")
-
-    pr.cache.clear()
-    monkeypatch.setattr(pr, "CACHE_TTL", 1)
 
     resp1 = test_client.get("/api/products")
     assert resp1.status_code == 200
@@ -617,11 +609,6 @@ def test_products_cache_expiry(test_client, monkeypatch):
     db.db["products"].append(new_prod)
     db.db_products_by_id[new_prod.product_id] = new_prod
 
-    resp_cached = test_client.get("/api/products")
-    assert resp_cached.status_code == 200
-    assert len(resp_cached.json()) == initial_count
-
-    time.sleep(1.1)
     resp_after = test_client.get("/api/products")
     assert resp_after.status_code == 200
     assert len(resp_after.json()) == initial_count + 1
@@ -629,15 +616,8 @@ def test_products_cache_expiry(test_client, monkeypatch):
     db.initialize_database_from_json()
 
 
-def test_products_cache_invalidation_on_modify(test_client, monkeypatch):
+def test_products_modify_operations_reflect_immediately(test_client):
     from app import db
-    from app.routers import product_router as pr
-
-    if not hasattr(pr, "cache"):
-        pytest.skip("product caching not implemented")
-
-    pr.cache.clear()
-    monkeypatch.setattr(pr, "CACHE_TTL", 60)
 
     resp = test_client.get("/api/products")
     count = len(resp.json())
@@ -666,15 +646,9 @@ def test_products_cache_invalidation_on_modify(test_client, monkeypatch):
     db.initialize_database_from_json()
 
 
-def test_product_search_cache_expiry(test_client, monkeypatch):
+def test_product_search_updates_reflect_immediately(test_client):
     from app import db
-    from app.routers import product_router as pr
 
-    if not hasattr(pr, "cache"):
-        pytest.skip("product caching not implemented")
-
-    pr.cache.clear()
-    monkeypatch.setattr(pr, "CACHE_TTL", 1)
     query = "CacheSearch"
 
     resp = test_client.get("/api/products/search", params={"name": query})
@@ -685,11 +659,6 @@ def test_product_search_cache_expiry(test_client, monkeypatch):
     db.db["products"].append(new_p)
     db.db_products_by_id[new_p.product_id] = new_p
 
-    resp_cached = test_client.get("/api/products/search", params={"name": query})
-    assert resp_cached.status_code == 200
-    assert resp_cached.json() == []
-
-    time.sleep(1.1)
     resp_after = test_client.get("/api/products/search", params={"name": query})
     assert resp_after.status_code == 200
     assert len(resp_after.json()) == 1
