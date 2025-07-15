@@ -1,26 +1,3 @@
-Of course. Here is the full, updated workflow for the repository that uses an environment.
-
-This version incorporates all the changes:
-
-  * It uses your environment named **`release`**.
-  * It reads the Docker image name from a **Repository Variable**.
-  * It's triggered **manually** with a version input.
-  * It **conditionally adds** the `:latest` tag.
-
------
-
-### \#\# 1. Required Setup
-
-Remember to configure the following in your repository settings under `Settings > Secrets and variables > Actions`:
-
-  * **Secrets:** `DOCKER_USERNAME`, `DOCKER_PASSWORD`
-  * **Variables:** `DOCKER_IMAGE_NAME` (with a value like `youruser/yourrepo`)
-
------
-
-### \#\# 2. Updated Workflow File
-
-```yaml
 name: Manual Release Docker Image
 
 on:
@@ -92,4 +69,3 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.prep_tags.outputs.tags }}
-```
