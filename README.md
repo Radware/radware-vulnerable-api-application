@@ -163,6 +163,14 @@ The application selects its database backend based on environment variables:
 
 #### Example Configurations
 
+**In-memory database (ephemeral)**
+```sh
+ docker run -d -p 8000:80 \
+  -e DB_MODE=memory \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+Data is stored only in memory and will be lost when the container stops.
+
 **SQLite inside the container**
 ```sh
 docker run -d -p 8000:80 \
@@ -171,7 +179,7 @@ docker run -d -p 8000:80 \
   -v $(pwd)/data:/data \
   --name radware-vuln-api vulnerable-ecommerce-api
 ```
-This stores the SQLite database in `./data/db.sqlite` on the host.
+This stores the SQLite database in `./data/db.sqlite` on the host. Remove the `-v` option if you want the database kept only inside the container and discarded when it is removed.
 
 **External database**
 ```sh
