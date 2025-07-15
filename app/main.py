@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
+import yaml
 from .routers import (
     auth_router,
     user_router,
@@ -105,6 +106,22 @@ app = FastAPI(
     description="An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters.",
     version="1.0.0",
 )
+
+# Use the pre-generated OpenAPI specification from openapi.yaml
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def custom_openapi() -> dict:
+    """Load the OpenAPI schema from the repository's openapi.yaml file."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_path = os.path.join(BASE_DIR, "openapi.yaml")
+    with open(openapi_path, "r") as f:
+        app.openapi_schema = yaml.safe_load(f)
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Add the custom middleware to your FastAPI app
 if os.getenv("ENABLE_ACCESS_LOG", "false").lower() == "true":
