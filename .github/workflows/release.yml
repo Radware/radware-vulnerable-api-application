@@ -1,0 +1,95 @@
+Of course. Here is the full, updated workflow for the repository that uses an environment.
+
+This version incorporates all the changes:
+
+  * It uses your environment named **`release`**.
+  * It reads the Docker image name from a **Repository Variable**.
+  * It's triggered **manually** with a version input.
+  * It **conditionally adds** the `:latest` tag.
+
+-----
+
+### \#\# 1. Required Setup
+
+Remember to configure the following in your repository settings under `Settings > Secrets and variables > Actions`:
+
+  * **Secrets:** `DOCKER_USERNAME`, `DOCKER_PASSWORD`
+  * **Variables:** `DOCKER_IMAGE_NAME` (with a value like `youruser/yourrepo`)
+
+-----
+
+### \#\# 2. Updated Workflow File
+
+```yaml
+name: Manual Release Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    # Points to your 'release' environment for approval and secrets
+    environment:
+      name: release
+      
+    # Define environment variables for the job
+    env:
+      # Reads the variable you created in the repository settings
+      DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # We need to fetch all history and tags to find the latest version
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Prepare Docker tags
+        id: prep_tags
+        run: |
+          CURRENT_VERSION="v${{ github.event.inputs.version }}"
+          LATEST_TAG=$(git tag | sort -V | tail -n 1)
+          
+          echo "Current version: ${CURRENT_VERSION}"
+          echo "Latest tag found: ${LATEST_TAG}"
+
+          # Use the environment variable for the image name
+          TAGS="${DOCKER_IMAGE_NAME}:${{ github.event.inputs.version }}"
+          
+          if [[ "${CURRENT_VERSION}" == "${LATEST_TAG}" ]]; then
+            echo "✅ This is the latest version. Adding 'latest' tag."
+            TAGS="${TAGS}\n${DOCKER_IMAGE_NAME}:latest"
+          else
+            echo "☑️ This is not the latest version. Skipping 'latest' tag."
+          fi
+          
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "${TAGS}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build & push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.prep_tags.outputs.tags }}
+```
