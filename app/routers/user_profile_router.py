@@ -128,12 +128,15 @@ async def create_user_address(
     user_addresses = db.db_addresses_by_user_id.get(user_id, [])
     if len(user_addresses) == 1:
         new_address_db.is_default = True
+        db.update_address(new_address_db.address_id, new_address_db.model_dump())
 
     if is_default:
         for addr_item in user_addresses:
             if addr_item.address_id != new_address_db.address_id:
                 addr_item.is_default = False
+                db.update_address(addr_item.address_id, addr_item.model_dump())
         new_address_db.is_default = True
+        db.update_address(new_address_db.address_id, new_address_db.model_dump())
 
     return Address.model_validate(new_address_db)
 
@@ -197,9 +200,11 @@ async def update_user_address(
         for addr_item in db.db_addresses_by_user_id.get(user_id, []):
             if addr_item.address_id != address_id: # Corrected: check against address_id from path
                 addr_item.is_default = False
+                db.update_address(addr_item.address_id, addr_item.model_dump())
         address_to_update.is_default = True # Ensure the target address itself is set to default
 
     address_to_update.updated_at = datetime.now(timezone.utc)
+    db.update_address(address_id, address_to_update.model_dump())
     return Address.model_validate(address_to_update)
 
 
@@ -260,6 +265,7 @@ async def delete_user_address(
             a.is_default for a in remaining_user_addresses
         ):
             remaining_user_addresses[0].is_default = True
+            db.update_address(remaining_user_addresses[0].address_id, remaining_user_addresses[0].model_dump())
             print(
                 f"Address {remaining_user_addresses[0].address_id} made default for user {user_id} after deleting previous default."
             )
@@ -342,6 +348,7 @@ async def create_user_credit_card(
     if is_default:
         for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
             card_item.is_default = False
+            db.update_credit_card(card_item.card_id, card_item.model_dump())
 
     card_last_four_digits = card_data_from_query.card_number[-4:]
     card_number_hash = get_password_hash(card_data_from_query.card_number)
@@ -422,10 +429,12 @@ async def update_user_credit_card(
         for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
             if card_item.card_id != card_id:
                 card_item.is_default = False
+                db.update_credit_card(card_item.card_id, card_item.model_dump())
         card_to_update.is_default = True # Ensure the target card itself is set to default
 
 
     card_to_update.updated_at = datetime.now(timezone.utc)
+    db.update_credit_card(card_id, card_to_update.model_dump())
     return CreditCard.model_validate(card_to_update)
 
 
@@ -483,6 +492,7 @@ async def delete_user_credit_card(
         remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
+            db.update_credit_card(remaining_user_cards[0].card_id, remaining_user_cards[0].model_dump())
             print(
                 f"Card {remaining_user_cards[0].card_id} made default for user {user_id} after deleting previous default."
             )

@@ -208,6 +208,8 @@ async def create_user_order(
         # Deduct stock
         stock.quantity -= quantity_val
         stock.last_updated = datetime.now(timezone.utc)
+        # Persist stock update to database
+        db.update_stock(product_id_key, stock.quantity)
 
         price_at_purchase = product.price
         order_item_db = OrderItemInDBBase(
@@ -266,6 +268,8 @@ async def create_user_order(
             ):
                 coupon.usage_count = 0
             coupon.updated_at = datetime.now(timezone.utc)
+            # Persist coupon update to database
+            db.update_coupon(coupon.coupon_id, coupon.model_dump())
     # --- END OF VULNERABILITY INJECTION ---
 
     # Prepare response model
@@ -417,9 +421,13 @@ async def apply_coupon_to_order(
     order_db.applied_coupon_code = coupon.code
     order_db.discount_amount = round(discount, 2)
     order_db.updated_at = datetime.now(timezone.utc)
+    # Persist order update to database
+    db.update_order(order_db.order_id, order_db.model_dump())
 
     coupon.usage_count += 1
     coupon.updated_at = datetime.now(timezone.utc)
+    # Persist coupon update to database
+    db.update_coupon(coupon.coupon_id, coupon.model_dump())
 
     items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
     order_response = Order.model_validate(order_db)

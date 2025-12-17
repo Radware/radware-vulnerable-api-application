@@ -469,8 +469,22 @@ class CollectionProxy:
     
     def append(self, item):
         """Add item to collection. Actual persistence handled by specific methods."""
-        # Items are persisted through specific create methods, this is just for compatibility
-        pass
+        # For SQLiteBackend, we need to actually persist the items
+        if self.collection == "orders" and hasattr(item, 'order_id'):
+            self.backend.create_order(item)
+        elif self.collection == "order_items" and hasattr(item, 'order_item_id'):
+            self.backend.create_order_item(item)
+        elif self.collection == "users" and hasattr(item, 'user_id'):
+            self.backend.create_user(item)
+        elif self.collection == "products" and hasattr(item, 'product_id'):
+            self.backend.create_product(item)
+        elif self.collection == "addresses" and hasattr(item, 'address_id'):
+            self.backend.create_address(item)
+        elif self.collection == "credit_cards" and hasattr(item, 'card_id'):
+            self.backend.create_credit_card(item)
+        elif self.collection == "stock" and hasattr(item, 'product_id'):
+            self.backend.update_stock(item.product_id, item.quantity)
+        # For other collections, this is a no-op as persistence happens elsewhere
     
     def remove(self, item):
         """Remove item from collection. Actual deletion handled by specific methods."""
