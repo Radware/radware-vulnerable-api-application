@@ -1,51 +1,68 @@
+# Docker Compose for External PostgreSQL Database Mode
+# Multiple workers supported - best performance and scalability
+# Requires PostgreSQL database (included in this compose file)
+
 services:
+  # PostgreSQL Database Service
   rva-db:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: rva-db
     environment:
-      POSTGRES_USER: rva
-      POSTGRES_PASSWORD: rva
-      POSTGRES_DB: rva
+      POSTGRES_USER: ${POSTGRES_USER:-rva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rva}
+      POSTGRES_DB: ${POSTGRES_DB:-rva}
     volumes:
       - rva-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rva"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rva}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     restart: unless-stopped
+    networks:
+      - rva-network
 
-  rva-init:
-    profiles: ["init"]
-    image: ${RVA_IMAGE:-rva-local:dev}
+  # Application Service (multi-worker)
+  rva-app:
+    image: ${RVA_IMAGE:-rva-app:latest}
     build:
       context: .
-    container_name: rva-init
-    depends_on:
-      rva-db:
-        condition: service_healthy
-    working_dir: /app
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      python -c "from app.db_sqlite import SQLiteBackend; SQLiteBackend('postgresql+psycopg2://rva:rva@rva-db:5432/rva').initialize_database_from_json()"
-    restart: "no"
-
-  rva:
-    image: ${RVA_IMAGE:-rva-local:dev}
-    build:
-      context: .
-    container_name: rva
+      dockerfile: Dockerfile
+    container_name: rva-app
     depends_on:
       rva-db:
         condition: service_healthy
     environment:
+      # Database configuration
       DB_MODE: external
-      DB_URL: postgresql+psycopg2://rva:rva@rva-db:5432/rva
-      UVICORN_WORKERS: 4
+      DB_URL: postgresql+psycopg2://${POSTGRES_USER:-rva}:${POSTGRES_PASSWORD:-rva}@rva-db:5432/${POSTGRES_DB:-rva}
+      # Multi-worker configuration (adjust based on your needs)
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
+      # Database initialization settings
       DB_STARTUP_LOCK: "true"
+      DB_SKIP_SCHEMA_INIT: "false"
+      DB_SKIP_AUTO_SEED: "false"
+      # Optional: Enable detailed access logging
+      ENABLE_ACCESS_LOG: "false"
     ports:
-      - "8060:80"
+      - "${RVA_PORT:-8060}:80"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - rva-network
 
 volumes:
   rva-pgdata:
+    name: rva-pgdata
+
+networks:
+  rva-network:
+    name: rva-network
+    driver: bridge
+

@@ -17,6 +17,47 @@ import json
 import time  # For response time logging
 from pydantic import BaseModel
 
+# Configure database backend before importing db
+def _configure_database():
+    """Configure the database backend based on environment variables."""
+    from . import db
+    from .db_sqlite import SQLiteBackend
+    from .db_memory import MemoryBackend
+    
+    db_mode = os.getenv("DB_MODE", "memory").lower()
+    db_url = os.getenv("DB_URL")
+    
+    if db_mode == "memory":
+        # In-memory database (default, single worker only)
+        backend = MemoryBackend()
+        backend.initialize_database_from_json()
+        db.set_backend(backend)
+        print("🗄️  Using in-memory database (single worker mode)")
+    
+    elif db_mode == "sqlite" or db_mode == "internal":
+        # Internal SQLite database (single worker recommended)
+        if db_url:
+            backend = SQLiteBackend(database_url=db_url)
+        else:
+            backend = SQLiteBackend()
+        db.set_backend(backend)
+        print(f"🗄️  Using SQLite database (single worker mode): {db_url or 'default path'}")
+    
+    elif db_mode == "external" or db_mode == "postgres" or db_mode == "postgresql":
+        # External database (PostgreSQL/MySQL - supports multiple workers)
+        if not db_url:
+            raise ValueError("DB_URL must be set when using DB_MODE=external")
+        backend = SQLiteBackend(database_url=db_url)
+        db.set_backend(backend)
+        print(f"🗄️  Using external database (multi-worker mode): {db_url}")
+    
+    else:
+        raise ValueError(f"Unknown DB_MODE: {db_mode}. Use 'memory', 'sqlite', or 'external'")
+
+
+# Initialize database on module load (before app creation)
+_configure_database()
+
 # Provide compatibility with Pydantic v1 by aliasing model_validate and model_dump
 if not hasattr(BaseModel, "model_validate"):
 

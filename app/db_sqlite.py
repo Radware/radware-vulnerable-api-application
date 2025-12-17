@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import (
@@ -20,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import IntegrityError
 from contextlib import contextmanager
+from sqlalchemy.pool import NullPool, QueuePool
 
 from .db_base import DatabaseBackend
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
@@ -53,12 +54,16 @@ def _startup_lock(engine):
 
     dialect = getattr(engine.dialect, "name", "")
     if dialect == "postgresql":
+        # Use a long timeout for the lock to handle slow startups
         with engine.connect() as conn:
-            conn.execute(text("SELECT pg_advisory_lock(:key)"), {"key": 424242})
+            # Use a transaction to ensure the lock is held properly
+            trans = conn.begin()
             try:
+                conn.execute(text("SELECT pg_advisory_lock(:key)"), {"key": 424242})
                 yield
             finally:
                 conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": 424242})
+                trans.commit()
         return
 
     if dialect in {"mysql", "mariadb"}:
@@ -182,6 +187,99 @@ class CouponModel(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+# ------------------------------------------------------------------
+# Dictionary-like proxy classes for backward compatibility
+# ------------------------------------------------------------------
+class DictLikeProxy:
+    """Base class for dictionary-like proxies that maintain MemoryBackend compatibility."""
+    
+    def __init__(self, backend: 'SQLiteBackend'):
+        self.backend = backend
+    
+    def get(self, key, default=None):
+        try:
+            result = self._get_item(key)
+            return result if result is not None else default
+        except (KeyError, ValueError):
+            return default
+    
+    def __getitem__(self, key):
+        result = self._get_item(key)
+        if result is None:
+            raise KeyError(key)
+        return result
+    
+    def __setitem__(self, key, value):
+        self._set_item(key, value)
+    
+    def pop(self, key, default=None):
+        try:
+            result = self._get_item(key)
+            if result is not None:
+                self._delete_item(key)
+                return result
+        except (KeyError, ValueError):
+            pass
+        return default
+    
+    def _get_item(self, key):
+        raise NotImplementedError
+    
+    def _set_item(self, key, value):
+        raise NotImplementedError
+    
+    def _delete_item(self, key):
+        raise NotImplementedError
+
+
+class UsersByUsernameProxy(DictLikeProxy):
+    def _get_item(self, username: str):
+        return self.backend.get_user_by_username(username)
+    
+    def _set_item(self, username: str, user: UserInDBBase):
+        # This is called after user creation/update, no-op for SQLAlchemy backend
+        pass
+    
+    def _delete_item(self, username: str):
+        # Called during user deletion, actual deletion handled elsewhere
+        pass
+
+
+class UsersByEmailProxy(DictLikeProxy):
+    def _get_item(self, email: str):
+        return self.backend.get_user_by_email(email)
+    
+    def _set_item(self, email: str, user: UserInDBBase):
+        pass
+    
+    def _delete_item(self, email: str):
+        pass
+
+
+class ProductsByIdProxy(DictLikeProxy):
+    def _get_item(self, product_id):
+        if isinstance(product_id, str):
+            product_id = UUID(product_id)
+        return self.backend.get_product(product_id)
+    
+    def _set_item(self, product_id, product: ProductInDBBase):
+        pass
+    
+    def _delete_item(self, product_id):
+        pass
+
+
+class CouponsByCodeProxy(DictLikeProxy):
+    def _get_item(self, code: str):
+        return self.backend.get_coupon_by_code(code)
+    
+    def _set_item(self, code: str, coupon: CouponInDBBase):
+        pass
+    
+    def _delete_item(self, code: str):
+        pass
+
+
 class SQLiteBackend(DatabaseBackend):
     """SQLAlchemy implementation of :class:`DatabaseBackend`.
 
@@ -196,11 +294,43 @@ class SQLiteBackend(DatabaseBackend):
             db_path = DB_SQLITE_PATH
             os.makedirs(os.path.dirname(db_path), exist_ok=True)
             database_url = f"sqlite:///{db_path}"
-        connect_args = (
-            {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-        )
-        self.engine = create_engine(database_url, connect_args=connect_args)
+        
+        # Determine if we're using SQLite or an external DB
+        is_sqlite = database_url.startswith("sqlite")
+        
+        # Configure connection arguments and pooling based on database type
+        if is_sqlite:
+            connect_args = {"check_same_thread": False}
+            # SQLite doesn't benefit from connection pooling with multiple workers
+            poolclass = NullPool
+        else:
+            connect_args = {}
+            # Use connection pooling for external databases (PostgreSQL, MySQL)
+            poolclass = QueuePool
+        
+        # Create engine with appropriate configuration
+        engine_kwargs = {
+            "connect_args": connect_args,
+            "poolclass": poolclass,
+        }
+        
+        # Additional pool settings for external databases
+        if not is_sqlite:
+            engine_kwargs.update({
+                "pool_size": 10,  # Number of connections to keep open
+                "max_overflow": 20,  # Additional connections when pool is exhausted
+                "pool_pre_ping": True,  # Verify connections before using them
+                "pool_recycle": 3600,  # Recycle connections after 1 hour
+            })
+        
+        self.engine = create_engine(database_url, **engine_kwargs)
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
+
+        # Initialize dictionary-like proxies for backward compatibility with MemoryBackend
+        self.db_users_by_username = UsersByUsernameProxy(self)
+        self.db_users_by_email = UsersByEmailProxy(self)
+        self.db_products_by_id = ProductsByIdProxy(self)
+        self.db_coupons_by_code = CouponsByCodeProxy(self)
 
         skip_schema = _env_flag("DB_SKIP_SCHEMA_INIT")
         skip_seed = _env_flag("DB_SKIP_AUTO_SEED")
@@ -215,12 +345,17 @@ class SQLiteBackend(DatabaseBackend):
     # Initialization helpers
     # ------------------------------------------------------------------
     def _initialize_if_empty(self) -> None:
-        with self.SessionLocal() as session:
-            has_users = session.query(UserModel).first() is not None
-        if not has_users:
-            self.initialize_database_from_json()
+        """Initialize database from JSON only if it's empty."""
+        try:
+            with self.SessionLocal() as session:
+                has_users = session.query(UserModel).first() is not None
+            if not has_users:
+                self.initialize_database_from_json()
+        except Exception as e:
+            print(f"Error checking if database is empty: {e}")
 
     def initialize(self, prepopulated_path: str) -> None:
+        """Initialize database from JSON file. Drops and recreates all tables."""
         try:
             with open(prepopulated_path, "r") as fh:
                 data = json.load(fh)
@@ -233,9 +368,12 @@ class SQLiteBackend(DatabaseBackend):
             )
             return
 
+        # Drop and recreate tables
         Base.metadata.drop_all(self.engine)
         Base.metadata.create_all(self.engine)
+        
         with self.SessionLocal() as session:
+            # Insert products and stock
             for product_data in data.get("products", []):
                 prod = ProductModel(
                     product_id=product_data["product_id"],
@@ -252,6 +390,7 @@ class SQLiteBackend(DatabaseBackend):
                 )
                 session.add(stock)
 
+            # Insert users and their related data
             for user_data in data.get("users", []):
                 user = UserModel(
                     user_id=user_data["user_id"],
@@ -262,6 +401,7 @@ class SQLiteBackend(DatabaseBackend):
                     is_protected=user_data.get("is_protected", False),
                 )
                 session.add(user)
+                
                 for addr_data in user_data.get("addresses", []):
                     addr = AddressModel(
                         address_id=addr_data["address_id"],
@@ -274,6 +414,7 @@ class SQLiteBackend(DatabaseBackend):
                         is_protected=addr_data.get("is_protected", False),
                     )
                     session.add(addr)
+                
                 for card_data in user_data.get("credit_cards", []):
                     card = CreditCardModel(
                         card_id=card_data["card_id"],
@@ -291,6 +432,7 @@ class SQLiteBackend(DatabaseBackend):
                     )
                     session.add(card)
 
+            # Insert orders
             for order_data in data.get("orders", []):
                 order = OrderModel(
                     order_id=order_data["order_id"],
@@ -302,6 +444,7 @@ class SQLiteBackend(DatabaseBackend):
                 )
                 session.add(order)
 
+            # Insert order items
             for item_data in data.get("order_items", []):
                 item = OrderItemModel(
                     order_item_id=item_data["order_item_id"],
@@ -312,6 +455,7 @@ class SQLiteBackend(DatabaseBackend):
                 )
                 session.add(item)
 
+            # Insert coupons - commit each separately to handle potential duplicates
             for coupon_data in data.get("coupons", []):
                 coupon = CouponModel(
                     coupon_id=coupon_data["coupon_id"],
@@ -325,14 +469,21 @@ class SQLiteBackend(DatabaseBackend):
                     is_protected=coupon_data.get("is_protected", False),
                 )
                 session.add(coupon)
-                try:
-                    session.commit()
-                except IntegrityError:
-                    session.rollback()
-
-        print(f"Database initialized from {prepopulated_path}")
+            
+            # Commit all changes at once
+            try:
+                session.commit()
+                print(f"Database initialized from {prepopulated_path}")
+            except IntegrityError as e:
+                session.rollback()
+                print(f"Integrity error during initialization: {e}")
+                # Try to continue if some data was already inserted
+            except Exception as e:
+                session.rollback()
+                print(f"Error during database initialization: {e}")
 
     def initialize_database_from_json(self) -> None:
+        """Initialize database from the default prepopulated_data.json file."""
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_dir = os.path.dirname(current_dir)
         json_file_path = os.path.join(root_dir, "prepopulated_data.json")

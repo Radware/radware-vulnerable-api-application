@@ -1,0 +1,36 @@
+# Docker Compose for Internal SQLite Database Mode
+# Single worker recommended - data persists in volume
+# Good balance of performance and data persistence
+
+services:
+  rva-app:
+    image: ${RVA_IMAGE:-rva-app:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rva-sqlite
+    environment:
+      # Database configuration
+      DB_MODE: sqlite
+      DB_SQLITE_PATH: /app/data/db.sqlite
+      # Single worker for SQLite (SQLite has limited concurrency)
+      UVICORN_WORKERS: 1
+      # Optional: Enable detailed access logging
+      ENABLE_ACCESS_LOG: "false"
+    ports:
+      - "${RVA_PORT:-8060}:80"
+    volumes:
+      # Persist SQLite database
+      - rva-sqlite-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  rva-sqlite-data:
+    name: rva-sqlite-data
+
