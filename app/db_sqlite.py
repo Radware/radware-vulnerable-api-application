@@ -280,6 +280,165 @@ class CouponsByCodeProxy(DictLikeProxy):
         pass
 
 
+class UsersByIdProxy(DictLikeProxy):
+    def _get_item(self, user_id):
+        if isinstance(user_id, str):
+            user_id = UUID(user_id)
+        return self.backend.get_user(user_id)
+    
+    def _set_item(self, user_id, user: UserInDBBase):
+        pass
+    
+    def _delete_item(self, user_id):
+        pass
+
+
+class AddressesByIdProxy(DictLikeProxy):
+    def _get_item(self, address_id):
+        if isinstance(address_id, str):
+            address_id = UUID(address_id)
+        return self.backend.get_address(address_id)
+    
+    def _set_item(self, address_id, address: AddressInDBBase):
+        pass
+    
+    def _delete_item(self, address_id):
+        pass
+
+
+class AddressesByUserIdProxy(DictLikeProxy):
+    """Proxy for addresses grouped by user_id."""
+    def _get_item(self, user_id):
+        if isinstance(user_id, str):
+            user_id = UUID(user_id)
+        return self.backend.list_addresses_for_user(user_id)
+    
+    def _set_item(self, user_id, addresses):
+        # This is complex, not used in write operations
+        pass
+    
+    def _delete_item(self, user_id):
+        pass
+
+
+class CreditCardsByIdProxy(DictLikeProxy):
+    def _get_item(self, card_id):
+        if isinstance(card_id, str):
+            card_id = UUID(card_id)
+        return self.backend.get_credit_card(card_id)
+    
+    def _set_item(self, card_id, card: CreditCardInDBBase):
+        pass
+    
+    def _delete_item(self, card_id):
+        pass
+
+
+class CreditCardsByUserIdProxy(DictLikeProxy):
+    """Proxy for credit cards grouped by user_id."""
+    def _get_item(self, user_id):
+        if isinstance(user_id, str):
+            user_id = UUID(user_id)
+        return self.backend.list_credit_cards_for_user(user_id)
+    
+    def _set_item(self, user_id, cards):
+        pass
+    
+    def _delete_item(self, user_id):
+        pass
+
+
+class StockByProductIdProxy(DictLikeProxy):
+    def _get_item(self, product_id):
+        if isinstance(product_id, str):
+            product_id = UUID(product_id)
+        return self.backend.get_stock(product_id)
+    
+    def _set_item(self, product_id, stock: StockInDBBase):
+        # Stock updates go through update_stock
+        pass
+    
+    def _delete_item(self, product_id):
+        pass
+
+
+class OrdersByIdProxy(DictLikeProxy):
+    def _get_item(self, order_id):
+        if isinstance(order_id, str):
+            order_id = UUID(order_id)
+        return self.backend.get_order(order_id)
+    
+    def _set_item(self, order_id, order: OrderInDBBase):
+        pass
+    
+    def _delete_item(self, order_id):
+        pass
+
+
+class OrdersByUserIdProxy(DictLikeProxy):
+    """Proxy for orders grouped by user_id."""
+    def _get_item(self, user_id):
+        if isinstance(user_id, str):
+            user_id = UUID(user_id)
+        return self.backend.list_orders_for_user(user_id)
+    
+    def _set_item(self, user_id, orders):
+        pass
+    
+    def _delete_item(self, user_id):
+        pass
+    
+    def setdefault(self, key, default=None):
+        """Special method for setdefault used in order creation."""
+        result = self.get(key, default)
+        return result if result is not None else default
+
+
+class OrderItemsByIdProxy(DictLikeProxy):
+    def _get_item(self, item_id):
+        # Order items are usually accessed by order_id, not item_id
+        # This is a simplified implementation
+        return None
+    
+    def _set_item(self, item_id, item: OrderItemInDBBase):
+        pass
+    
+    def _delete_item(self, item_id):
+        pass
+
+
+class OrderItemsByOrderIdProxy(DictLikeProxy):
+    """Proxy for order items grouped by order_id."""
+    def _get_item(self, order_id):
+        if isinstance(order_id, str):
+            order_id = UUID(order_id)
+        return self.backend.list_order_items(order_id)
+    
+    def _set_item(self, order_id, items):
+        pass
+    
+    def _delete_item(self, order_id):
+        pass
+    
+    def setdefault(self, key, default=None):
+        """Special method for setdefault used in order item creation."""
+        result = self.get(key, default)
+        return result if result is not None else default
+
+
+class CouponsByIdProxy(DictLikeProxy):
+    def _get_item(self, coupon_id):
+        if isinstance(coupon_id, str):
+            coupon_id = UUID(coupon_id)
+        return self.backend.get_coupon(coupon_id)
+    
+    def _set_item(self, coupon_id, coupon: CouponInDBBase):
+        pass
+    
+    def _delete_item(self, coupon_id):
+        pass
+
+
 class SQLiteBackend(DatabaseBackend):
     """SQLAlchemy implementation of :class:`DatabaseBackend`.
 
@@ -327,9 +486,20 @@ class SQLiteBackend(DatabaseBackend):
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
 
         # Initialize dictionary-like proxies for backward compatibility with MemoryBackend
+        self.db_users_by_id = UsersByIdProxy(self)
         self.db_users_by_username = UsersByUsernameProxy(self)
         self.db_users_by_email = UsersByEmailProxy(self)
+        self.db_addresses_by_id = AddressesByIdProxy(self)
+        self.db_addresses_by_user_id = AddressesByUserIdProxy(self)
+        self.db_credit_cards_by_id = CreditCardsByIdProxy(self)
+        self.db_credit_cards_by_user_id = CreditCardsByUserIdProxy(self)
         self.db_products_by_id = ProductsByIdProxy(self)
+        self.db_stock_by_product_id = StockByProductIdProxy(self)
+        self.db_orders_by_id = OrdersByIdProxy(self)
+        self.db_orders_by_user_id = OrdersByUserIdProxy(self)
+        self.db_order_items_by_id = OrderItemsByIdProxy(self)
+        self.db_order_items_by_order_id = OrderItemsByOrderIdProxy(self)
+        self.db_coupons_by_id = CouponsByIdProxy(self)
         self.db_coupons_by_code = CouponsByCodeProxy(self)
 
         skip_schema = _env_flag("DB_SKIP_SCHEMA_INIT")
