@@ -28,6 +28,11 @@ from .security import get_password_hash
 
 DB_SQLITE_PATH = os.getenv("DB_SQLITE_PATH", "/app/data/db.sqlite")
 
+
+def _env_flag(name: str) -> bool:
+    value = os.getenv(name, "")
+    return value.lower() in {"1", "true", "yes", "on"}
+
 Base = declarative_base()
 
 
@@ -151,8 +156,14 @@ class SQLiteBackend(DatabaseBackend):
         )
         self.engine = create_engine(database_url, connect_args=connect_args)
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
-        Base.metadata.create_all(self.engine)
-        self._initialize_if_empty()
+
+        skip_schema = _env_flag("DB_SKIP_SCHEMA_INIT")
+        skip_seed = _env_flag("DB_SKIP_AUTO_SEED")
+
+        if not skip_schema:
+            Base.metadata.create_all(self.engine)
+        if not skip_seed:
+            self._initialize_if_empty()
 
     # ------------------------------------------------------------------
     # Initialization helpers

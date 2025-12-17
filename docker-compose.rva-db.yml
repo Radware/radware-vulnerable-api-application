@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  rva-db:
+    image: postgres:15
+    container_name: rva-db
+    environment:
+      POSTGRES_USER: rva
+      POSTGRES_PASSWORD: rva
+      POSTGRES_DB: rva
+    volumes:
+      - rva-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rva"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rva-init:
+    image: razor29/rva:v1.2.0
+    container_name: rva-init
+    depends_on:
+      rva-db:
+        condition: service_healthy
+    working_dir: /app
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      python -c "from app.db_sqlite import SQLiteBackend; SQLiteBackend('postgresql+psycopg2://rva:rva@rva-db:5432/rva')"
+    restart: "no"
+
+  rva:
+    image: razor29/rva:v1.2.0
+    container_name: rva
+    depends_on:
+      rva-init:
+        condition: service_completed_successfully
+    environment:
+      DB_MODE: external
+      DB_URL: postgresql+psycopg2://rva:rva@rva-db:5432/rva
+      UVICORN_WORKERS: 4
+      DB_SKIP_SCHEMA_INIT: "true"
+      DB_SKIP_AUTO_SEED: "true"
+    ports:
+      - "8060:80"
+    restart: unless-stopped
+
+volumes:
+  rva-pgdata:

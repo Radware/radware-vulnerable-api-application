@@ -160,6 +160,10 @@ The application selects its database backend based on environment variables:
   synchronization.
 * `DB_SYNC_INTERVAL` – polling interval in seconds when `DB_SYNC_PEER` is set
   (default: 60).
+* `DB_SKIP_SCHEMA_INIT` – set to `true` to skip automatic table creation. Use
+  this when the database schema is managed externally.
+* `DB_SKIP_AUTO_SEED` – set to `true` to skip loading `prepopulated_data.json`
+  on startup. Useful when a peer or init job already seeded the data.
 
 #### Example Configurations
 
