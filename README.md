@@ -164,6 +164,11 @@ The application selects its database backend based on environment variables:
   this when the database schema is managed externally.
 * `DB_SKIP_AUTO_SEED` – set to `true` to skip loading `prepopulated_data.json`
   on startup. Useful when a peer or init job already seeded the data.
+* `DB_RESET_ON_START` – set to `true` to drop and recreate tables from
+  `prepopulated_data.json` on startup (intended for demos/tests).
+* `DB_STARTUP_LOCK` – set to `false` to disable the advisory lock used to
+  serialize schema creation and auto-seeding across multiple workers
+  (default: enabled where supported).
 
 #### Example Configurations
 

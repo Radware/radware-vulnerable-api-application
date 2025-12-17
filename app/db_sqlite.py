@@ -15,9 +15,11 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import IntegrityError
+from contextlib import contextmanager
 
 from .db_base import DatabaseBackend
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
@@ -29,9 +31,52 @@ from .security import get_password_hash
 DB_SQLITE_PATH = os.getenv("DB_SQLITE_PATH", "/app/data/db.sqlite")
 
 
-def _env_flag(name: str) -> bool:
-    value = os.getenv(name, "")
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None or value == "":
+        return default
     return value.lower() in {"1", "true", "yes", "on"}
+
+
+@contextmanager
+def _startup_lock(engine):
+    """Best-effort cross-process lock for DB bootstrap.
+
+    When multiple Uvicorn workers start simultaneously and point at the same
+    external database, table creation and auto-seeding can race. For databases
+    that support it, we acquire an advisory lock to serialize those operations.
+    """
+
+    if not _env_flag("DB_STARTUP_LOCK", default=True):
+        yield
+        return
+
+    dialect = getattr(engine.dialect, "name", "")
+    if dialect == "postgresql":
+        with engine.connect() as conn:
+            conn.execute(text("SELECT pg_advisory_lock(:key)"), {"key": 424242})
+            try:
+                yield
+            finally:
+                conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": 424242})
+        return
+
+    if dialect in {"mysql", "mariadb"}:
+        with engine.connect() as conn:
+            conn.execute(
+                text("SELECT GET_LOCK(:name, :timeout)"),
+                {"name": "rva_bootstrap", "timeout": 60},
+            )
+            try:
+                yield
+            finally:
+                conn.execute(
+                    text("SELECT RELEASE_LOCK(:name)"),
+                    {"name": "rva_bootstrap"},
+                )
+        return
+
+    yield
 
 Base = declarative_base()
 
@@ -160,10 +205,11 @@ class SQLiteBackend(DatabaseBackend):
         skip_schema = _env_flag("DB_SKIP_SCHEMA_INIT")
         skip_seed = _env_flag("DB_SKIP_AUTO_SEED")
 
-        if not skip_schema:
-            Base.metadata.create_all(self.engine)
-        if not skip_seed:
-            self._initialize_if_empty()
+        with _startup_lock(self.engine):
+            if not skip_schema:
+                Base.metadata.create_all(self.engine)
+            if not skip_seed:
+                self._initialize_if_empty()
 
     # ------------------------------------------------------------------
     # Initialization helpers

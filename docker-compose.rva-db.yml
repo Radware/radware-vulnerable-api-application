@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   rva-db:
     image: postgres:15
@@ -18,7 +16,10 @@ services:
     restart: unless-stopped
 
   rva-init:
-    image: razor29/rva:v1.2.0
+    profiles: ["init"]
+    image: ${RVA_IMAGE:-rva-local:dev}
+    build:
+      context: .
     container_name: rva-init
     depends_on:
       rva-db:
@@ -26,21 +27,22 @@ services:
     working_dir: /app
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      python -c "from app.db_sqlite import SQLiteBackend; SQLiteBackend('postgresql+psycopg2://rva:rva@rva-db:5432/rva')"
+      python -c "from app.db_sqlite import SQLiteBackend; SQLiteBackend('postgresql+psycopg2://rva:rva@rva-db:5432/rva').initialize_database_from_json()"
     restart: "no"
 
   rva:
-    image: razor29/rva:v1.2.0
+    image: ${RVA_IMAGE:-rva-local:dev}
+    build:
+      context: .
     container_name: rva
     depends_on:
-      rva-init:
-        condition: service_completed_successfully
+      rva-db:
+        condition: service_healthy
     environment:
       DB_MODE: external
       DB_URL: postgresql+psycopg2://rva:rva@rva-db:5432/rva
       UVICORN_WORKERS: 4
-      DB_SKIP_SCHEMA_INIT: "true"
-      DB_SKIP_AUTO_SEED: "true"
+      DB_STARTUP_LOCK: "true"
     ports:
       - "8060:80"
     restart: unless-stopped
