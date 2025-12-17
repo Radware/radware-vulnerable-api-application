@@ -27,36 +27,47 @@ def _configure_database():
     db_mode = os.getenv("DB_MODE", "memory").lower()
     db_url = os.getenv("DB_URL")
     
-    if db_mode == "memory":
-        # In-memory database (default, single worker only)
-        backend = MemoryBackend()
-        backend.initialize_database_from_json()
-        db.set_backend(backend)
-        print("🗄️  Using in-memory database (single worker mode)")
-    
-    elif db_mode == "sqlite" or db_mode == "internal":
-        # Internal SQLite database (single worker recommended)
-        if db_url:
+    try:
+        if db_mode == "memory":
+            # In-memory database (default, single worker only)
+            backend = MemoryBackend()
+            backend.initialize_database_from_json()
+            db.set_backend(backend)
+            print("🗄️  Using in-memory database (single worker mode)")
+        
+        elif db_mode == "sqlite" or db_mode == "internal":
+            # Internal SQLite database (single worker recommended)
+            if db_url:
+                backend = SQLiteBackend(database_url=db_url)
+            else:
+                backend = SQLiteBackend()
+            db.set_backend(backend)
+            print(f"🗄️  Using SQLite database (single worker mode): {db_url or 'default path'}")
+        
+        elif db_mode == "external" or db_mode == "postgres" or db_mode == "postgresql":
+            # External database (PostgreSQL/MySQL - supports multiple workers)
+            if not db_url:
+                raise ValueError("DB_URL must be set when using DB_MODE=external")
             backend = SQLiteBackend(database_url=db_url)
+            db.set_backend(backend)
+            print(f"🗄️  Using external database (multi-worker mode): {db_url}")
+        
         else:
-            backend = SQLiteBackend()
-        db.set_backend(backend)
-        print(f"🗄️  Using SQLite database (single worker mode): {db_url or 'default path'}")
-    
-    elif db_mode == "external" or db_mode == "postgres" or db_mode == "postgresql":
-        # External database (PostgreSQL/MySQL - supports multiple workers)
-        if not db_url:
-            raise ValueError("DB_URL must be set when using DB_MODE=external")
-        backend = SQLiteBackend(database_url=db_url)
-        db.set_backend(backend)
-        print(f"🗄️  Using external database (multi-worker mode): {db_url}")
-    
-    else:
-        raise ValueError(f"Unknown DB_MODE: {db_mode}. Use 'memory', 'sqlite', or 'external'")
+            raise ValueError(f"Unknown DB_MODE: {db_mode}. Use 'memory', 'sqlite', or 'external'")
+    except Exception as e:
+        print(f"❌ Database configuration error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 # Initialize database on module load (before app creation)
-_configure_database()
+try:
+    _configure_database()
+except Exception as e:
+    print(f"❌ FATAL: Failed to configure database: {e}")
+    import sys
+    sys.exit(1)
 
 # Provide compatibility with Pydantic v1 by aliasing model_validate and model_dump
 if not hasattr(BaseModel, "model_validate"):

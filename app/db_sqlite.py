@@ -350,9 +350,14 @@ class SQLiteBackend(DatabaseBackend):
             with self.SessionLocal() as session:
                 has_users = session.query(UserModel).first() is not None
             if not has_users:
+                print("📋 Database is empty, initializing from prepopulated_data.json...")
                 self.initialize_database_from_json()
+            else:
+                print("✓ Database already initialized, skipping seed data")
         except Exception as e:
-            print(f"Error checking if database is empty: {e}")
+            print(f"⚠️  Error checking if database is empty: {e}")
+            import traceback
+            traceback.print_exc()
 
     def initialize(self, prepopulated_path: str) -> None:
         """Initialize database from JSON file. Drops and recreates all tables."""
@@ -473,14 +478,21 @@ class SQLiteBackend(DatabaseBackend):
             # Commit all changes at once
             try:
                 session.commit()
-                print(f"Database initialized from {prepopulated_path}")
+                print(f"✅ Database successfully initialized from {prepopulated_path}")
             except IntegrityError as e:
                 session.rollback()
-                print(f"Integrity error during initialization: {e}")
-                # Try to continue if some data was already inserted
+                print(f"⚠️  Integrity error during initialization (may be normal in multi-worker setup): {e}")
+                # Check if data was partially inserted
+                with self.SessionLocal() as check_session:
+                    user_count = check_session.query(UserModel).count()
+                    if user_count > 0:
+                        print(f"✓ Database has {user_count} users, initialization appears successful despite error")
             except Exception as e:
                 session.rollback()
-                print(f"Error during database initialization: {e}")
+                print(f"❌ Error during database initialization: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
 
     def initialize_database_from_json(self) -> None:
         """Initialize database from the default prepopulated_data.json file."""
