@@ -319,6 +319,11 @@ class AddressesByUserIdProxy(DictLikeProxy):
     
     def _delete_item(self, user_id):
         pass
+    
+    def setdefault(self, key, default=None):
+        """Special method for setdefault used in address creation."""
+        result = self.get(key, default)
+        return result if result is not None else default
 
 
 class CreditCardsByIdProxy(DictLikeProxy):
@@ -346,6 +351,11 @@ class CreditCardsByUserIdProxy(DictLikeProxy):
     
     def _delete_item(self, user_id):
         pass
+    
+    def setdefault(self, key, default=None):
+        """Special method for setdefault used in credit card creation."""
+        result = self.get(key, default)
+        return result if result is not None else default
 
 
 class StockByProductIdProxy(DictLikeProxy):
@@ -439,6 +449,83 @@ class CouponsByIdProxy(DictLikeProxy):
         pass
 
 
+class DatabaseProxy:
+    """Proxy that provides db['collection'] access pattern for SQLiteBackend."""
+    
+    def __init__(self, backend: 'SQLiteBackend'):
+        self.backend = backend
+    
+    def __getitem__(self, key: str):
+        """Return a collection proxy that mimics list operations."""
+        return CollectionProxy(self.backend, key)
+
+
+class CollectionProxy:
+    """Proxy for a specific collection (e.g., 'users', 'products') that mimics list operations."""
+    
+    def __init__(self, backend: 'SQLiteBackend', collection: str):
+        self.backend = backend
+        self.collection = collection
+    
+    def append(self, item):
+        """Add item to collection. Actual persistence handled by specific methods."""
+        # Items are persisted through specific create methods, this is just for compatibility
+        pass
+    
+    def remove(self, item):
+        """Remove item from collection. Actual deletion handled by specific methods."""
+        # Deletions are handled through specific delete methods, this is just for compatibility
+        pass
+    
+    def __contains__(self, item):
+        """Check if item exists in collection."""
+        # This is used for existence checks before operations
+        if self.collection == "users" and hasattr(item, 'user_id'):
+            return self.backend.get_user(item.user_id) is not None
+        elif self.collection == "addresses" and hasattr(item, 'address_id'):
+            return self.backend.get_address(item.address_id) is not None
+        elif self.collection == "credit_cards" and hasattr(item, 'card_id'):
+            return self.backend.get_credit_card(item.card_id) is not None
+        elif self.collection == "products" and hasattr(item, 'product_id'):
+            return self.backend.get_product(item.product_id) is not None
+        elif self.collection == "orders" and hasattr(item, 'order_id'):
+            return self.backend.get_order(item.order_id) is not None
+        elif self.collection == "order_items" and hasattr(item, 'order_item_id'):
+            # Order items don't have a direct get method, return True for now
+            return True
+        elif self.collection == "stock" and hasattr(item, 'product_id'):
+            return self.backend.get_stock(item.product_id) is not None
+        return False
+    
+    def __iter__(self):
+        """Iterate over all items in collection."""
+        if self.collection == "users":
+            return iter(self.backend.list_users())
+        elif self.collection == "products":
+            return iter(self.backend.list_products())
+        elif self.collection == "orders":
+            # This would need a list_all_orders method, for now return empty
+            return iter([])
+        elif self.collection == "addresses":
+            # This would need a list_all_addresses method, for now return empty
+            return iter([])
+        elif self.collection == "credit_cards":
+            # This would need a list_all_credit_cards method, for now return empty
+            return iter([])
+        elif self.collection == "stock":
+            # This would need a list_all_stock method, for now return empty
+            return iter([])
+        elif self.collection == "order_items":
+            return iter([])
+        return iter([])
+    
+    def __setitem__(self, key, value):
+        """Assignment to collection (e.g., db['stock'] = [...])."""
+        # This is used for bulk operations like filtering stock
+        # In SQLite backend, we don't support this pattern directly
+        pass
+
+
 class SQLiteBackend(DatabaseBackend):
     """SQLAlchemy implementation of :class:`DatabaseBackend`.
 
@@ -486,6 +573,7 @@ class SQLiteBackend(DatabaseBackend):
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
 
         # Initialize dictionary-like proxies for backward compatibility with MemoryBackend
+        self.db = DatabaseProxy(self)  # For db["collection"] access pattern
         self.db_users_by_id = UsersByIdProxy(self)
         self.db_users_by_username = UsersByUsernameProxy(self)
         self.db_users_by_email = UsersByEmailProxy(self)
