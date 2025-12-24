@@ -278,6 +278,7 @@
           "expiry_month": "03",
           "expiry_year": "2026",
           "is_default": true,
+          "is_protected": true,
           "card_number_plain": "4222222222222222",
           "cvv_plain": "345"
         },

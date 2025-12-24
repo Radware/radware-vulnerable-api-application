@@ -15,12 +15,14 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    event,
     text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import IntegrityError
 from contextlib import contextmanager
 from sqlalchemy.pool import NullPool, QueuePool
+import time
 
 from .db_base import DatabaseBackend
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
@@ -586,6 +588,16 @@ class SQLiteBackend(DatabaseBackend):
         self.engine = create_engine(database_url, **engine_kwargs)
         self.SessionLocal = sessionmaker(bind=self.engine, expire_on_commit=False)
 
+        if is_sqlite:
+            @event.listens_for(self.engine, "connect")
+            def _register_sleep(dbapi_connection, _):  # pragma: no cover - best effort
+                try:
+                    dbapi_connection.create_function(
+                        "sleep", 1, lambda seconds: time.sleep(float(seconds)) or 0
+                    )
+                except Exception:
+                    pass
+
         # Initialize dictionary-like proxies for backward compatibility with MemoryBackend
         self.db = DatabaseProxy(self)  # For db["collection"] access pattern
         self.db_users_by_id = UsersByIdProxy(self)
@@ -911,6 +923,39 @@ class SQLiteBackend(DatabaseBackend):
             rows = session.query(ProductModel).all()
             return [ProductInDBBase.model_validate(r) for r in rows]
 
+    def unsafe_search_products(self, name: str) -> List[ProductInDBBase]:
+        dialect = getattr(self.engine.dialect, "name", "")
+        if dialect == "postgresql":
+            query = f"SELECT * FROM products WHERE name ILIKE '%{name}%'"
+        else:
+            query = f"SELECT * FROM products WHERE name LIKE '%{name}%'"
+
+        with self.engine.connect() as conn:
+            trans = None
+            try:
+                if dialect == "postgresql":
+                    trans = conn.begin()
+                    conn.execute(text("SET TRANSACTION READ ONLY"))
+                elif dialect in {"mysql", "mariadb"}:
+                    conn.execute(text("SET TRANSACTION READ ONLY"))
+                    trans = conn.begin()
+                elif dialect == "sqlite":
+                    conn.execute(text("PRAGMA query_only = true"))
+                    trans = conn.begin()
+                else:
+                    trans = conn.begin()
+                rows = conn.execute(text(query)).mappings().all()
+            finally:
+                if trans is not None:
+                    trans.rollback()
+                if dialect == "sqlite":
+                    try:
+                        conn.execute(text("PRAGMA query_only = false"))
+                    except Exception:
+                        pass
+
+        return [ProductInDBBase.model_validate(row) for row in rows]
+
     def update_product(self, product_id: UUID, update_data: dict) -> ProductInDBBase:
         with self._session() as session:
             row = session.get(ProductModel, str(product_id))
@@ -946,6 +991,22 @@ class SQLiteBackend(DatabaseBackend):
                 row.last_updated = datetime.now(timezone.utc)
             session.commit()
             return StockInDBBase.model_validate(row)
+
+    def list_stock_for_products(
+        self, product_ids: List[UUID]
+    ) -> Dict[UUID, StockInDBBase]:
+        if not product_ids:
+            return {}
+        product_id_values = [str(product_id) for product_id in product_ids]
+        with self._session() as session:
+            rows = (
+                session.query(StockModel)
+                .filter(StockModel.product_id.in_(product_id_values))
+                .all()
+            )
+            return {
+                UUID(row.product_id): StockInDBBase.model_validate(row) for row in rows
+            }
 
     def create_order(self, order: OrderInDBBase) -> OrderInDBBase:
         with self._session() as session:

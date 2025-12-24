@@ -47,6 +47,14 @@ test.describe('Checkout BOLA Vulnerability', () => {
   });
 
   test('order FOR victim using their address and card', async ({ page }) => {
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    const initialOrdersResponse = await page.request.get(
+      `http://localhost:8000/api/users/${user2Id}/orders`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const initialOrders = await initialOrdersResponse.json();
+    const initialVictimOrderCount = Array.isArray(initialOrders) ? initialOrders.length : 0;
+
     await expect(page.locator('#bola-demo-section')).toBeVisible();
     await page.check('#order-for-other-user');
     await expect(page.locator('#bola-demo-fields')).toBeVisible();
@@ -76,7 +84,7 @@ test.describe('Checkout BOLA Vulnerability', () => {
       page.locator('form#view-orders-form button[type="submit"]').click()
     ]);
     const orderRowsVictim = page.locator('#orders-container table tbody tr');
-    await expect(orderRowsVictim).toHaveCount(0);
+    await expect(orderRowsVictim).toHaveCount(initialVictimOrderCount);
   });
 
   test('order for self using victim credit card', async ({ page }) => {

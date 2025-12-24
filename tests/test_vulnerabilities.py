@@ -49,6 +49,33 @@ def test_bola_user_addresses_access(
         assert addresses[0]["user_id"] == victim_user_id
 
 
+def test_bola_legacy_address_search(
+    test_client, regular_auth_headers, another_regular_user_info
+):
+    """
+    Test legacy address search BOLA: attacker can search another user's addresses.
+    """
+    victim_user_id = another_regular_user_info["user_id"]
+    victim_addresses = another_regular_user_info["addresses"]
+    if not victim_addresses:
+        pytest.skip("Victim user has no addresses to search.")
+
+    target = victim_addresses[0]
+    query_source = target.get("street") or target.get("city") or target.get("zip_code")
+    query = query_source[:4].lower()
+
+    response = test_client.get(
+        f"/api/users/{victim_user_id}/addresses/search-legacy",
+        params={"q": query},
+        headers=regular_auth_headers,
+    )
+
+    assert response.status_code == 200
+    results = response.json()
+    assert any(addr["address_id"] == target["address_id"] for addr in results)
+    assert all(addr["user_id"] == victim_user_id for addr in results)
+
+
 def test_bola_user_credit_cards_access(
     test_client, regular_auth_headers, another_regular_user_info
 ):
@@ -97,6 +124,54 @@ def test_bola_user_orders_access(
 
         datetime.fromisoformat(order["created_at"])
         assert "credit_card_last_four" in order
+
+
+def test_bola_legacy_order_status_access(
+    test_client,
+    regular_auth_headers,
+    another_regular_user_info,
+    test_data,
+):
+    """
+    Test legacy order status BOLA: attacker can read another user's order status.
+    """
+    victim_user_id = another_regular_user_info["user_id"]
+    victim_address = another_regular_user_info["addresses"][0]
+    victim_card = another_regular_user_info["credit_cards"][0]
+    product = test_data["products"][0]
+
+    login_response = test_client.post(
+        "/api/auth/login",
+        params={
+            "username": another_regular_user_info["username"],
+            "password": another_regular_user_info["password_plain"],
+        },
+    )
+    assert login_response.status_code == 200
+    victim_headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
+
+    create_response = test_client.post(
+        f"/api/users/{victim_user_id}/orders"
+        f"?address_id={victim_address['address_id']}"
+        f"&credit_card_id={victim_card['card_id']}"
+        f"&product_id_1={product['product_id']}"
+        f"&quantity_1=1",
+        headers=victim_headers,
+    )
+    assert create_response.status_code == 201
+    order_id = create_response.json()["order_id"]
+
+    response = test_client.get(
+        f"/api/users/{victim_user_id}/orders/{order_id}/status-legacy",
+        headers=regular_auth_headers,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["order_id"] == order_id
+    assert data["billing_email"] == another_regular_user_info["email"]
+    assert data["credit_card_last_four"] == victim_card["card_number_plain"][-4:]
+    assert data["address"]["user_id"] == victim_user_id
 
 
 def test_bola_create_address_for_another_user(
@@ -238,6 +313,22 @@ def test_bola_using_another_users_card_for_order(
     assert new_order["credit_card_last_four"] == expected_last_four
 
 
+def test_b2b_partner_lookup_exposes_pricing(test_client):
+    """
+    Test legacy B2B lookup exposure: no auth and returns pricing snapshot.
+    """
+    response = test_client.get(
+        "/api/b2b/partner-lookup",
+        params={"q": "shske345pll"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ref_code"] == "shske345pll"
+    assert data["pricing_snapshot"]
+    assert "wholesale_price" in data["pricing_snapshot"][0]
+
+
 # --- Additional BOLA address & credit card modification tests ---
 
 
@@ -377,9 +468,9 @@ def test_bola_delete_protected_credit_card_forbidden(
         f"/api/users/{victim_user_id}/credit-cards/{card_id}",
         headers=regular_auth_headers,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 403
     data = resp.json()
-    assert "credit card deleted" in data.get("message", "").lower()
+    assert "protected" in data.get("detail", "").lower()
 
 
 def test_bola_delete_credit_card_for_another_user(

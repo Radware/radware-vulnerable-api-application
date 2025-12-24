@@ -526,6 +526,12 @@ async def delete_user_credit_card(
             detail="Credit card not found for this user.",
         )
 
+    if getattr(card_to_delete, "is_protected", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Credit Card ID {card_id} is protected and cannot be deleted.",
+        )
+
     owner_user = db.db_users_by_id.get(user_id)  # user_exists is already owner_user
     if owner_user and owner_user.is_protected:
         remaining = db.db_credit_cards_by_user_id.get(user_id, [])

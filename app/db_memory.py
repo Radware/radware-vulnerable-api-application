@@ -385,6 +385,16 @@ class MemoryBackend(DatabaseBackend):
             stock.quantity = quantity
         return stock
 
+    def list_stock_for_products(
+        self, product_ids: List[UUID]
+    ) -> Dict[UUID, StockInDBBase]:
+        stock_map: Dict[UUID, StockInDBBase] = {}
+        for product_id in product_ids:
+            stock_obj = self.db_stock_by_product_id.get(product_id)
+            if stock_obj is not None:
+                stock_map[product_id] = stock_obj
+        return stock_map
+
     def create_order(self, order: OrderInDBBase) -> OrderInDBBase:
         self.db["orders"].append(order)
         self.db_orders_by_id[order.order_id] = order

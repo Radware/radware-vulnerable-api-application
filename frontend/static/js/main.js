@@ -245,9 +245,20 @@ function displayGlobalMessage(message, type = 'info', duration = 5000) {
     }
 }
 
+function clearProtectedWarningMessages(messageText) {
+    const container = document.getElementById('global-message-container');
+    if (!container || !messageText) return;
+    container.querySelectorAll('.global-message.warning-message').forEach((el) => {
+        if (el.textContent && el.textContent.includes(messageText)) {
+            el.remove();
+        }
+    });
+}
+
 function handleProtectedEntityError(error) {
     if (error && error.message && /protected/i.test(error.message)) {
         const msg = error.message;
+        clearProtectedWarningMessages(msg);
         if (/must have at least one|cannot delete the last/i.test(msg)) {
             const userNameForMsg = typeof currentlyViewedUsername !== 'undefined' && currentlyViewedUsername ? currentlyViewedUsername : 'The user';
             displayGlobalMessage(
@@ -783,6 +794,7 @@ function initCartPage() {
 
 let currentlyViewedUserId = null;
 let currentlyViewedUsername = 'Your'; // Default to 'Your' for titles etc.
+let currentlyViewedUserIsProtected = false;
 
 // --- Updated Profile Page Initialization ---
 function initProfilePage() {
@@ -852,8 +864,33 @@ function setupProfilePageEventListeners() {
 
     // Credit Card Form Listeners
     document.getElementById('toggle-card-form-btn')?.addEventListener('click', () => toggleItemForm('card'));
-    document.getElementById('card-form')?.addEventListener('submit', handleCardFormSubmit);
+    const cardForm = document.getElementById('card-form');
+    if (cardForm) {
+        cardForm.setAttribute('novalidate', 'true');
+        cardForm.addEventListener('submit', handleCardFormSubmit);
+    }
     document.getElementById('card-form-cancel-btn')?.addEventListener('click', () => cancelItemForm('card'));
+
+    const cardFieldValidators = [
+        { inputId: 'card-cardholder-name', errorId: 'card-cardholder-name-error', validate: v => v.length > 0 },
+        { inputId: 'card-number-input', errorId: 'card-number-input-error', validate: v => /^\d{12,19}$/.test(v) },
+        { inputId: 'card-expiry-month', errorId: 'card-expiry-month-error', validate: v => /^(0[1-9]|1[0-2])$/.test(v) },
+        { inputId: 'card-expiry-year', errorId: 'card-expiry-year-error', validate: v => /^20[2-9][0-9]$/.test(v) },
+        { inputId: 'card-cvv-input', errorId: 'card-cvv-input-error', validate: v => /^\d{3,4}$/.test(v) },
+    ];
+    cardFieldValidators.forEach(({ inputId, errorId, validate }) => {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (!input || !errorEl) return;
+        input.addEventListener('input', () => {
+            const value = input.value.trim();
+            if (validate(value)) {
+                input.classList.remove('is-invalid');
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+        });
+    });
 }
 // --- BOLA Demo Functions ---
 async function listAvailableVictims() {
@@ -865,7 +902,7 @@ async function listAvailableVictims() {
     }
 
     usersListElement.innerHTML = '<li class="list-group-item">Discovering users (BFLA Exploit)... <i class="fas fa-spinner fa-spin"></i></li>';
-    usersContainer.style.display = 'block';
+    usersContainer.classList.add('demo-visible');
 
     try {
         showPageLoader('Loading users...');
@@ -901,10 +938,15 @@ async function listAvailableVictims() {
                     }
                     
                     fetchAndDisplayFullProfile(victimId);
+                    if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
+                        updateUIVulnerabilityFeaturesDisplay(true);
+                    }
                     
-                    document.getElementById('return-to-my-profile-btn').style.display = 'inline-block';
-                    document.getElementById('discover-users-btn').style.display = 'none';
-                    usersContainer.style.display = 'none'; 
+                    const returnBtn = document.getElementById('return-to-my-profile-btn');
+                    const discoverBtn = document.getElementById('discover-users-btn');
+                    if (returnBtn) returnBtn.classList.add('demo-visible');
+                    if (discoverBtn) discoverBtn.classList.remove('demo-visible');
+                    usersContainer.classList.remove('demo-visible'); 
                     displayGlobalMessage(`Now viewing ${victimName}'s profile. (BOLA Demo Active)`, 'warning');
                 });
             });
@@ -957,6 +999,7 @@ async function fetchAndDisplayFullProfile(userId) {
         showPageLoader('Loading profile...');
         const userDetails = await apiCall(`/api/users/${userId}`, 'GET');
         currentlyViewedUsername = userDetails.username; 
+        currentlyViewedUserIsProtected = !!userDetails.is_protected;
 
         const possessiveName = `${userDetails.username}'s`; 
         const displayNameForUserInfoHeader = userDetails.username; // Keep this for the "User Information" header
@@ -970,17 +1013,14 @@ async function fetchAndDisplayFullProfile(userId) {
         if (creditCardsHeader) creditCardsHeader.innerHTML = `<i class="fas fa-credit-card card-icon"></i> Credit Cards`;
         // --- End of Change ---
         
-        if(profileViewIndicator && currentViewingUsernameSpan) {
+        if (profileViewIndicator && currentViewingUsernameSpan) {
             currentViewingUsernameSpan.textContent = `${userDetails.username}'s Profile`; 
-            if (uiVulnerabilityFeaturesEnabled) {
-                profileViewIndicator.style.display = 'block';
-            } else {
-                profileViewIndicator.style.display = 'none';
-            }
+            profileViewIndicator.classList.toggle('demo-visible', uiVulnerabilityFeaturesEnabled);
         }
 
-        if(bolaDemoActiveBanner) {
-            bolaDemoActiveBanner.style.display = (uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id) ? 'block' : 'none';
+        if (bolaDemoActiveBanner) {
+            const showBanner = uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id;
+            bolaDemoActiveBanner.classList.toggle('demo-visible', showBanner);
         }
         
         if (escalationTargetUsernameStrong && escalationTargetBtnUsernameSpan) {
@@ -1415,6 +1455,11 @@ function initCheckoutPage() {
     document.getElementById('search-users-btn')?.addEventListener('click', searchUsers);
     document.getElementById('search-addresses-btn')?.addEventListener('click', searchAddressesForBola);
     document.getElementById('search-cards-btn')?.addEventListener('click', searchCreditCards);
+
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    if (applyCouponBtn) {
+        applyCouponBtn.addEventListener('click', handleApplyCoupon);
+    }
     
     const theftPreview = document.getElementById('theft-preview');
     if (theftPreview) {
@@ -1857,7 +1902,7 @@ async function fetchAndDisplayProducts() {
         if (productsContainer) productsContainer.style.display = 'none';
         if (noProductsMessage) noProductsMessage.style.display = 'none';
         
-        const products = await apiCall('/api/products', 'GET', null, false);
+        const products = await apiCall('/api/products/with-stock', 'GET', null, false);
         renderProducts(products);
     } catch (error) {
         displayError(`Failed to load products: ${error.message}`);
@@ -1895,12 +1940,7 @@ function renderProducts(products) {
     
     for (const product of products) {
         renderPromises.push((async () => {
-            let stockInfo = { quantity: 0 };
-            try {
-                stockInfo = await apiCall(`/api/products/${product.product_id}/stock`, 'GET', null, false);
-            } catch (error) {
-                console.warn(`Failed to fetch stock for product ${product.product_id}: ${error.message}`);
-            }
+            const stockInfo = { quantity: product.stock_quantity || 0 };
             
             const { webpPath, pngPath } = getImagePaths(product);
             
@@ -2288,15 +2328,22 @@ async function fetchAndDisplayProductDetail(productId) {
             throw new Error("API call function is missing, cannot fetch product data.");
         }
         
-        console.log(`[main.js] Fetching product data for ID: ${productId} from /api/products/${productId}`);
-        const product = await apiCall(`/api/products/${productId}`, 'GET', null, false);
-        
-        let stockInfo = { quantity: 0, last_updated: new Date().toISOString() }; 
+        let product;
+        let stockInfo = { quantity: 0, last_updated: new Date().toISOString() };
         try {
-            console.log(`[main.js] Fetching stock data for ID: ${productId} from /api/products/${productId}/stock`);
-            stockInfo = await apiCall(`/api/products/${productId}/stock`, 'GET', null, false);
-        } catch (stockError) {
-            console.warn(`[main.js] Could not fetch stock info for product ${productId}:`, stockError.message, "Using default stock (0).");
+            console.log(`[main.js] Fetching product+stock data for ID: ${productId} from /api/products/${productId}/with-stock`);
+            product = await apiCall(`/api/products/${productId}/with-stock`, 'GET', null, false);
+            stockInfo.quantity = product.stock_quantity || 0;
+        } catch (productError) {
+            console.warn(`[main.js] Product+stock endpoint failed for ${productId}:`, productError.message);
+            console.log(`[main.js] Fetching product data for ID: ${productId} from /api/products/${productId}`);
+            product = await apiCall(`/api/products/${productId}`, 'GET', null, false);
+            try {
+                console.log(`[main.js] Fetching stock data for ID: ${productId} from /api/products/${productId}/stock`);
+                stockInfo = await apiCall(`/api/products/${productId}/stock`, 'GET', null, false);
+            } catch (stockError) {
+                console.warn(`[main.js] Could not fetch stock info for product ${productId}:`, stockError.message, "Using default stock (0).");
+            }
         }
 
         console.log("[main.js] Product data received:", product);
@@ -2535,11 +2582,31 @@ async function handleLogin(e) {
         
         const tokenParts = authToken.split('.');
         if (tokenParts.length === 3) {
-            const tokenPayload = JSON.parse(atob(tokenParts[1]));
-            if (tokenPayload && tokenPayload.user_id) {
-                const userProfile = await apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true);
-                localStorage.setItem('user', JSON.stringify(userProfile));
-                currentUser = userProfile;
+            try {
+                const payloadSegment = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
+                const paddedPayload = payloadSegment.padEnd(Math.ceil(payloadSegment.length / 4) * 4, '=');
+                const tokenPayload = JSON.parse(atob(paddedPayload));
+                if (tokenPayload && tokenPayload.user_id) {
+                    currentUser = {
+                        user_id: tokenPayload.user_id,
+                        username: tokenPayload.sub || username,
+                        is_admin: !!tokenPayload.is_admin,
+                    };
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    updateNavbar();
+
+                    apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true)
+                        .then((userProfile) => {
+                            localStorage.setItem('user', JSON.stringify(userProfile));
+                            currentUser = userProfile;
+                            updateNavbar();
+                        })
+                        .catch((profileError) => {
+                            console.warn('[main.js] Failed to refresh user profile after login:', profileError.message);
+                        });
+                }
+            } catch (parseError) {
+                console.warn('[main.js] Failed to decode login token payload:', parseError.message);
             }
         }
         updateNavbar();
@@ -2937,7 +3004,8 @@ function populateAddressFormForEdit(addressId, allAddresses) {
 
     const protectedNote = document.getElementById('address-protected-note');
     if (protectedNote) {
-        protectedNote.style.display = address.is_protected ? 'block' : 'none';
+        const isProtectedContext = address.is_protected || currentlyViewedUserIsProtected;
+        protectedNote.style.display = isProtectedContext ? 'block' : 'none';
     }
     
     const editIndicator = document.getElementById('address-edit-mode-indicator');
@@ -3145,7 +3213,9 @@ function populateCardFormForEdit(cardId, allCards) {
         cardCvvInput.disabled = true;
     }
 
-    if (protectedNote) protectedNote.style.display = card.is_protected ? 'block' : 'none';
+    if (protectedNote) {
+        protectedNote.style.display = (card.is_protected || currentlyViewedUserIsProtected) ? 'block' : 'none';
+    }
     if (cardholderInput) cardholderInput.disabled = false;
     if (expiryMonthInput) expiryMonthInput.disabled = false;
     if (expiryYearInput) expiryYearInput.disabled = false;
@@ -3546,6 +3616,50 @@ function displayCheckoutItems() {
     container.innerHTML = itemsHTML;
 }
 
+function getCartTotalAmount() {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+async function handleApplyCoupon() {
+    const couponInput = document.getElementById('coupon-code');
+    const discountInfo = document.getElementById('discount-info');
+    const discountedTotalEl = document.getElementById('discounted-total');
+    const grandTotalEl = document.getElementById('checkout-grand-total');
+    if (!couponInput || !discountInfo || !discountedTotalEl || !grandTotalEl) {
+        displayGlobalMessage('Coupon UI is unavailable right now.', 'error');
+        return;
+    }
+
+    const code = couponInput.value.trim();
+    if (!code) {
+        displayGlobalMessage('Please enter a coupon code first.', 'error');
+        return;
+    }
+
+    try {
+        const coupon = await apiCall(`/api/coupons/${encodeURIComponent(code)}`, 'GET', null, true);
+        const baseTotal = getCartTotalAmount();
+        let discount = 0;
+        if (coupon.discount_type === 'percentage') {
+            discount = baseTotal * (coupon.discount_value / 100);
+        } else if (coupon.discount_type === 'fixed') {
+            discount = coupon.discount_value;
+        }
+        const finalTotal = Math.max(0, baseTotal - discount);
+
+        discountedTotalEl.textContent = `$${finalTotal.toFixed(2)}`;
+        discountInfo.style.display = 'block';
+        grandTotalEl.textContent = `$${finalTotal.toFixed(2)}`;
+        appliedCouponCode = code;
+        displayGlobalMessage(`Coupon ${code} applied!`, 'success');
+    } catch (error) {
+        appliedCouponCode = null;
+        discountInfo.style.display = 'none';
+        grandTotalEl.textContent = `$${getCartTotalAmount().toFixed(2)}`;
+        displayGlobalMessage(`Failed to apply coupon: ${error.message}`, 'error');
+    }
+}
+
 async function populateAddressDropdown() {
     const addressSelect = document.getElementById('address-id');
     if (!addressSelect || !currentUser) return;
@@ -3694,7 +3808,7 @@ async function fetchAdminProducts() {
         if (revealInternal) queryParams += '&status=internal';
 
         // Add '/api' prefix to API endpoint paths
-        const products = await apiCall(`/api/products${queryParams}`, 'GET', null, true);
+        const products = await apiCall(`/api/products/with-stock${queryParams}`, 'GET', null, true);
 
         if (!products || products.length === 0) {
             productsContainer.innerHTML = '<p>No products found or access denied.</p>';
@@ -3702,12 +3816,7 @@ async function fetchAdminProducts() {
         }
         let tableHTML = `<table class="admin-products-table table"><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Category</th><th>Internal Status</th><th>Stock</th><th>Actions</th></tr></thead><tbody>`;
         for (const product of products) {
-            let stock = { quantity: "N/A" };
-             try {
-                // Add '/api' prefix to stock endpoint
-                stock = await apiCall(`/api/products/${product.product_id}/stock`, 'GET', null, false);
-            } catch(e) { console.warn("Could not fetch stock for " + product.product_id)}
-
+            const stockQuantity = typeof product.stock_quantity === 'number' ? product.stock_quantity : 'N/A';
             tableHTML += `
                 <tr>
                     <td>${product.product_id.substring(0,8)}...</td>
@@ -3715,7 +3824,7 @@ async function fetchAdminProducts() {
                     <td>$${product.price.toFixed(2)}</td>
                     <td>${product.category || 'N/A'}</td>
                     <td>${product.internal_status || 'N/A'}</td>
-                    <td class="text-center">${stock.quantity}</td>
+                    <td class="text-center">${stockQuantity}</td>
                     <td>
                         <button class="btn btn-sm btn-danger delete-product-btn" data-product-id="${product.product_id}">Del</button>
                     </td>

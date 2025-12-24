@@ -29,6 +29,10 @@ class Product(ProductInDBBase):
     pass
 
 
+class ProductWithStock(ProductInDBBase):
+    stock_quantity: int = Field(..., ge=0)
+
+
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None

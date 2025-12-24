@@ -5,7 +5,6 @@ const alice = {
   password: 'AlicePass1!'
 };
 
-const graceId = '00000008-0000-0000-0000-000000000008';
 const bobId = '00000003-0000-0000-0000-000000000003';
 
 async function login(page: Page, username = alice.username, password = alice.password) {
@@ -52,11 +51,18 @@ test.describe('Admin Page UI Demos', () => {
     await login(page);
     await enableUiDemos(page);
     await page.reload();
+    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const newUserResponse = await page.request.post(
+      `http://localhost:8000/api/auth/register?username=UiDelete${unique}&email=ui-delete-${unique}@example.com&password=UiDeletePass1!`
+    );
+    expect(newUserResponse.status()).toBe(201);
+    const newUser = await newUserResponse.json();
+    const newUserId = newUser.user_id;
     await page.goto('/admin');
-    await page.fill('#delete-user-id', graceId);
+    await page.fill('#delete-user-id', newUserId);
     page.once('dialog', d => d.accept());
     const [delResp] = await Promise.all([
-      page.waitForResponse(r => r.url().includes(`/api/users/${graceId}`) && r.request().method() === 'DELETE' && r.status() === 200),
+      page.waitForResponse(r => r.url().includes(`/api/users/${newUserId}`) && r.request().method() === 'DELETE' && r.status() === 200),
       page.locator('#delete-user-form button[type="submit"]').click()
     ]);
     const delBody = await delResp.json();

@@ -64,6 +64,42 @@ async def list_user_addresses(
     return user_addresses
 
 
+@router.get(
+    "/addresses/search-legacy",
+    response_model=List[Address],
+    deprecated=True,
+)
+async def search_user_addresses_legacy(
+    user_id: UUID,
+    q: str = Query(..., description="Legacy substring match on address fields."),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """
+    Deprecated address search endpoint.
+    Vulnerability: Authenticated but no ownership check (BOLA).
+    """
+    print(
+        f"Legacy address search for user {user_id} by {current_user.user_id}. BOLA: No ownership check."
+    )
+
+    path_user_exists = db.db_users_by_id.get(user_id)
+    if not path_user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found.",
+        )
+
+    query = q.strip().lower()
+    matches = []
+    for address in db.db_addresses_by_user_id.get(user_id, []):
+        haystack = " ".join(
+            [address.street, address.city, address.country, address.zip_code]
+        ).lower()
+        if query in haystack:
+            matches.append(Address.model_validate(address))
+    return matches
+
+
 @router.post("/addresses", response_model=Address, status_code=status.HTTP_201_CREATED)
 async def create_user_address(
     user_id: UUID,  # User ID from path
@@ -460,6 +496,12 @@ async def delete_user_credit_card(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
+        )
+
+    if getattr(card_to_delete, "is_protected", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Credit Card ID {card_id} is protected and cannot be deleted.",
         )
 
     owner_user = db.db_users_by_id.get(user_id)

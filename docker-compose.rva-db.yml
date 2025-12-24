@@ -1,4 +1,4 @@
-# Docker Compose for External PostgreSQL Database Mode
+  # Docker Compose for External PostgreSQL Database Mode
 # Multiple workers supported - best performance and scalability
 # Requires PostgreSQL database (included in this compose file)
 

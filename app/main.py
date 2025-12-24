@@ -6,6 +6,7 @@ import os
 import yaml
 from .routers import (
     auth_router,
+    b2b_router,
     user_router,
     product_router,
     user_profile_router,
@@ -198,6 +199,7 @@ app.include_router(
     prefix="/api",
     tags=["Coupons", "Admin"],
 )
+app.include_router(b2b_router.router, prefix="/api", tags=["B2B"])
 
 from . import sync
 

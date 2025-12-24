@@ -57,6 +57,13 @@ test.describe('Vulnerability Demonstrations', () => {
     await enableUiDemos(page);
     await login(page, user1.username, user1.password);
     await addItemToCart(page);
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    const initialOrdersResponse = await page.request.get(
+      `http://localhost:8000/api/users/${user2Id}/orders`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const initialOrders = await initialOrdersResponse.json();
+    const initialVictimOrderCount = Array.isArray(initialOrders) ? initialOrders.length : 0;
     await page.goto('/checkout');
     await page.waitForSelector('#address-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
     await page.waitForSelector('#credit-card-id option[value]:not([value=""])', { state: 'attached', timeout: 30000 });
@@ -79,7 +86,7 @@ test.describe('Vulnerability Demonstrations', () => {
     ]);
     await expect(page.locator('#viewing-user-id-orders')).toHaveValue(user2Id, { timeout: 10000 });
     const orderRows = page.locator('#orders-container table tbody tr');
-    await expect(orderRows).toHaveCount(0);
+    await expect(orderRows).toHaveCount(initialVictimOrderCount);
   });
 
   test('should demonstrate Parameter Pollution for admin escalation', async ({ page }) => {
@@ -149,4 +156,3 @@ test.describe('Vulnerability Demonstrations', () => {
     await expect(warningMessageLocator).toContainText(/cannot have stock reduced below/i, { timeout: 5000 });
   });
 });
-

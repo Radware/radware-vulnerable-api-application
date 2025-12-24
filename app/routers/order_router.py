@@ -12,6 +12,7 @@ from ..models.order_models import (
     OrderItem,
     OrderItemCreate,
     OrderItemInDBBase,
+    LegacyOrderStatus,
     TokenData,
 )
 from ..models.product_models import Product, Stock
@@ -325,6 +326,55 @@ async def get_user_order_by_id(
     if card:
         order_response.credit_card_last_four = card.card_last_four
     return order_response
+
+
+@router.get(
+    "/{order_id}/status-legacy",
+    response_model=LegacyOrderStatus,
+    deprecated=True,
+)
+async def get_order_status_legacy(
+    user_id: UUID,
+    order_id: UUID,
+    legacy_token: Optional[str] = Query(
+        None,
+        description="Deprecated legacy token parameter. Accepted but not validated.",
+    ),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """
+    Legacy order status polling endpoint.
+    Vulnerability: Authenticated but no ownership check (BOLA) and returns extra data.
+    """
+    logger.info(
+        "Legacy status lookup for order %s (user %s). Token present: %s",
+        order_id,
+        user_id,
+        bool(legacy_token),
+    )
+
+    order_db = db.db_orders_by_id.get(order_id)
+    if not order_db or order_db.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found for this user.",
+        )
+
+    address = db.db_addresses_by_id.get(order_db.address_id)
+    card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
+    user = db.db_users_by_id.get(order_db.user_id)
+
+    return LegacyOrderStatus(
+        order_id=order_db.order_id,
+        status=order_db.status,
+        created_at=order_db.created_at,
+        updated_at=order_db.updated_at,
+        address=Address.model_validate(address) if address else None,
+        credit_card_id=order_db.credit_card_id,
+        credit_card_last_four=card.card_last_four if card else None,
+        billing_email=user.email if user else None,
+        legacy_notes="Legacy status endpoint returns extended fields for backward compatibility.",
+    )
 
 
 @router.post("/{order_id}/apply-coupon", response_model=Order)

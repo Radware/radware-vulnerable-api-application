@@ -268,7 +268,9 @@ test.describe('Profile Page - BOLA Vulnerabilities', () => {
     ]);
 
     const warningMsg = page.locator('#global-message-container .global-message.warning-message');
-    await expect(warningMsg.filter({ hasText: `Action Blocked: User '${originalBobUsername}' is protected. Username and email cannot be changed.` })).toBeVisible({ timeout: 15000 });
+    const actionBlockedMsg = warningMsg.filter({ hasText: `Action Blocked: User '${originalBobUsername}' is protected.` });
+    await expect(actionBlockedMsg).toBeVisible({ timeout: 15000 });
+    await expect(actionBlockedMsg).toContainText(/Username cannot be changed/i, { timeout: 15000 });
 
     // Verify Bob's username in the UI has NOT changed
     await expect(page.locator('#profile-info-content p', { hasText: `Username: ${originalBobUsername}` })).toBeVisible({ timeout: 5000 });

@@ -139,7 +139,7 @@ async function fetchAdminProducts() {
             loadingIndicator.style.display = 'none';
             return;
         }
-        const products = await apiCall(`/api/products${queryParams}`, 'GET', null, true); // Requires auth
+        const products = await apiCall(`/api/products/with-stock${queryParams}`, 'GET', null, true); // Requires auth
         
         if (!products || products.length === 0) {
             productsContainer.innerHTML = '<p>No products available or you may not have permission to view them.</p>';
@@ -147,6 +147,10 @@ async function fetchAdminProducts() {
             return;
         }
         
+        const internalViewNote = (revealInternalEl && revealInternalEl.checked)
+            ? '<div class="internal-view-note">Internal view enabled (parameter pollution demo).</div>'
+            : '';
+
         // Build products table
         let tableHTML = `
             <table class="admin-products-table table"> <!-- Added 'table' class for global table styles -->
@@ -163,19 +167,9 @@ async function fetchAdminProducts() {
                 </thead>
                 <tbody>
         `;
-        
-        // Fetch stock for all products in parallel for efficiency
-        const stockPromises = products.map(product =>
-            apiCall(`/api/products/${product.product_id}/stock`, 'GET', null, false)
-                .catch(err => {
-                    console.warn(`Failed to fetch stock for ${product.product_id}: ${err.message}`);
-                    return { quantity: 'N/A' }; // Default stock if fetch fails
-                })
-        );
-        const stocks = await Promise.all(stockPromises);
 
         products.forEach((product, index) => {
-            const stockQuantity = stocks[index] ? stocks[index].quantity : 'N/A';
+            const stockQuantity = typeof product.stock_quantity === 'number' ? product.stock_quantity : 'N/A';
             tableHTML += `
                 <tr>
                     <td>${product.product_id.substring(0, 8)}...</td>
@@ -192,12 +186,12 @@ async function fetchAdminProducts() {
             `;
         });
         
-        tableHTML += `
+            tableHTML += `
                 </tbody>
             </table>
         `;
-        
-        productsContainer.innerHTML = tableHTML;
+
+        productsContainer.innerHTML = `${internalViewNote}${tableHTML}`;
         
         // Success messages for parameter pollution demo
         if (adminEscalationEl && adminEscalationEl.checked) {

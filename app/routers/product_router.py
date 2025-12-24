@@ -10,6 +10,7 @@ from ..models.product_models import (
     ProductCreate,
     ProductInDBBase,
     ProductUpdate,
+    ProductWithStock,
     Stock,
     StockUpdate,
     StockInDBBase,
@@ -38,6 +39,32 @@ async def list_all_products():
     List all available products.
     """
     return [Product.model_validate(p) for p in db.db["products"]]
+
+
+@router.get(
+    "/products/with-stock",
+    response_model=List[ProductWithStock],
+    tags=["Products", "Stock"],
+)
+async def list_products_with_stock():
+    """
+    List all products along with their stock quantities.
+    """
+    products = list(db.db["products"])
+    product_ids = [product.product_id for product in products]
+    stock_by_product_id = db.list_stock_for_products(product_ids)
+
+    response: List[ProductWithStock] = []
+    for product in products:
+        product_data = product.model_dump()
+        stock = stock_by_product_id.get(product.product_id)
+        response.append(
+            ProductWithStock(
+                **product_data,
+                stock_quantity=stock.quantity if stock is not None else 0,
+            )
+        )
+    return response
 
 
 # BFLA Target: No admin check initially. Data via query parameters.
@@ -91,8 +118,18 @@ async def search_products_by_name(name: str = Query(...)):
         "Searching for product with name containing: '%s'. Intended Injection Target.",
         name,
     )
+    if hasattr(db, "unsafe_search_products"):
+        try:
+            results = db.unsafe_search_products(name)
+            return [Product.model_validate(p) for p in results]
+        except Exception as exc:
+            logger.info("Search failed on SQL backend: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Search query failed due to invalid input",
+            )
+
     # VULNERABILITY: Naive string matching, simulating how a direct query concatenation might behave.
-    # In a real SQL/NoSQL scenario, `name` would be unsafely injected into a query.
     # For our in-memory store, we just do a simple substring match, but the intent is to show the input point.
     results = [
         Product.model_validate(p)
@@ -128,6 +165,27 @@ async def get_product_by_id(product_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
     return Product.model_validate(product)
+
+
+@router.get(
+    "/products/{product_id}/with-stock",
+    response_model=ProductWithStock,
+    tags=["Products", "Stock"],
+)
+async def get_product_by_id_with_stock(product_id: UUID):
+    """
+    Get a product by its unique ID along with stock quantity.
+    """
+    product = db.db_products_by_id.get(product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
+    stock = db.get_stock(product_id)
+    return ProductWithStock(
+        **product.model_dump(),
+        stock_quantity=stock.quantity if stock is not None else 0,
+    )
 
 
 # Parameter Pollution Target for internal_status. Data via query parameters.

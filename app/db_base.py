@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from .models.user_models import UserInDBBase, AddressInDBBase, CreditCardInDBBase
@@ -117,6 +117,12 @@ class DatabaseBackend(ABC):
 
     @abstractmethod
     def update_stock(self, product_id: UUID, quantity: int) -> StockInDBBase:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_stock_for_products(
+        self, product_ids: List[UUID]
+    ) -> Dict[UUID, StockInDBBase]:
         raise NotImplementedError
 
     # --- Order operations ---
