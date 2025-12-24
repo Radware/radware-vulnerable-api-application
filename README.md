@@ -11,7 +11,7 @@
     but the primary interaction is via API clients (e.g., Postman, curl, custom scripts).
 *   **Framework:** FastAPI (Python) for its modern features, speed, and automatic OpenAPI documentation.
 *   **Database:** A simple in-memory Python dictionary acts as the database to keep the setup lightweight and focus on API logic rather than database intricacies. Data is ephemeral and resets on application restart.
-*   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`).
+*   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`). Access tokens expire after 3 hours; the UI redirects to login when they are expired or invalid.
 *   **Vulnerability Focus:** Endpoints are intentionally designed with security flaws to serve as learning examples.
 
 ## 2. Features

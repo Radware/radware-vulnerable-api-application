@@ -17,12 +17,15 @@ let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 var appliedCouponCode = null; // Holds coupon code staged during checkout
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
+const LOGIN_REDIRECT_REASON_KEY = 'loginRedirectReason';
+const LOGIN_REDIRECT_EXP_KEY = 'loginRedirectExpiry';
 
 // DOM content loaded event to setup initial UI
 document.addEventListener('DOMContentLoaded', () => {
     initializeUIVulnerabilityFeaturesToggle();
-    updateNavbar();
     updateCurrentYear();
+    enforceTokenValidityOnLoad();
+    updateNavbar();
     
     // Page-specific initializations based on body ID or similar
     const path = window.location.pathname;
@@ -56,6 +59,53 @@ function updateCurrentYear() {
     if (el) el.textContent = new Date().getFullYear();
 }
 
+function decodeJwtPayload(token) {
+    if (!token) return null;
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) return null;
+    try {
+        const payloadSegment = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const paddedPayload = payloadSegment.padEnd(Math.ceil(payloadSegment.length / 4) * 4, '=');
+        return JSON.parse(atob(paddedPayload));
+    } catch (_error) {
+        return null;
+    }
+}
+
+function getTokenStatus(token) {
+    const payload = decodeJwtPayload(token);
+    if (!payload || typeof payload.exp === 'undefined') {
+        return { state: 'invalid', expSeconds: null };
+    }
+    const expSeconds = Number(payload.exp);
+    if (!Number.isFinite(expSeconds)) {
+        return { state: 'invalid', expSeconds: null };
+    }
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (nowSeconds >= expSeconds) {
+        return { state: 'expired', expSeconds };
+    }
+    return { state: 'valid', expSeconds };
+}
+
+function getLogoutReasonFromToken(token) {
+    const status = getTokenStatus(token);
+    if (status.state === 'expired') {
+        return { reason: 'expired', expSeconds: status.expSeconds };
+    }
+    return { reason: 'invalid', expSeconds: null };
+}
+
+function enforceTokenValidityOnLoad() {
+    if (!authToken) return;
+    const status = getTokenStatus(authToken);
+    if (status.state === 'expired') {
+        handleSessionExpired('expired', status.expSeconds);
+    } else if (status.state === 'invalid') {
+        handleSessionExpired('invalid');
+    }
+}
+
 async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = true) {
     const headers = { 'Content-Type': 'application/json' };
     
@@ -76,7 +126,8 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
         if (!response.ok) {
             if (response.status === 401 && requiresAuth && !isHandlingSessionExpiration) {
                 console.warn(`API Call to ${method} ${fullUrl} resulted in 401. Session expired or invalid.`);
-                handleSessionExpired();
+                const { reason, expSeconds } = getLogoutReasonFromToken(authToken);
+                handleSessionExpired(reason, expSeconds);
                 throw new Error('SESSION_EXPIRED');
             }
 
@@ -179,7 +230,7 @@ function updateNavbar() {
     }
 }
 
-function handleSessionExpired() {
+function handleSessionExpired(reason = 'invalid', expSeconds = null) {
     if (isHandlingSessionExpiration) {
         console.log("Session expiration handling already in progress.");
         return;
@@ -187,6 +238,14 @@ function handleSessionExpired() {
     isHandlingSessionExpiration = true;
 
     console.log("Session expired. Logging out user.");
+
+    const normalizedReason = reason === 'expired' ? 'expired' : 'invalid';
+    sessionStorage.setItem(LOGIN_REDIRECT_REASON_KEY, normalizedReason);
+    if (normalizedReason === 'expired' && Number.isFinite(expSeconds)) {
+        sessionStorage.setItem(LOGIN_REDIRECT_EXP_KEY, String(expSeconds));
+    } else {
+        sessionStorage.removeItem(LOGIN_REDIRECT_EXP_KEY);
+    }
 
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -197,12 +256,16 @@ function handleSessionExpired() {
 
     updateNavbar();
 
-    displayGlobalMessage('Your session has expired or is invalid. Please log in again.', 'warning', 7000);
+    const message = normalizedReason === 'expired'
+        ? 'Your session expired. Please log in again.'
+        : 'Your session is invalid. Please log in again.';
+    displayGlobalMessage(message, 'warning', 7000);
 
     const currentPath = window.location.pathname;
+    const loginRedirectUrl = `/login?reason=${encodeURIComponent(normalizedReason)}`;
     if (currentPath !== '/login' && currentPath !== '/register') {
         setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = loginRedirectUrl;
             isHandlingSessionExpiration = false;
         }, 2000);
     } else {
@@ -761,6 +824,7 @@ function initProductDetailPage() {
 
 function initLoginPage() {
     console.log('Initializing Login Page');
+    showLoginRedirectMessage();
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
@@ -2580,39 +2644,54 @@ async function handleLogin(e) {
         authToken = response.access_token;
         localStorage.setItem('token', authToken);
         
-        const tokenParts = authToken.split('.');
-        if (tokenParts.length === 3) {
-            try {
-                const payloadSegment = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
-                const paddedPayload = payloadSegment.padEnd(Math.ceil(payloadSegment.length / 4) * 4, '=');
-                const tokenPayload = JSON.parse(atob(paddedPayload));
-                if (tokenPayload && tokenPayload.user_id) {
-                    currentUser = {
-                        user_id: tokenPayload.user_id,
-                        username: tokenPayload.sub || username,
-                        is_admin: !!tokenPayload.is_admin,
-                    };
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    updateNavbar();
+        const tokenPayload = decodeJwtPayload(authToken);
+        if (tokenPayload && tokenPayload.user_id) {
+            currentUser = {
+                user_id: tokenPayload.user_id,
+                username: tokenPayload.sub || username,
+                is_admin: !!tokenPayload.is_admin,
+            };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateNavbar();
 
-                    apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true)
-                        .then((userProfile) => {
-                            localStorage.setItem('user', JSON.stringify(userProfile));
-                            currentUser = userProfile;
-                            updateNavbar();
-                        })
-                        .catch((profileError) => {
-                            console.warn('[main.js] Failed to refresh user profile after login:', profileError.message);
-                        });
-                }
-            } catch (parseError) {
-                console.warn('[main.js] Failed to decode login token payload:', parseError.message);
-            }
+            apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true)
+                .then((userProfile) => {
+                    localStorage.setItem('user', JSON.stringify(userProfile));
+                    currentUser = userProfile;
+                    updateNavbar();
+                })
+                .catch((profileError) => {
+                    console.warn('[main.js] Failed to refresh user profile after login:', profileError.message);
+                });
+        } else {
+            console.warn('[main.js] Failed to decode login token payload.');
         }
         updateNavbar();
         displaySuccess('Login successful! Redirecting...');
         setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (error) { displayError(`Login failed: ${error.message}`); }
+}
+
+function showLoginRedirectMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get('reason') || sessionStorage.getItem(LOGIN_REDIRECT_REASON_KEY);
+    if (!reason) return;
+
+    const expSeconds = sessionStorage.getItem(LOGIN_REDIRECT_EXP_KEY);
+    sessionStorage.removeItem(LOGIN_REDIRECT_REASON_KEY);
+    sessionStorage.removeItem(LOGIN_REDIRECT_EXP_KEY);
+
+    if (reason === 'expired') {
+        if (expSeconds && Number.isFinite(Number(expSeconds))) {
+            const expDate = new Date(Number(expSeconds) * 1000);
+            displayGlobalMessage(`Your session expired at ${expDate.toLocaleString()}. Please log in again.`, 'warning', 8000);
+        } else {
+            displayGlobalMessage('Your session expired. Please log in again.', 'warning', 8000);
+        }
+        return;
+    }
+
+    displayGlobalMessage('Your session is invalid. Please log in again.', 'warning', 8000);
 }
 
 async function handleRegistration(e) {
