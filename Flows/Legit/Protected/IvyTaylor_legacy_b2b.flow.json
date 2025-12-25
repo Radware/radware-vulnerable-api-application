@@ -1,0 +1,78 @@
+{
+  "name": "IvyTaylor - Legacy + B2B Discovery",
+  "description": "Protected user IvyTaylor logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "IvyTaylor",
+    "userPassword": "IvyPass9(",
+    "userId": "00000010-0000-0000-0000-000000000010",
+    "legacyOrderId": "33d372b0-3763-5e55-916e-ea95bfbe79a0",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Opal%20City",
+    "partnerCode": "ivyta118lor"
+  },
+  "steps": [
+    {
+      "id": "step_ivytaylor_login",
+      "name": "Login IvyTaylor",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivytaylor_legacy_address_search",
+      "name": "IvyTaylor: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivytaylor_legacy_order_status",
+      "name": "IvyTaylor: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivytaylor_b2b_partner_lookup",
+      "name": "IvyTaylor: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_ivytaylor_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_ivytaylor_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_ivytaylor_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_ivytaylor_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

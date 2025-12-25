@@ -1,0 +1,78 @@
+{
+  "name": "UmaTurner - Legacy + B2B Discovery",
+  "description": "Protected user UmaTurner logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "UmaTurner",
+    "userPassword": "UmaPass20!",
+    "userId": "00000021-0000-0000-0000-000000000021",
+    "legacyOrderId": "ade73f44-5317-5a74-a939-234b191fc00f",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "ExampleTown",
+    "partnerCode": "umatu127ner"
+  },
+  "steps": [
+    {
+      "id": "step_umaturner_login",
+      "name": "Login UmaTurner",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_umaturner_legacy_address_search",
+      "name": "UmaTurner: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_umaturner_legacy_order_status",
+      "name": "UmaTurner: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_umaturner_b2b_partner_lookup",
+      "name": "UmaTurner: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_umaturner_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_umaturner_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_umaturner_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_umaturner_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

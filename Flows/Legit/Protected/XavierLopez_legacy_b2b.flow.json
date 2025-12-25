@@ -1,0 +1,78 @@
+{
+  "name": "XavierLopez - Legacy + B2B Discovery",
+  "description": "Protected user XavierLopez logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "XavierLopez",
+    "userPassword": "XavierPass23!",
+    "userId": "00000024-0000-0000-0000-000000000024",
+    "legacyOrderId": "2270a0d5-04d6-51f1-bad9-26e521836a0f",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Exampletown",
+    "partnerCode": "xavie131pez"
+  },
+  "steps": [
+    {
+      "id": "step_xavierlopez_login",
+      "name": "Login XavierLopez",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_xavierlopez_legacy_address_search",
+      "name": "XavierLopez: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_xavierlopez_legacy_order_status",
+      "name": "XavierLopez: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_xavierlopez_b2b_partner_lookup",
+      "name": "XavierLopez: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_xavierlopez_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_xavierlopez_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_xavierlopez_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_xavierlopez_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

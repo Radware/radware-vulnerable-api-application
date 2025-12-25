@@ -1,0 +1,78 @@
+{
+  "name": "OwenHall - Legacy + B2B Discovery",
+  "description": "Protected user OwenHall logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "OwenHall",
+    "userPassword": "OwenPass14!",
+    "userId": "00000015-0000-0000-0000-000000000015",
+    "legacyOrderId": "ae502390-f9c3-527e-8f92-eb5c2c41f5ea",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Hill%20Valley",
+    "partnerCode": "owenh124all"
+  },
+  "steps": [
+    {
+      "id": "step_owenhall_login",
+      "name": "Login OwenHall",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owenhall_legacy_address_search",
+      "name": "OwenHall: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owenhall_legacy_order_status",
+      "name": "OwenHall: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owenhall_b2b_partner_lookup",
+      "name": "OwenHall: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_owenhall_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_owenhall_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_owenhall_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_owenhall_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

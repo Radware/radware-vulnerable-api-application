@@ -1352,7 +1352,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^[a-z]{5}[0-9]{3}[a-z]{3}$'
+            pattern: '^[a-z]{5}[1-9]{3}[a-z]{3}$'
           description: 'Legacy partner reference code (example: shske345pll)'
       responses:
         '200':

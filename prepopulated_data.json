@@ -570,8 +570,7 @@
         }
       ],
       "is_protected": true
-    }
-,
+    },
     {
       "user_id": "00000012-0000-0000-0000-000000000012",
       "username": "LauraScott",
@@ -1133,37 +1132,377 @@
   ],
   "orders": [
     {
-      "order_id": "a2000000-0000-0000-0000-000000000002",
-      "user_id": "00000002-0000-0000-0000-000000000002",
-      "address_id": "ad000002-0001-0000-0000-000000000001",
-      "credit_card_id": "cc000002-0001-0000-0000-000000000001",
+      "order_id": "4e6c5038-d0f6-5f76-85ba-6f236b4cd163",
+      "user_id": "00000001-0000-0000-0000-000000000001",
+      "address_id": "ad000001-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000001-0001-0000-0000-000000000001",
       "status": "pending",
       "total_amount": 1499.99,
       "created_at": "2024-02-01T10:00:00+00:00",
       "updated_at": "2024-02-01T10:00:00+00:00"
     },
     {
-      "order_id": "a4000000-0000-0000-0000-000000000004",
+      "order_id": "1b703d74-0a6e-567a-a461-b93271b5e47e",
+      "user_id": "00000002-0000-0000-0000-000000000002",
+      "address_id": "ad000002-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000002-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 25.5,
+      "created_at": "2024-02-01T10:10:00+00:00",
+      "updated_at": "2024-02-01T10:10:00+00:00"
+    },
+    {
+      "order_id": "aa6e4588-106a-5db4-aa38-d8c4cc717bfc",
+      "user_id": "00000003-0000-0000-0000-000000000003",
+      "address_id": "ad000003-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000003-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 75.0,
+      "created_at": "2024-02-01T10:20:00+00:00",
+      "updated_at": "2024-02-01T10:20:00+00:00"
+    },
+    {
+      "order_id": "99c4e447-9e2d-5db5-9a5c-c82ab7770f06",
       "user_id": "00000004-0000-0000-0000-000000000004",
       "address_id": "ad000004-0001-0000-0000-000000000001",
       "credit_card_id": "cc000004-0001-0000-0000-000000000001",
       "status": "pending",
-      "total_amount": 25.5,
+      "total_amount": 320.0,
+      "created_at": "2024-02-01T10:30:00+00:00",
+      "updated_at": "2024-02-01T10:30:00+00:00"
+    },
+    {
+      "order_id": "01143bd7-72d2-5ae5-af74-f22f11882de7",
+      "user_id": "00000005-0000-0000-0000-000000000005",
+      "address_id": "ad000005-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000005-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 99.9,
+      "created_at": "2024-02-01T10:40:00+00:00",
+      "updated_at": "2024-02-01T10:40:00+00:00"
+    },
+    {
+      "order_id": "671c7092-a373-5b56-931d-253fde055a2b",
+      "user_id": "00000006-0000-0000-0000-000000000006",
+      "address_id": "ad000006-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000006-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 199.0,
+      "created_at": "2024-02-01T10:50:00+00:00",
+      "updated_at": "2024-02-01T10:50:00+00:00"
+    },
+    {
+      "order_id": "275cd78d-bbe1-57a0-900c-0d132e70ce23",
+      "user_id": "00000007-0000-0000-0000-000000000007",
+      "address_id": "ad000007-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000007-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 45.75,
       "created_at": "2024-02-01T11:00:00+00:00",
       "updated_at": "2024-02-01T11:00:00+00:00"
+    },
+    {
+      "order_id": "33d372b0-3763-5e55-916e-ea95bfbe79a0",
+      "user_id": "00000010-0000-0000-0000-000000000010",
+      "address_id": "ad000010-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000010-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 35.0,
+      "created_at": "2024-02-01T11:10:00+00:00",
+      "updated_at": "2024-02-01T11:10:00+00:00"
+    },
+    {
+      "order_id": "7294e297-971c-5067-a1a7-77f352f086d6",
+      "user_id": "00000011-0000-0000-0000-000000000011",
+      "address_id": "ad000011-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000011-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 120.0,
+      "created_at": "2024-02-01T11:20:00+00:00",
+      "updated_at": "2024-02-01T11:20:00+00:00"
+    },
+    {
+      "order_id": "652d82c2-e3f1-5183-b586-d2f82f48a716",
+      "user_id": "00000012-0000-0000-0000-000000000012",
+      "address_id": "ad000012-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000012-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 250.0,
+      "created_at": "2024-02-01T11:30:00+00:00",
+      "updated_at": "2024-02-01T11:30:00+00:00"
+    },
+    {
+      "order_id": "8029c4a3-6581-5c6e-8009-79bc2d676611",
+      "user_id": "00000013-0000-0000-0000-000000000013",
+      "address_id": "ad000013-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000013-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 180.5,
+      "created_at": "2024-02-01T11:40:00+00:00",
+      "updated_at": "2024-02-01T11:40:00+00:00"
+    },
+    {
+      "order_id": "5d9b6870-72fa-5abd-9f68-91926339f1ba",
+      "user_id": "00000014-0000-0000-0000-000000000014",
+      "address_id": "ad000014-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000014-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 299.99,
+      "created_at": "2024-02-01T11:50:00+00:00",
+      "updated_at": "2024-02-01T11:50:00+00:00"
+    },
+    {
+      "order_id": "ae502390-f9c3-527e-8f92-eb5c2c41f5ea",
+      "user_id": "00000015-0000-0000-0000-000000000015",
+      "address_id": "ad000015-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000015-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 799.0,
+      "created_at": "2024-02-01T12:00:00+00:00",
+      "updated_at": "2024-02-01T12:00:00+00:00"
+    },
+    {
+      "order_id": "ab916c29-95de-5be8-b762-be4c584bd706",
+      "user_id": "00000016-0000-0000-0000-000000000016",
+      "address_id": "ad000016-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000016-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 110.25,
+      "created_at": "2024-02-01T12:10:00+00:00",
+      "updated_at": "2024-02-01T12:10:00+00:00"
+    },
+    {
+      "order_id": "54787cda-3ce6-5087-93a0-3e223a436725",
+      "user_id": "00000020-0000-0000-0000-000000000020",
+      "address_id": "ad000020-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000020-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 49.99,
+      "created_at": "2024-02-01T12:20:00+00:00",
+      "updated_at": "2024-02-01T12:20:00+00:00"
+    },
+    {
+      "order_id": "ade73f44-5317-5a74-a939-234b191fc00f",
+      "user_id": "00000021-0000-0000-0000-000000000021",
+      "address_id": "ad000021-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000021-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 39.95,
+      "created_at": "2024-02-01T12:30:00+00:00",
+      "updated_at": "2024-02-01T12:30:00+00:00"
+    },
+    {
+      "order_id": "d062d204-2bd3-546f-941d-9d5bb32623bf",
+      "user_id": "00000022-0000-0000-0000-000000000022",
+      "address_id": "ad000022-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000022-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 399.0,
+      "created_at": "2024-02-01T12:40:00+00:00",
+      "updated_at": "2024-02-01T12:40:00+00:00"
+    },
+    {
+      "order_id": "c585cdb3-8b68-5366-8000-af2baa4ddc47",
+      "user_id": "00000023-0000-0000-0000-000000000023",
+      "address_id": "ad000023-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000023-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 450.0,
+      "created_at": "2024-02-01T12:50:00+00:00",
+      "updated_at": "2024-02-01T12:50:00+00:00"
+    },
+    {
+      "order_id": "2270a0d5-04d6-51f1-bad9-26e521836a0f",
+      "user_id": "00000024-0000-0000-0000-000000000024",
+      "address_id": "ad000024-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000024-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 150.0,
+      "created_at": "2024-02-01T13:00:00+00:00",
+      "updated_at": "2024-02-01T13:00:00+00:00"
+    },
+    {
+      "order_id": "6517a1de-d03f-52aa-bbf5-df45d4d77ae5",
+      "user_id": "00000025-0000-0000-0000-000000000025",
+      "address_id": "ad000025-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000025-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 22.0,
+      "created_at": "2024-02-01T13:10:00+00:00",
+      "updated_at": "2024-02-01T13:10:00+00:00"
+    },
+    {
+      "order_id": "68b48e04-9ebc-5603-87e9-56028c8de20e",
+      "user_id": "00000026-0000-0000-0000-000000000026",
+      "address_id": "ad000026-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000026-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 1499.99,
+      "created_at": "2024-02-01T13:20:00+00:00",
+      "updated_at": "2024-02-01T13:20:00+00:00"
+    },
+    {
+      "order_id": "2cb6a798-a996-5d7e-b3a4-c6735b0cbaed",
+      "user_id": "00000027-0000-0000-0000-000000000027",
+      "address_id": "ad000027-0001-0000-0000-000000000001",
+      "credit_card_id": "cc000027-0001-0000-0000-000000000001",
+      "status": "pending",
+      "total_amount": 25.5,
+      "created_at": "2024-02-01T13:30:00+00:00",
+      "updated_at": "2024-02-01T13:30:00+00:00"
     }
   ],
   "order_items": [
     {
-      "order_item_id": "b2000000-0000-0000-0000-000000000002",
-      "order_id": "a2000000-0000-0000-0000-000000000002",
+      "order_item_id": "744ff909-f22c-5e1f-8088-54716e2e9491",
+      "order_id": "4e6c5038-d0f6-5f76-85ba-6f236b4cd163",
       "product_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       "quantity": 1,
       "price_at_purchase": 1499.99
     },
     {
-      "order_item_id": "b4000000-0000-0000-0000-000000000004",
-      "order_id": "a4000000-0000-0000-0000-000000000004",
+      "order_item_id": "873bad8a-e41d-55df-9157-e10962381930",
+      "order_id": "1b703d74-0a6e-567a-a461-b93271b5e47e",
+      "product_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      "quantity": 1,
+      "price_at_purchase": 25.5
+    },
+    {
+      "order_item_id": "e8658972-d55b-5130-aba2-1b4d5dc3de4f",
+      "order_id": "aa6e4588-106a-5db4-aa38-d8c4cc717bfc",
+      "product_id": "b2c3d4e5-f6a7-8901-2345-678901bcdef0",
+      "quantity": 1,
+      "price_at_purchase": 75.0
+    },
+    {
+      "order_item_id": "c2d11e93-f2d4-5ae6-a315-53a3c6bd28a2",
+      "order_id": "99c4e447-9e2d-5db5-9a5c-c82ab7770f06",
+      "product_id": "c3d4e5f6-a7b8-9012-3456-789012cdef01",
+      "quantity": 1,
+      "price_at_purchase": 320.0
+    },
+    {
+      "order_item_id": "03a3ffc4-33f9-5be2-976e-d6e651e4bc12",
+      "order_id": "01143bd7-72d2-5ae5-af74-f22f11882de7",
+      "product_id": "d4e5f6a7-b8c9-0123-4567-890123def012",
+      "quantity": 1,
+      "price_at_purchase": 99.9
+    },
+    {
+      "order_item_id": "c6ba14ff-ea7f-59dd-b18e-1e59ba2be803",
+      "order_id": "671c7092-a373-5b56-931d-253fde055a2b",
+      "product_id": "e5f6a7b8-c9d0-1234-5678-901234ef0123",
+      "quantity": 1,
+      "price_at_purchase": 199.0
+    },
+    {
+      "order_item_id": "93d131ca-7d28-5775-8dd8-237d8175e26f",
+      "order_id": "275cd78d-bbe1-57a0-900c-0d132e70ce23",
+      "product_id": "f6a7b8c9-d0e1-2345-6789-012345f01234",
+      "quantity": 1,
+      "price_at_purchase": 45.75
+    },
+    {
+      "order_item_id": "ec82df64-e475-54a5-8c59-94ec2daa5180",
+      "order_id": "33d372b0-3763-5e55-916e-ea95bfbe79a0",
+      "product_id": "07b8c9d0-e1f2-3456-7890-123456012345",
+      "quantity": 1,
+      "price_at_purchase": 35.0
+    },
+    {
+      "order_item_id": "610b9248-8cdc-5223-9762-f315b1a60494",
+      "order_id": "7294e297-971c-5067-a1a7-77f352f086d6",
+      "product_id": "18c9d0e1-f2a3-4567-8901-234567123456",
+      "quantity": 1,
+      "price_at_purchase": 120.0
+    },
+    {
+      "order_item_id": "8d11aa8a-e68e-5f6c-a8cf-1b5d5fbfc132",
+      "order_id": "652d82c2-e3f1-5183-b586-d2f82f48a716",
+      "product_id": "29d0e1f2-a3b4-5678-9012-345678234567",
+      "quantity": 1,
+      "price_at_purchase": 250.0
+    },
+    {
+      "order_item_id": "b6bb3641-1ed0-5ad8-bb6c-22f18db6fc67",
+      "order_id": "8029c4a3-6581-5c6e-8009-79bc2d676611",
+      "product_id": "30e1f2a3-b4c5-6789-0123-456789345678",
+      "quantity": 1,
+      "price_at_purchase": 180.5
+    },
+    {
+      "order_item_id": "45384d79-f029-5281-9606-15d504ec68af",
+      "order_id": "5d9b6870-72fa-5abd-9f68-91926339f1ba",
+      "product_id": "41f2a3b4-c5d6-7890-1234-567890456789",
+      "quantity": 1,
+      "price_at_purchase": 299.99
+    },
+    {
+      "order_item_id": "2f1901fa-e017-5380-8e0c-86280e959b48",
+      "order_id": "ae502390-f9c3-527e-8f92-eb5c2c41f5ea",
+      "product_id": "52a3b4c5-d6e7-8901-2345-678901567890",
+      "quantity": 1,
+      "price_at_purchase": 799.0
+    },
+    {
+      "order_item_id": "6394e6c0-7a60-58b5-a48c-16eaa262599f",
+      "order_id": "ab916c29-95de-5be8-b762-be4c584bd706",
+      "product_id": "63b4c5d6-e7f8-9012-3456-789012678901",
+      "quantity": 1,
+      "price_at_purchase": 110.25
+    },
+    {
+      "order_item_id": "c9959de1-a05a-5a24-9fbe-4490d5be5a2e",
+      "order_id": "54787cda-3ce6-5087-93a0-3e223a436725",
+      "product_id": "74c5d6e7-f8a9-0123-4567-890123789012",
+      "quantity": 1,
+      "price_at_purchase": 49.99
+    },
+    {
+      "order_item_id": "fb8e89ed-9d5a-5356-b6f4-1a43e07b4fee",
+      "order_id": "ade73f44-5317-5a74-a939-234b191fc00f",
+      "product_id": "85d6e7f8-a9b0-1234-5678-901234890123",
+      "quantity": 1,
+      "price_at_purchase": 39.95
+    },
+    {
+      "order_item_id": "df99ab94-f434-5e19-bf71-224fb466265a",
+      "order_id": "d062d204-2bd3-546f-941d-9d5bb32623bf",
+      "product_id": "96e7f8a9-b0c1-2345-6789-012345901234",
+      "quantity": 1,
+      "price_at_purchase": 399.0
+    },
+    {
+      "order_item_id": "fe5d0da2-9fcb-5d10-9594-c6a90cb283fd",
+      "order_id": "c585cdb3-8b68-5366-8000-af2baa4ddc47",
+      "product_id": "a7f8a9b0-c1d2-3456-7890-123456a12345",
+      "quantity": 1,
+      "price_at_purchase": 450.0
+    },
+    {
+      "order_item_id": "32604a8e-4a0d-5754-9e8f-b5cd8253f703",
+      "order_id": "2270a0d5-04d6-51f1-bad9-26e521836a0f",
+      "product_id": "b8a9b0c1-d2e3-4567-8901-234567b23456",
+      "quantity": 1,
+      "price_at_purchase": 150.0
+    },
+    {
+      "order_item_id": "559c85e3-696c-5106-96e0-e6e7bfc83b93",
+      "order_id": "6517a1de-d03f-52aa-bbf5-df45d4d77ae5",
+      "product_id": "c9b0c1d2-e3f4-5678-9012-345678c34567",
+      "quantity": 1,
+      "price_at_purchase": 22.0
+    },
+    {
+      "order_item_id": "0b153232-c2eb-598d-8fda-3b633af5a572",
+      "order_id": "68b48e04-9ebc-5603-87e9-56028c8de20e",
+      "product_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "quantity": 1,
+      "price_at_purchase": 1499.99
+    },
+    {
+      "order_item_id": "d52ce2e5-1fb3-5e26-b166-5d8c3bcbaac4",
+      "order_id": "2cb6a798-a996-5d7e-b3a4-c6735b0cbaed",
       "product_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
       "quantity": 1,
       "price_at_purchase": 25.5
