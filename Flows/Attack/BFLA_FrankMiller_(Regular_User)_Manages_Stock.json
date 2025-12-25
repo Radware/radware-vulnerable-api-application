@@ -3,10 +3,10 @@
     "name": "BFLA: FrankMiller (Regular User) Manages Stock",
     "description": "FrankMiller, a non-admin user, exploits BFLA to update the stock of an existing product.",
     "staticVars": {
-      "baseUrl": "http://vampi.bowz.fr",
+      "baseUrl": "https://bla-bypass.ase-team.com",
       "frankUsername": "FrankMiller",
       "frankPassword": "FrankPass6^",
-      "targetProductIdForStock": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+      "targetProductIdForStock": "b8a9b0c1-d2e3-4567-8901-234567b23456"
     },
     "steps": [
       {

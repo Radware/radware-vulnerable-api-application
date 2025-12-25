@@ -3,10 +3,10 @@
     "name": "Parameter Pollution: AliceSmith Modifies Product Status & Injection Search",
     "description": "AliceSmith modifies a product's internal status via parameter pollution and then performs a product search with an injection-like string.",
     "staticVars": {
-      "baseUrl": "http://vampi.bowz.fr",
+      "baseUrl": "https://bla-bypass.ase-team.com",
       "aliceUsername": "AliceSmith",
       "alicePassword": "AlicePass1!",
-      "targetProductIdForStatus": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      "targetProductIdForStatus": "a7f8a9b0-c1d2-3456-7890-123456a12345"
     },
     "steps": [
       {
@@ -25,7 +25,7 @@
         "name": "AliceSmith Modifies Product Internal Status (Parameter Pollution)",
         "type": "request",
         "method": "PUT",
-        "url": "{{baseUrl}}/api/products/{{targetProductIdForStatus}}?name=Wireless%20Mouse&internal_status=backdoored",
+        "url": "{{baseUrl}}/api/products/{{targetProductIdForStatus}}?name=Digital%20Camera%20DSLR&internal_status=backdoored",
         "headers": {
           "Authorization": "Bearer {{alice_token}}"
         },

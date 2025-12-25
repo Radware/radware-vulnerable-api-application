@@ -1,0 +1,108 @@
+{
+  "name": "CarolWhite - Product Browsing and Searching",
+  "description": "CarolWhite logs in, views her profile, browses the main product catalog, searches for two different items, and views a specific product's details. She does not make a purchase.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "steps": [
+    {
+      "id": "step_carol_login",
+      "name": "Login CarolWhite",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{carolUsername}}&password={{carolPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_carol_get_profile",
+      "name": "Carol: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{carolUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carol_browse_products",
+      "name": "Carol: Browse All Products",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carol_view_product_details",
+      "name": "Carol: View Specific Product Details",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/{{protectedProductId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_carol_search_for_mouse",
+      "name": "Carol: Search for 'Mouse'",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name=Mouse",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_carol_search_for_headset",
+      "name": "Carol: Search for 'Headset'",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name=Headset",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "carolUsername": "CarolWhite",
+    "carolPassword": "CarolPass3#",
+    "carolUserId": "00000004-0000-0000-0000-000000000004",
+    "protectedProductId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  },
+  "visualLayout": {
+    "step_carol_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_carol_get_profile": {
+      "x": 250,
+      "y": 50
+    },
+    "step_carol_browse_products": {
+      "x": 450,
+      "y": 50
+    },
+    "step_carol_view_product_details": {
+      "x": 650,
+      "y": 50
+    },
+    "step_carol_search_for_mouse": {
+      "x": 450,
+      "y": 150
+    },
+    "step_carol_search_for_headset": {
+      "x": 650,
+      "y": 150
+    }
+  }
+}

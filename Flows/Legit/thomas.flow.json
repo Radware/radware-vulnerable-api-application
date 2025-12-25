@@ -1,0 +1,77 @@
+{
+  "name": "ThomasWright - Full Credit Card Management Cycle",
+  "description": "ThomasWright logs in, lists his cards, adds a temporary card, lists again, sets the new card as default, lists again to verify the change, and then deletes the temporary card. This provides a complete, idempotent account management sequence for credit cards.",
+  "headers": { "Accept": "application/json" },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "thomasUsername": "ThomasWright",
+    "thomasPassword": "ThomasPass19!",
+    "thomasUserId": "00000020-0000-0000-0000-000000000020"
+  },
+  "steps": [
+    {
+      "id": "step_thomas_login",
+      "name": "Login ThomasWright",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{thomasUsername}}&password={{thomasPassword}}",
+      "extract": { "token": "body.access_token" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_get_profile",
+      "name": "Thomas: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_add_temp_card",
+      "name": "Thomas: Add Temporary Credit Card",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}/credit-cards?cardholder_name=Temp%20Card%20Thomas&card_number=5300300030003000&expiry_month=11&expiry_year=2033&cvv=666&is_default=false",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "extract": { "temp_card_id": "body.card_id" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_list_after_add",
+      "name": "Thomas: List Cards After Add",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}/credit-cards",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_set_as_default",
+      "name": "Thomas: Set Temporary Card as Default",
+      "type": "request",
+      "method": "PUT",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}/credit-cards/{{temp_card_id}}?is_default=true",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_list_after_default",
+      "name": "Thomas: List Cards After Setting Default",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}/credit-cards",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomas_delete_temp_card",
+      "name": "Thomas: Delete Temporary Card (Cleanup)",
+      "type": "request",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/users/{{thomasUserId}}/credit-cards/{{temp_card_id}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "continue"
+    }
+  ]
+}

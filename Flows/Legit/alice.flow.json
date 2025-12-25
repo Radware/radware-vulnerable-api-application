@@ -1,0 +1,108 @@
+{
+  "name": "AliceSmith - Full Purchase Cycle",
+  "description": "AliceSmith logs in, fetches her profile and payment info, browses products, views a specific product, and places an order. This flow represents a complete and realistic 'happy path' for a legitimate purchase, providing a core sequence for BLA learning.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "aliceUsername": "AliceSmith",
+    "alicePassword": "AlicePass1!",
+    "aliceUserId": "00000002-0000-0000-0000-000000000002",
+    "protectedProductId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  },
+  "steps": [
+    {
+      "id": "step_alice_login",
+      "name": "Login AliceSmith",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{aliceUsername}}&password={{alicePassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_alice_get_profile",
+      "name": "Alice: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_alice_get_addresses",
+      "name": "Alice: Get Available Addresses (Pre-Order)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/addresses",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "addressId": "body.[0].address_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_alice_get_cards",
+      "name": "Alice: Get Available Credit Cards (Pre-Order)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "cardId": "body.[0].card_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_alice_browse_products",
+      "name": "Alice: Browse Products Catalog",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_alice_view_product_detail",
+      "name": "Alice: View Specific Product",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/{{protectedProductId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_alice_create_order",
+      "name": "Alice: Create Order",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/orders?address_id={{addressId}}&credit_card_id={{cardId}}&product_id_1={{protectedProductId}}&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "visualLayout": {
+    "step_alice_login": {"x": 50, "y": 50},
+    "step_alice_get_profile": {"x": 250, "y": 50},
+    "step_alice_get_addresses": {"x": 450, "y": 50},
+    "step_alice_get_cards": {"x": 650, "y": 50},
+    "step_alice_browse_products": {"x": 50, "y": 150},
+    "step_alice_view_product_detail": {"x": 250, "y": 150},
+    "step_alice_create_order": {"x": 450, "y": 150}
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "name": "AliceSmith - Legacy Address Search & B2B Lookups",
+  "description": "Protected user AliceSmith logs in and uses newly added legacy endpoints (address search + legacy order status) and the B2B partner lookup in non-destructive, read-only ways. The legacy order status uses a prepopulated order for Alice.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "steps": [
+    {
+      "id": "step_alice_login_legacy_b2b",
+      "name": "Login AliceSmith",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{aliceUsername}}&password={{alicePassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_alice_search_address_legacy_street",
+      "name": "Alice: Legacy Address Search by Street",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/addresses/search-legacy?q={{addressSearchQueryStreet}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop",
+      "extract": {
+        "legacyAddressId": "body.[0].address_id"
+      }
+    },
+    {
+      "id": "step_alice_search_address_legacy_city",
+      "name": "Alice: Legacy Address Search by City",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/addresses/search-legacy?q={{addressSearchQueryCity}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_alice_legacy_order_status",
+      "name": "Alice: Legacy Order Status (Read-Only)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{aliceUserId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_b2b_partner_lookup_primary",
+      "name": "B2B: Legacy Partner Lookup (Primary Code)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCodePrimary}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_partner_lookup_secondary",
+      "name": "B2B: Legacy Partner Lookup (Secondary Code)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCodeSecondary}}",
+      "onFailure": "continue"
+    }
+  ],
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "aliceUsername": "AliceSmith",
+    "alicePassword": "AlicePass1!",
+    "aliceUserId": "00000002-0000-0000-0000-000000000002",
+    "legacyOrderId": "a2000000-0000-0000-0000-000000000002",
+    "legacyToken": "legacy-demo",
+    "addressSearchQueryStreet": "Oak",
+    "addressSearchQueryCity": "Springfield",
+    "partnerCodePrimary": "shske345pll",
+    "partnerCodeSecondary": "pccuf987szf"
+  },
+  "visualLayout": {
+    "step_alice_login_legacy_b2b": {
+      "x": 50,
+      "y": 50
+    },
+    "step_alice_search_address_legacy_street": {
+      "x": 250,
+      "y": 50
+    },
+    "step_alice_search_address_legacy_city": {
+      "x": 450,
+      "y": 50
+    },
+    "step_alice_legacy_order_status": {
+      "x": 650,
+      "y": 50
+    },
+    "step_b2b_partner_lookup_primary": {
+      "x": 250,
+      "y": 150
+    },
+    "step_b2b_partner_lookup_secondary": {
+      "x": 450,
+      "y": 150
+    }
+  }
+}

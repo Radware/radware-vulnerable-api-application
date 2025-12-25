@@ -1,0 +1,81 @@
+{
+  "name": "VictorZhang - Login and View Specific Order Detail",
+  "description": "VictorZhang logs in, lists his past orders to find one, and then views the details of that specific order. This flow is distinct from viewing the entire order list and represents a common user action.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "victorUsername": "VictorZhang",
+    "victorPassword": "VictorPass21!",
+    "victorUserId": "00000022-0000-0000-0000-000000000022"
+  },
+  "steps": [
+    {
+      "id": "step_victor_login",
+      "name": "Login VictorZhang",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{victorUsername}}&password={{victorPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victor_get_profile",
+      "name": "Victor: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victorUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victor_list_orders",
+      "name": "Victor: List Orders to Find One",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victorUserId}}/orders",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "firstOrderId": "body.[0].order_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victor_check_if_order_exists",
+      "name": "Condition: Was an Order ID extracted?",
+      "type": "condition",
+      "conditionData": {
+        "variable": "firstOrderId",
+        "operator": "exists",
+        "value": ""
+      },
+      "then": [
+        {
+          "id": "step_victor_view_order_detail",
+          "name": "Victor: View Specific Order Detail",
+          "type": "request",
+          "method": "GET",
+          "url": "{{baseUrl}}/api/users/{{victorUserId}}/orders/{{firstOrderId}}",
+          "headers": {
+            "Authorization": "Bearer {{token}}"
+          },
+          "onFailure": "continue"
+        }
+      ],
+      "else": []
+    }
+  ],
+  "visualLayout": {
+    "step_victor_login": { "x": 50, "y": 50 },
+    "step_victor_get_profile": { "x": 250, "y": 50 },
+    "step_victor_list_orders": { "x": 450, "y": 50 },
+    "step_victor_check_if_order_exists": { "x": 650, "y": 50 }
+  }
+}

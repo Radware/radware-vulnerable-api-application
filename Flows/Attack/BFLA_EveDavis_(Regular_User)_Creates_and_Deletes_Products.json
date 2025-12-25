@@ -20,7 +20,7 @@
       "name": "EveDavis Creates Product (BFLA)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/api/products?name=EveSecretProduct&price=1.99&description=UnauthorizedCreation&category=BFLA",
+      "url": "{{baseUrl}}/api/products/?name=EveSecretProduct&price=1.99&description=UnauthorizedCreation&category=BFLA",
       "headers": {
         "Authorization": "Bearer {{eve_token}}"
       },
@@ -53,7 +53,7 @@
     }
   ],
   "staticVars": {
-    "baseUrl": "http://vampi.bowz.fr",
+    "baseUrl": "https://bla-bypass.ase-team.com",
     "eveUsername": "EveDavis",
     "evePassword": "EvePass5%"
   },

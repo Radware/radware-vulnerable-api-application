@@ -1,0 +1,73 @@
+{
+  "name": "IvyTaylor - Profile Confirmation (Idempotent Update)",
+  "description": "IvyTaylor logs in, fetches her profile, and then immediately re-sends her current email in an update request. This simulates a user clicking 'save' on their profile without making changes, teaching the system that this idempotent update pattern is legitimate.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "ivyUsername": "IvyTaylor",
+    "ivyPassword": "IvyPass9(",
+    "ivyUserId": "00000010-0000-0000-0000-000000000010"
+  },
+  "steps": [
+    {
+      "id": "step_ivy_login",
+      "name": "Login IvyTaylor",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{ivyUsername}}&password={{ivyPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivy_get_profile_to_extract_email",
+      "name": "Ivy: Get Profile to Extract Current Email",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{ivyUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "current_email": "body.email"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivy_idempotent_email_update",
+      "name": "Ivy: 'Updates' Email with the Same Value",
+      "type": "request",
+      "method": "PUT",
+      "url": "{{baseUrl}}/api/users/{{ivyUserId}}?email={{current_email}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "updated_email": "body.email"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_ivy_verify_update_succeeded",
+      "name": "Condition: Verify 'Update' Succeeded",
+      "type": "condition",
+      "description": "Verifies that the email in the response from the PUT request matches the original email, confirming the no-op update was successful.",
+      "conditionData": {
+        "variable": "updated_email",
+        "operator": "equals",
+        "value": "{{current_email}}"
+      },
+      "then": [],
+      "else": []
+    }
+  ],
+  "visualLayout": {
+    "step_ivy_login": { "x": 50, "y": 50 },
+    "step_ivy_get_profile_to_extract_email": { "x": 250, "y": 50 },
+    "step_ivy_idempotent_email_update": { "x": 450, "y": 50 },
+    "step_ivy_verify_update_succeeded": { "x": 650, "y": 50 }
+  }
+}

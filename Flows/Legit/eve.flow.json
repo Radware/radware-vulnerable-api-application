@@ -1,0 +1,111 @@
+{
+  "name": "EveDavis - Multi-Product Order",
+  "description": "EveDavis logs in, loads her profile, and places a single order containing two different products, using her first available address and card. This teaches the system about legitimate multi-item orders via query parameters.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "eveUsername": "EveDavis",
+    "evePassword": "EvePass5%",
+    "eveUserId": "00000006-0000-0000-0000-000000000006",
+    "product1": "d4e5f6a7-b8c9-0123-4567-890123def012",
+    "product2": "e5f6a7b8-c9d0-1234-5678-901234ef0123"
+  },
+  "steps": [
+    {
+      "id": "step_evedavis_login",
+      "name": "Login EveDavis",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{eveUsername}}&password={{evePassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_evedavis_get_profile",
+      "name": "EveDavis: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{eveUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_evedavis_get_addresses",
+      "name": "EveDavis: Get Available Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{eveUserId}}/addresses",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "addressId": "body.[0].address_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_evedavis_get_cards",
+      "name": "EveDavis: Get Available Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{eveUserId}}/credit-cards",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "cardId": "body.[0].card_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_evedavis_check_prerequisites",
+      "name": "Condition: Check if Address and Card IDs were extracted",
+      "type": "condition",
+      "conditionData": {
+        "operator": "exists",
+        "variable": "addressId"
+      },
+      "then": [
+        {
+          "id": "step_evedavis_check_card_exists",
+          "name": "Condition: Check if Card ID Exists",
+          "type": "condition",
+          "conditionData": {
+            "operator": "exists",
+            "variable": "cardId"
+          },
+          "then": [
+            {
+              "id": "step_evedavis_place_multi_product_order",
+              "name": "EveDavis: Places Multi-Product Order",
+              "type": "request",
+              "method": "POST",
+              "url": "{{baseUrl}}/api/users/{{eveUserId}}/orders?address_id={{addressId}}&credit_card_id={{cardId}}&product_id_1={{product1}}&quantity_1=1&product_id_2={{product2}}&quantity_2=2",
+              "headers": {
+                "Authorization": "Bearer {{token}}"
+              },
+              "onFailure": "continue"
+            }
+          ],
+          "else": []
+        }
+      ],
+      "else": []
+    }
+  ],
+  "visualLayout": {
+    "step_evedavis_login": { "x": 50, "y": 50 },
+    "step_evedavis_get_profile": { "x": 250, "y": 50 },
+    "step_evedavis_get_addresses": { "x": 450, "y": 50 },
+    "step_evedavis_get_cards": { "x": 650, "y": 50 },
+    "step_evedavis_check_prerequisites": { "x": 50, "y": 150 },
+    "step_evedavis_check_card_exists": { "x": 250, "y": 220 },
+    "step_evedavis_place_multi_product_order": { "x": 450, "y": 290 }
+  }
+}

