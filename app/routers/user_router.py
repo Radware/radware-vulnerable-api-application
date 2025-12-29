@@ -277,7 +277,11 @@ async def list_users(current_user: TokenData = Depends(get_current_user)):
         current_user.username,
         current_user.user_id,
     )
-    return [User.model_validate(u) for u in db.db_users_by_id.values()]
+    if hasattr(db, "list_users"):
+        users = db.list_users()
+    else:
+        users = list(db.db_users_by_id.values())
+    return [User.model_validate(u) for u in users]
 
 
 ## Credit Card Endpoints ##
