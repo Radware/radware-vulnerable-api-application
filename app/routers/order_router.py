@@ -39,6 +39,13 @@ def get_product_and_stock(product_id: UUID):
     return product, stock
 
 
+def get_coupon_by_code_unsafe(coupon_code: str):
+    unsafe_lookup = getattr(db, "unsafe_get_coupon_by_code", None)
+    if callable(unsafe_lookup):
+        return unsafe_lookup(coupon_code)
+    return db.db_coupons_by_code.get(coupon_code)
+
+
 @router.get("", response_model=List[Order])
 async def list_user_orders(
     user_id: UUID, current_user: TokenData = Depends(get_current_user)
@@ -401,7 +408,7 @@ async def apply_coupon_to_order(
     # --- START OF VULNERABLE LOGIC ---
     if not order_db:
         # VULNERABILITY: Order does not exist. Instead of failing, we cache the coupon.
-        coupon = db.db_coupons_by_code.get(coupon_code)
+        coupon = get_coupon_by_code_unsafe(coupon_code)
         if coupon and coupon.is_active:
             logger.info(
                 "VULNERABILITY: Order %s not found. Caching coupon '%s' for user %s.",
@@ -447,7 +454,7 @@ async def apply_coupon_to_order(
             detail="Coupon already applied to this order",
         )
 
-    coupon = db.db_coupons_by_code.get(coupon_code)
+    coupon = get_coupon_by_code_unsafe(coupon_code)
     if not coupon or not coupon.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Coupon not found or inactive"

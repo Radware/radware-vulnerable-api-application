@@ -1070,6 +1070,38 @@ class SQLiteBackend(DatabaseBackend):
             row = session.query(CouponModel).filter_by(code=code).first()
             return CouponInDBBase.model_validate(row) if row else None
 
+    def unsafe_get_coupon_by_code(self, code: str) -> Optional[CouponInDBBase]:
+        query = f"SELECT * FROM coupons WHERE code = '{code}'"
+        dialect = getattr(self.engine.dialect, "name", "")
+
+        with self.engine.connect() as conn:
+            trans = None
+            try:
+                if dialect == "postgresql":
+                    trans = conn.begin()
+                    conn.execute(text("SET TRANSACTION READ ONLY"))
+                elif dialect in {"mysql", "mariadb"}:
+                    conn.execute(text("SET TRANSACTION READ ONLY"))
+                    trans = conn.begin()
+                elif dialect == "sqlite":
+                    conn.execute(text("PRAGMA query_only = true"))
+                    trans = conn.begin()
+                else:
+                    trans = conn.begin()
+                rows = conn.execute(text(query)).mappings().all()
+            finally:
+                if trans is not None:
+                    trans.rollback()
+                if dialect == "sqlite":
+                    try:
+                        conn.execute(text("PRAGMA query_only = false"))
+                    except Exception:
+                        pass
+
+        if not rows:
+            return None
+        return CouponInDBBase.model_validate(rows[0])
+
     def update_coupon(self, coupon_id: UUID, update_data: dict) -> CouponInDBBase:
         with self._session() as session:
             row = session.get(CouponModel, str(coupon_id))

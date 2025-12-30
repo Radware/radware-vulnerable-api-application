@@ -19,6 +19,8 @@ var appliedCouponCode = null; // Holds coupon code staged during checkout
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
 const LOGIN_REDIRECT_REASON_KEY = 'loginRedirectReason';
 const LOGIN_REDIRECT_EXP_KEY = 'loginRedirectExpiry';
+const MAX_CLIENT_ITEM_QTY = 50;
+const BULK_ORDER_MESSAGE = 'For major stock purchases please contact support.';
 
 // DOM content loaded event to setup initial UI
 document.addEventListener('DOMContentLoaded', () => {
@@ -2117,22 +2119,44 @@ function renderProducts(products) {
 // Cart handling functions
 function addToCart(item) {
     const existingItemIndex = cart.findIndex(cartItem => cartItem.product_id === item.product_id);
+    let wasCapped = false;
     if (existingItemIndex !== -1) {
-        cart[existingItemIndex].quantity += item.quantity;
+        const requestedQuantity = parseInt(item.quantity, 10) || 1;
+        const proposedQuantity = cart[existingItemIndex].quantity + requestedQuantity;
+        const cappedQuantity = Math.min(proposedQuantity, MAX_CLIENT_ITEM_QTY);
+        if (cappedQuantity !== proposedQuantity) {
+            wasCapped = true;
+        }
+        cart[existingItemIndex].quantity = cappedQuantity;
     } else {
-        cart.push(item);
+        const requestedQuantity = parseInt(item.quantity, 10) || 1;
+        const cappedQuantity = Math.min(requestedQuantity, MAX_CLIENT_ITEM_QTY);
+        if (cappedQuantity !== requestedQuantity) {
+            wasCapped = true;
+        }
+        cart.push({ ...item, quantity: cappedQuantity });
     }
     saveCart();
+    if (wasCapped) {
+        displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+        return;
+    }
     displayGlobalMessage(`Added ${item.quantity} "${item.name}" to cart.`, 'success');
 }
 
 function updateCartItemQuantity(productId, newQuantity) {
     const itemIndex = cart.findIndex(item => item.product_id === productId);
     if (itemIndex !== -1) {
-        if (newQuantity <= 0) {
+        const normalizedQuantity = parseInt(newQuantity, 10);
+        if (Number.isNaN(normalizedQuantity) || normalizedQuantity <= 0) {
             removeCartItem(productId);
         } else {
-            cart[itemIndex].quantity = newQuantity;
+            let cappedQuantity = normalizedQuantity;
+            if (cappedQuantity > MAX_CLIENT_ITEM_QTY) {
+                cappedQuantity = MAX_CLIENT_ITEM_QTY;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+            }
+            cart[itemIndex].quantity = cappedQuantity;
             saveCart();
         }
     }
@@ -2249,7 +2273,7 @@ function displayCart() {
                                 </svg>
                             </button>
                             <input type="number" class="quantity-input cart-quantity" data-testid="cart-quantity" 
-                                   value="${item.quantity}" min="1" max="99">
+                                   value="${item.quantity}" min="1" max="${MAX_CLIENT_ITEM_QTY}">
                             <button type="button" class="quantity-btn increase" data-testid="increase-quantity" aria-label="Increase quantity">
                                 <svg viewBox="0 0 24 24" width="16" height="16">
                                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
@@ -2285,10 +2309,15 @@ function setupCartEventListeners() {
     // Quantity change event listeners
     document.querySelectorAll('.cart-quantity').forEach(input => {
         input.addEventListener('change', function() {
-            const newQuantity = parseInt(this.value);
+            let newQuantity = parseInt(this.value);
             if (isNaN(newQuantity) || newQuantity < 1) {
                 this.value = 1;
                 return;
+            }
+            if (newQuantity > MAX_CLIENT_ITEM_QTY) {
+                newQuantity = MAX_CLIENT_ITEM_QTY;
+                this.value = newQuantity;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
             }
             
             const productId = this.closest('tr').dataset.productId;
@@ -2329,7 +2358,13 @@ function setupCartEventListeners() {
     document.querySelectorAll('.quantity-btn.increase').forEach(btn => {
         btn.addEventListener('click', function() {
             const input = this.parentElement.querySelector('.quantity-input');
-            const newVal = parseInt(input.value) + 1;
+            let newVal = parseInt(input.value) + 1;
+            if (newVal > MAX_CLIENT_ITEM_QTY) {
+                newVal = MAX_CLIENT_ITEM_QTY;
+                input.value = newVal;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+                return;
+            }
             input.value = newVal;
             
             const productId = this.closest('tr').dataset.productId;
@@ -2470,7 +2505,7 @@ async function fetchAndDisplayProductDetail(productId) {
                                         <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13H5v-2h14v2z" fill="currentColor"></path></svg>
                                     </button>
                                     <input type="number" id="quantity-detail" class="quantity-input" data-testid="quantity-input" 
-                                        value="1" min="1" max="${stockInfo.quantity || 0}" ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
+                                        value="1" min="1" max="${Math.min(stockInfo.quantity || 0, MAX_CLIENT_ITEM_QTY)}" ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
                                     <button type="button" class="quantity-btn increase" data-testid="increase-quantity" aria-label="Increase quantity">
                                         <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path></svg>
                                     </button>
@@ -2553,8 +2588,16 @@ async function fetchAndDisplayProductDetail(productId) {
                 const currentProductId = btn.dataset.productId;
                 const currentProductName = btn.dataset.productName;
                 const currentProductPrice = parseFloat(btn.dataset.productPrice);
-                const quantity = parseInt(document.getElementById('quantity-detail').value);
-                
+                const quantityInput = document.getElementById('quantity-detail');
+                const quantity = parseInt(quantityInput.value);
+                const maxAllowed = Math.min(stockInfo.quantity || 0, MAX_CLIENT_ITEM_QTY);
+
+                if (quantity > MAX_CLIENT_ITEM_QTY) {
+                    displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+                    quantityInput.value = maxAllowed || 1;
+                    return;
+                }
+
                 if (quantity > 0 && quantity <= (stockInfo.quantity || 0)) {
                     btn.classList.add('clicked');
                     setTimeout(() => btn.classList.remove('clicked'), 300);
@@ -3798,6 +3841,14 @@ async function handleOrderSubmission(e) {
     submitButton.disabled = true;
 
     try {
+        const overLimitItem = cart.find(item => item.quantity > MAX_CLIENT_ITEM_QTY);
+        if (overLimitItem) {
+            displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+            return;
+        }
+
         // Get user's selected address and card
         let addressId = document.getElementById('address-id')?.value;
         let creditCardId = document.getElementById('credit-card-id')?.value;

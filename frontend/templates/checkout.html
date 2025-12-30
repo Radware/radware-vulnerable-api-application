@@ -46,6 +46,7 @@
         .btn-danger:hover { background-color: var(--danger-hover); }
         .btn-secondary { background-color: var(--text-light); color:white;}
         .btn-secondary:hover { background-color: #5a6268;}
+        .checkout-note { margin-top: 8px; font-size: 0.9rem; color: var(--text-light); }
 
     </style>
 {% endblock %}
@@ -178,6 +179,7 @@
     <!-- Place Order Button - Associated with the form via its 'form' attribute -->
     <div style="text-align:right; margin-top: 24px;">
         <button type="submit" form="checkout-form" id="place-order-btn" class="btn btn-primary btn-lg">Place Order</button>
+        <p class="checkout-note">For canceling orders please contact support.</p>
     </div>
 </div>
 {% endblock %}
