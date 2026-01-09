@@ -1,0 +1,78 @@
+{
+  "name": "DavidBrown - Legacy + B2B Discovery",
+  "description": "Protected user DavidBrown logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "DavidBrown",
+    "userPassword": "DavidPass4$",
+    "userId": "00000005-0000-0000-0000-000000000005",
+    "legacyOrderId": "01143bd7-72d2-5ae5-af74-f22f11882de7",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Gotham",
+    "partnerCode": "david115own"
+  },
+  "steps": [
+    {
+      "id": "step_davidbrown_login",
+      "name": "Login DavidBrown",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_davidbrown_legacy_address_search",
+      "name": "DavidBrown: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_davidbrown_legacy_order_status",
+      "name": "DavidBrown: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_davidbrown_b2b_partner_lookup",
+      "name": "DavidBrown: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_davidbrown_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_davidbrown_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_davidbrown_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_davidbrown_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

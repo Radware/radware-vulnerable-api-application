@@ -277,7 +277,11 @@ async def list_users(current_user: TokenData = Depends(get_current_user)):
         current_user.username,
         current_user.user_id,
     )
-    return [User.model_validate(u) for u in db.db_users_by_id.values()]
+    if hasattr(db, "list_users"):
+        users = db.list_users()
+    else:
+        users = list(db.db_users_by_id.values())
+    return [User.model_validate(u) for u in users]
 
 
 ## Credit Card Endpoints ##
@@ -410,11 +414,14 @@ async def add_credit_card_to_user(  # Removed Depends(get_current_user)
     user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
     if len(user_cards) == 1:  # If this is the first card
         new_card_in_db.is_default = True
+        db.update_credit_card(new_card_in_db.card_id, new_card_in_db.model_dump())
     elif is_default:  # If this card is marked as default
         for card_item in user_cards:
             if card_item.card_id != new_card_in_db.card_id:
                 card_item.is_default = False
+                db.update_credit_card(card_item.card_id, card_item.model_dump())
         new_card_in_db.is_default = True  # Ensure the new card is set
+        db.update_credit_card(new_card_in_db.card_id, new_card_in_db.model_dump())
 
     logger.info(
         "Credit card added for user %s. Intended BOLA: No owner check performed.",
@@ -487,9 +494,11 @@ async def update_user_credit_card(  # Removed Depends(get_current_user)
         for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
             if card_item.card_id != card_id:
                 card_item.is_default = False
+                db.update_credit_card(card_item.card_id, card_item.model_dump())
         credit_card_to_update.is_default = True  # Ensure target card is set
 
     credit_card_to_update.updated_at = datetime.now(timezone.utc)
+    db.update_credit_card(card_id, credit_card_to_update.model_dump())
     logger.info(
         "Credit card %s for user %s updated. Intended BOLA: No owner check performed.",
         card_id,
@@ -521,6 +530,12 @@ async def delete_user_credit_card(
             detail="Credit card not found for this user.",
         )
 
+    if getattr(card_to_delete, "is_protected", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Credit Card ID {card_id} is protected and cannot be deleted.",
+        )
+
     owner_user = db.db_users_by_id.get(user_id)  # user_exists is already owner_user
     if owner_user and owner_user.is_protected:
         remaining = db.db_credit_cards_by_user_id.get(user_id, [])
@@ -548,6 +563,7 @@ async def delete_user_credit_card(
         remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
+            db.update_credit_card(remaining_user_cards[0].card_id, remaining_user_cards[0].model_dump())
             logger.info(
                 "Card %s made default for user %s after deleting previous default.",
                 remaining_user_cards[0].card_id,

@@ -1,0 +1,84 @@
+{
+  "name": "PaulaGreen - Successful Purchase with Multi-Use SAVE10 Coupon",
+  "description": "PaulaGreen logs in, loads her profile, creates an order for a webcam, and successfully applies the multi-use 'SAVE10' coupon. This provides another example of a standard, legitimate purchase flow.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "paulaUsername": "PaulaGreen",
+    "paulaPassword": "PaulaPass15!",
+    "paulaUserId": "00000016-0000-0000-0000-000000000016",
+    "paulaDefaultAddressId": "ad000016-0001-0000-0000-000000000001",
+    "paulaDefaultCardId": "cc000016-0001-0000-0000-000000000001",
+    "productForOrder": "07b8c9d0-e1f2-3456-7890-123456012345",
+    "multiUseCouponCode": "SAVE10"
+  },
+  "steps": [
+    {
+      "id": "step_paula_login_coupon_purchase",
+      "name": "Login PaulaGreen",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{paulaUsername}}&password={{paulaPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_paula_get_profile",
+      "name": "Paula: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{paulaUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_paula_create_order",
+      "name": "Paula: Create Order",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{paulaUserId}}/orders?address_id={{paulaDefaultAddressId}}&credit_card_id={{paulaDefaultCardId}}&product_id_1={{productForOrder}}&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "order_id": "body.order_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_paula_apply_coupon",
+      "name": "Paula: Apply SAVE10 Coupon",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{paulaUserId}}/orders/{{order_id}}/apply-coupon?coupon_code={{multiUseCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_paula_get_final_order",
+      "name": "Paula: Get Final Order Details",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{paulaUserId}}/orders/{{order_id}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_paula_login_coupon_purchase": { "x": 50, "y": 50 },
+    "step_paula_get_profile": { "x": 250, "y": 50 },
+    "step_paula_create_order": { "x": 450, "y": 50 },
+    "step_paula_apply_coupon": { "x": 650, "y": 50 },
+    "step_paula_get_final_order": { "x": 450, "y": 150 }
+  }
+}

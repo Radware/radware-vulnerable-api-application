@@ -11,7 +11,7 @@
     but the primary interaction is via API clients (e.g., Postman, curl, custom scripts).
 *   **Framework:** FastAPI (Python) for its modern features, speed, and automatic OpenAPI documentation.
 *   **Database:** A simple in-memory Python dictionary acts as the database to keep the setup lightweight and focus on API logic rather than database intricacies. Data is ephemeral and resets on application restart.
-*   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`).
+*   **Authentication:** JWT (JSON Web Tokens) are used for authenticating users. Tokens are passed via Authorization headers (`Bearer <token>`). Access tokens expire after 3 hours; the UI redirects to login when they are expired or invalid.
 *   **Vulnerability Focus:** Endpoints are intentionally designed with security flaws to serve as learning examples.
 
 ## 2. Features
@@ -144,6 +144,69 @@ This often manifests as Mass Assignment or Parameter Pollution, where users can 
 *   Docker (Recommended)
 *   Python 3.9+ (if running locally without Docker)
 *   Git (for cloning, though not strictly necessary if files are manually downloaded)
+
+### Configuration via Environment Variables
+
+The application selects its database backend based on environment variables:
+
+* `DB_MODE` – one of `memory` (default), `sqlite`, or `external`.
+* `DB_SQLITE_PATH` – location for the SQLite file when using `DB_MODE=sqlite`.
+  Defaults to `/app/data/db.sqlite` in the container.
+* `DB_URL` – used only when `DB_MODE=external`. Provide a full SQLAlchemy
+  connection string. If the URL points to a SQLite file the built-in SQLite
+  backend is reused. For other databases (e.g., PostgreSQL/MySQL) make sure the
+  appropriate drivers are installed.
+* `DB_SYNC_PEER` – optional base URL of another instance for database
+  synchronization.
+* `DB_SYNC_INTERVAL` – polling interval in seconds when `DB_SYNC_PEER` is set
+  (default: 60).
+* `DB_SKIP_SCHEMA_INIT` – set to `true` to skip automatic table creation. Use
+  this when the database schema is managed externally.
+* `DB_SKIP_AUTO_SEED` – set to `true` to skip loading `prepopulated_data.json`
+  on startup. Useful when a peer or init job already seeded the data.
+* `DB_RESET_ON_START` – set to `true` to drop and recreate tables from
+  `prepopulated_data.json` on startup (intended for demos/tests).
+* `DB_STARTUP_LOCK` – set to `false` to disable the advisory lock used to
+  serialize schema creation and auto-seeding across multiple workers
+  (default: enabled where supported).
+
+#### Example Configurations
+
+**In-memory database (ephemeral)**
+```sh
+ docker run -d -p 8000:80 \
+  -e DB_MODE=memory \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+Data is stored only in memory and will be lost when the container stops.
+
+**SQLite inside the container**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_MODE=sqlite \
+  -e DB_SQLITE_PATH=/data/db.sqlite \
+  -v $(pwd)/data:/data \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+This stores the SQLite database in `./data/db.sqlite` on the host. Remove the `-v` option if you want the database kept only inside the container and discarded when it is removed.
+
+**External database**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_MODE=external \
+  -e DB_URL=postgresql+psycopg2://user:pass@dbserver/dbname \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+Replace the connection string with one appropriate for your database engine.
+
+**Peer sync**
+```sh
+docker run -d -p 8000:80 \
+  -e DB_SYNC_PEER=http://other-instance:8000 \
+  -e DB_SYNC_INTERVAL=30 \
+  --name radware-vuln-api vulnerable-ecommerce-api
+```
+The service will periodically push and pull data with the peer.
 
 ### Instructions
 

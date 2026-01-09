@@ -131,7 +131,7 @@ test.describe('Checkout Process', () => {
     await page.waitForURL(/\/orders/, { timeout: 20000 });
     const orderRow = page.locator('#orders-container table tbody tr').first();
     await expect(orderRow).toBeVisible({ timeout: 15000 });
-    await expect(orderRow.locator('td').nth(4)).toHaveText('2');
+    await expect(orderRow.locator('td').nth(5)).toHaveText('2');
   });
 
   test('should handle checkout with empty cart', async ({ page }) => {

@@ -1,0 +1,100 @@
+{
+  "name": "MichaelKing - Attempt to Re-Use Single-Use Coupon",
+  "description": "MichaelKing logs in, creates an order, and attempts to apply the 'MEGAOFF50' coupon, which has a usage limit of 1 and would have been consumed by another user's flow. This demonstrates the expected 'usage limit reached' failure.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "michaelUsername": "MichaelKing",
+    "michaelPassword": "MichaelPass12!",
+    "michaelUserId": "00000013-0000-0000-0000-000000000013",
+    "michaelDefaultAddressId": "ad000013-0001-0000-0000-000000000001",
+    "michaelDefaultCardId": "cc000013-0001-0000-0000-000000000001",
+    "productForOrder": "b2c3d4e5-f6a7-8901-2345-678901bcdef0",
+    "singleUseCouponCode": "MEGAOFF50"
+  },
+  "steps": [
+    {
+      "id": "step_michael_login_fail_coupon",
+      "name": "Login MichaelKing",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{michaelUsername}}&password={{michaelPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_michael_get_profile_fail_coupon",
+      "name": "Michael: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{michaelUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_michael_create_order_for_fail_coupon",
+      "name": "Michael: Create Order for Keyboard",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{michaelUserId}}/orders?address_id={{michaelDefaultAddressId}}&credit_card_id={{michaelDefaultCardId}}&product_id_1={{productForOrder}}&quantity_1=1",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "order_id": "body.order_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_michael_attempt_used_coupon",
+      "name": "Michael: Attempt to Apply Used 'MEGAOFF50' Coupon",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{michaelUserId}}/orders/{{order_id}}/apply-coupon?coupon_code={{singleUseCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_michael_get_order_details_after_fail_attempt",
+      "name": "Michael: Get Order Details to Verify No Discount",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{michaelUserId}}/orders/{{order_id}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "extract": {
+        "final_discount_amount": "body.discount_amount"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_michael_verify_no_discount_applied",
+      "name": "Condition: Verify No Discount Was Applied",
+      "type": "condition",
+      "conditionData": {
+        "variable": "final_discount_amount",
+        "operator": "equals",
+        "value": "0"
+      },
+      "then": [],
+      "else": []
+    }
+  ],
+  "visualLayout": {
+    "step_michael_login_fail_coupon": { "x": 50, "y": 50 },
+    "step_michael_get_profile_fail_coupon": { "x": 250, "y": 50 },
+    "step_michael_create_order_for_fail_coupon": { "x": 450, "y": 50 },
+    "step_michael_attempt_used_coupon": { "x": 650, "y": 50 },
+    "step_michael_get_order_details_after_fail_attempt": { "x": 450, "y": 150 },
+    "step_michael_verify_no_discount_applied": { "x": 650, "y": 150 }
+  }
+}

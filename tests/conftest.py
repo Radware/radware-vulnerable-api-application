@@ -2,9 +2,9 @@ import pytest
 import asyncio
 import json
 import os
+import importlib
 from pathlib import Path
 from fastapi.testclient import TestClient
-from app.main import app
 from pydantic import BaseModel
 
 # Provide minimal compatibility with Pydantic v2 API when running on
@@ -38,7 +38,35 @@ def event_loop():
 @pytest.fixture(scope="session")
 def test_client():
     """Create a FastAPI TestClient for in-memory testing."""
-    return TestClient(app)
+    import app as app_package
+    import app.main as app_main
+
+    importlib.reload(app_package)
+    importlib.reload(app_main)
+    return TestClient(app_main.app)
+
+
+@pytest.fixture(scope="session")
+def sqlite_test_client(tmp_path_factory):
+    """Create a FastAPI TestClient using the SQLite backend."""
+    db_file = tmp_path_factory.mktemp("sqlite") / "test.sqlite"
+    os.environ["DB_MODE"] = "sqlite"
+    os.environ["DB_SQLITE_PATH"] = str(db_file)
+    import app as app_package
+    import app.main as app_main
+
+    importlib.reload(app_package)
+    importlib.reload(app_main)
+    client = TestClient(app_main.app)
+    yield client
+    client.close()
+    # Cleanup
+    if db_file.exists():
+        db_file.unlink()
+    os.environ.pop("DB_MODE", None)
+    os.environ.pop("DB_SQLITE_PATH", None)
+    importlib.reload(app_package)
+    importlib.reload(app_main)
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,75 @@
+{
+  "id": "flow_b2b_gracewilson_legit_then_scrape_pricing",
+  "name": "B2B: GraceWilson Legit Lookup then Pricing Scrape",
+  "description": "GraceWilson logs in, makes a single legitimate partner lookup, then enumerates additional partner codes to scrape internal pricing.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "graceUsername": "GraceWilson",
+    "gracePassword": "GracePass7&",
+    "legitPartnerCode": "shske345pll",
+    "secondaryPartnerCode": "pccuf987szf",
+    "unknownValidCode": "zzzzz999zzz",
+    "invalidPatternCode": "shske000pll"
+  },
+  "steps": [
+    {
+      "id": "step_grace_login_b2b_scrape",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{graceUsername}}&password={{gracePassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "grace_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_grace_b2b_legit_lookup",
+      "name": "B2B Lookup: Legit Partner Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{legitPartnerCode}}",
+      "extract": {
+        "legit_pricing_snapshot": "body.pricing_snapshot"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_grace_b2b_secondary_lookup",
+      "name": "B2B Lookup: Secondary Partner Code (Scrape)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{secondaryPartnerCode}}",
+      "extract": {
+        "secondary_pricing_snapshot": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_b2b_unknown_code",
+      "name": "B2B Lookup: Unknown Valid-Format Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{unknownValidCode}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_b2b_invalid_pattern",
+      "name": "B2B Lookup: Invalid Pattern Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{invalidPatternCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_grace_login_b2b_scrape": { "x": 50, "y": 50 },
+    "step_grace_b2b_legit_lookup": { "x": 250, "y": 50 },
+    "step_grace_b2b_secondary_lookup": { "x": 450, "y": 50 },
+    "step_grace_b2b_unknown_code": { "x": 250, "y": 150 },
+    "step_grace_b2b_invalid_pattern": { "x": 450, "y": 150 }
+  }
+}

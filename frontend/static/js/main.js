@@ -17,12 +17,17 @@ let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 var appliedCouponCode = null; // Holds coupon code staged during checkout
 let uiVulnerabilityFeaturesEnabled = localStorage.getItem('uiVulnerabilityFeaturesEnabled') === 'true';
+const LOGIN_REDIRECT_REASON_KEY = 'loginRedirectReason';
+const LOGIN_REDIRECT_EXP_KEY = 'loginRedirectExpiry';
+const MAX_CLIENT_ITEM_QTY = 50;
+const BULK_ORDER_MESSAGE = 'For major stock purchases please contact support.';
 
 // DOM content loaded event to setup initial UI
 document.addEventListener('DOMContentLoaded', () => {
     initializeUIVulnerabilityFeaturesToggle();
-    updateNavbar();
     updateCurrentYear();
+    enforceTokenValidityOnLoad();
+    updateNavbar();
     
     // Page-specific initializations based on body ID or similar
     const path = window.location.pathname;
@@ -56,6 +61,53 @@ function updateCurrentYear() {
     if (el) el.textContent = new Date().getFullYear();
 }
 
+function decodeJwtPayload(token) {
+    if (!token) return null;
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) return null;
+    try {
+        const payloadSegment = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const paddedPayload = payloadSegment.padEnd(Math.ceil(payloadSegment.length / 4) * 4, '=');
+        return JSON.parse(atob(paddedPayload));
+    } catch (_error) {
+        return null;
+    }
+}
+
+function getTokenStatus(token) {
+    const payload = decodeJwtPayload(token);
+    if (!payload || typeof payload.exp === 'undefined') {
+        return { state: 'invalid', expSeconds: null };
+    }
+    const expSeconds = Number(payload.exp);
+    if (!Number.isFinite(expSeconds)) {
+        return { state: 'invalid', expSeconds: null };
+    }
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (nowSeconds >= expSeconds) {
+        return { state: 'expired', expSeconds };
+    }
+    return { state: 'valid', expSeconds };
+}
+
+function getLogoutReasonFromToken(token) {
+    const status = getTokenStatus(token);
+    if (status.state === 'expired') {
+        return { reason: 'expired', expSeconds: status.expSeconds };
+    }
+    return { reason: 'invalid', expSeconds: null };
+}
+
+function enforceTokenValidityOnLoad() {
+    if (!authToken) return;
+    const status = getTokenStatus(authToken);
+    if (status.state === 'expired') {
+        handleSessionExpired('expired', status.expSeconds);
+    } else if (status.state === 'invalid') {
+        handleSessionExpired('invalid');
+    }
+}
+
 async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = true) {
     const headers = { 'Content-Type': 'application/json' };
     
@@ -76,7 +128,8 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = tru
         if (!response.ok) {
             if (response.status === 401 && requiresAuth && !isHandlingSessionExpiration) {
                 console.warn(`API Call to ${method} ${fullUrl} resulted in 401. Session expired or invalid.`);
-                handleSessionExpired();
+                const { reason, expSeconds } = getLogoutReasonFromToken(authToken);
+                handleSessionExpired(reason, expSeconds);
                 throw new Error('SESSION_EXPIRED');
             }
 
@@ -179,7 +232,7 @@ function updateNavbar() {
     }
 }
 
-function handleSessionExpired() {
+function handleSessionExpired(reason = 'invalid', expSeconds = null) {
     if (isHandlingSessionExpiration) {
         console.log("Session expiration handling already in progress.");
         return;
@@ -187,6 +240,14 @@ function handleSessionExpired() {
     isHandlingSessionExpiration = true;
 
     console.log("Session expired. Logging out user.");
+
+    const normalizedReason = reason === 'expired' ? 'expired' : 'invalid';
+    sessionStorage.setItem(LOGIN_REDIRECT_REASON_KEY, normalizedReason);
+    if (normalizedReason === 'expired' && Number.isFinite(expSeconds)) {
+        sessionStorage.setItem(LOGIN_REDIRECT_EXP_KEY, String(expSeconds));
+    } else {
+        sessionStorage.removeItem(LOGIN_REDIRECT_EXP_KEY);
+    }
 
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -197,12 +258,16 @@ function handleSessionExpired() {
 
     updateNavbar();
 
-    displayGlobalMessage('Your session has expired or is invalid. Please log in again.', 'warning', 7000);
+    const message = normalizedReason === 'expired'
+        ? 'Your session expired. Please log in again.'
+        : 'Your session is invalid. Please log in again.';
+    displayGlobalMessage(message, 'warning', 7000);
 
     const currentPath = window.location.pathname;
+    const loginRedirectUrl = `/login?reason=${encodeURIComponent(normalizedReason)}`;
     if (currentPath !== '/login' && currentPath !== '/register') {
         setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = loginRedirectUrl;
             isHandlingSessionExpiration = false;
         }, 2000);
     } else {
@@ -245,9 +310,20 @@ function displayGlobalMessage(message, type = 'info', duration = 5000) {
     }
 }
 
+function clearProtectedWarningMessages(messageText) {
+    const container = document.getElementById('global-message-container');
+    if (!container || !messageText) return;
+    container.querySelectorAll('.global-message.warning-message').forEach((el) => {
+        if (el.textContent && el.textContent.includes(messageText)) {
+            el.remove();
+        }
+    });
+}
+
 function handleProtectedEntityError(error) {
     if (error && error.message && /protected/i.test(error.message)) {
         const msg = error.message;
+        clearProtectedWarningMessages(msg);
         if (/must have at least one|cannot delete the last/i.test(msg)) {
             const userNameForMsg = typeof currentlyViewedUsername !== 'undefined' && currentlyViewedUsername ? currentlyViewedUsername : 'The user';
             displayGlobalMessage(
@@ -750,6 +826,7 @@ function initProductDetailPage() {
 
 function initLoginPage() {
     console.log('Initializing Login Page');
+    showLoginRedirectMessage();
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
@@ -783,6 +860,7 @@ function initCartPage() {
 
 let currentlyViewedUserId = null;
 let currentlyViewedUsername = 'Your'; // Default to 'Your' for titles etc.
+let currentlyViewedUserIsProtected = false;
 
 // --- Updated Profile Page Initialization ---
 function initProfilePage() {
@@ -852,8 +930,33 @@ function setupProfilePageEventListeners() {
 
     // Credit Card Form Listeners
     document.getElementById('toggle-card-form-btn')?.addEventListener('click', () => toggleItemForm('card'));
-    document.getElementById('card-form')?.addEventListener('submit', handleCardFormSubmit);
+    const cardForm = document.getElementById('card-form');
+    if (cardForm) {
+        cardForm.setAttribute('novalidate', 'true');
+        cardForm.addEventListener('submit', handleCardFormSubmit);
+    }
     document.getElementById('card-form-cancel-btn')?.addEventListener('click', () => cancelItemForm('card'));
+
+    const cardFieldValidators = [
+        { inputId: 'card-cardholder-name', errorId: 'card-cardholder-name-error', validate: v => v.length > 0 },
+        { inputId: 'card-number-input', errorId: 'card-number-input-error', validate: v => /^\d{12,19}$/.test(v) },
+        { inputId: 'card-expiry-month', errorId: 'card-expiry-month-error', validate: v => /^(0[1-9]|1[0-2])$/.test(v) },
+        { inputId: 'card-expiry-year', errorId: 'card-expiry-year-error', validate: v => /^20[2-9][0-9]$/.test(v) },
+        { inputId: 'card-cvv-input', errorId: 'card-cvv-input-error', validate: v => /^\d{3,4}$/.test(v) },
+    ];
+    cardFieldValidators.forEach(({ inputId, errorId, validate }) => {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (!input || !errorEl) return;
+        input.addEventListener('input', () => {
+            const value = input.value.trim();
+            if (validate(value)) {
+                input.classList.remove('is-invalid');
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+        });
+    });
 }
 // --- BOLA Demo Functions ---
 async function listAvailableVictims() {
@@ -865,7 +968,7 @@ async function listAvailableVictims() {
     }
 
     usersListElement.innerHTML = '<li class="list-group-item">Discovering users (BFLA Exploit)... <i class="fas fa-spinner fa-spin"></i></li>';
-    usersContainer.style.display = 'block';
+    usersContainer.classList.add('demo-visible');
 
     try {
         showPageLoader('Loading users...');
@@ -901,10 +1004,15 @@ async function listAvailableVictims() {
                     }
                     
                     fetchAndDisplayFullProfile(victimId);
+                    if (typeof updateUIVulnerabilityFeaturesDisplay === 'function') {
+                        updateUIVulnerabilityFeaturesDisplay(true);
+                    }
                     
-                    document.getElementById('return-to-my-profile-btn').style.display = 'inline-block';
-                    document.getElementById('discover-users-btn').style.display = 'none';
-                    usersContainer.style.display = 'none'; 
+                    const returnBtn = document.getElementById('return-to-my-profile-btn');
+                    const discoverBtn = document.getElementById('discover-users-btn');
+                    if (returnBtn) returnBtn.classList.add('demo-visible');
+                    if (discoverBtn) discoverBtn.classList.remove('demo-visible');
+                    usersContainer.classList.remove('demo-visible'); 
                     displayGlobalMessage(`Now viewing ${victimName}'s profile. (BOLA Demo Active)`, 'warning');
                 });
             });
@@ -957,6 +1065,7 @@ async function fetchAndDisplayFullProfile(userId) {
         showPageLoader('Loading profile...');
         const userDetails = await apiCall(`/api/users/${userId}`, 'GET');
         currentlyViewedUsername = userDetails.username; 
+        currentlyViewedUserIsProtected = !!userDetails.is_protected;
 
         const possessiveName = `${userDetails.username}'s`; 
         const displayNameForUserInfoHeader = userDetails.username; // Keep this for the "User Information" header
@@ -970,17 +1079,14 @@ async function fetchAndDisplayFullProfile(userId) {
         if (creditCardsHeader) creditCardsHeader.innerHTML = `<i class="fas fa-credit-card card-icon"></i> Credit Cards`;
         // --- End of Change ---
         
-        if(profileViewIndicator && currentViewingUsernameSpan) {
+        if (profileViewIndicator && currentViewingUsernameSpan) {
             currentViewingUsernameSpan.textContent = `${userDetails.username}'s Profile`; 
-            if (uiVulnerabilityFeaturesEnabled) {
-                profileViewIndicator.style.display = 'block';
-            } else {
-                profileViewIndicator.style.display = 'none';
-            }
+            profileViewIndicator.classList.toggle('demo-visible', uiVulnerabilityFeaturesEnabled);
         }
 
-        if(bolaDemoActiveBanner) {
-            bolaDemoActiveBanner.style.display = (uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id) ? 'block' : 'none';
+        if (bolaDemoActiveBanner) {
+            const showBanner = uiVulnerabilityFeaturesEnabled && currentUser && userId !== currentUser.user_id;
+            bolaDemoActiveBanner.classList.toggle('demo-visible', showBanner);
         }
         
         if (escalationTargetUsernameStrong && escalationTargetBtnUsernameSpan) {
@@ -1415,6 +1521,11 @@ function initCheckoutPage() {
     document.getElementById('search-users-btn')?.addEventListener('click', searchUsers);
     document.getElementById('search-addresses-btn')?.addEventListener('click', searchAddressesForBola);
     document.getElementById('search-cards-btn')?.addEventListener('click', searchCreditCards);
+
+    const applyCouponBtn = document.getElementById('apply-coupon-btn');
+    if (applyCouponBtn) {
+        applyCouponBtn.addEventListener('click', handleApplyCoupon);
+    }
     
     const theftPreview = document.getElementById('theft-preview');
     if (theftPreview) {
@@ -1857,7 +1968,7 @@ async function fetchAndDisplayProducts() {
         if (productsContainer) productsContainer.style.display = 'none';
         if (noProductsMessage) noProductsMessage.style.display = 'none';
         
-        const products = await apiCall('/api/products', 'GET', null, false);
+        const products = await apiCall('/api/products/with-stock', 'GET', null, false);
         renderProducts(products);
     } catch (error) {
         displayError(`Failed to load products: ${error.message}`);
@@ -1895,12 +2006,7 @@ function renderProducts(products) {
     
     for (const product of products) {
         renderPromises.push((async () => {
-            let stockInfo = { quantity: 0 };
-            try {
-                stockInfo = await apiCall(`/api/products/${product.product_id}/stock`, 'GET', null, false);
-            } catch (error) {
-                console.warn(`Failed to fetch stock for product ${product.product_id}: ${error.message}`);
-            }
+            const stockInfo = { quantity: product.stock_quantity || 0 };
             
             const { webpPath, pngPath } = getImagePaths(product);
             
@@ -2013,22 +2119,44 @@ function renderProducts(products) {
 // Cart handling functions
 function addToCart(item) {
     const existingItemIndex = cart.findIndex(cartItem => cartItem.product_id === item.product_id);
+    let wasCapped = false;
     if (existingItemIndex !== -1) {
-        cart[existingItemIndex].quantity += item.quantity;
+        const requestedQuantity = parseInt(item.quantity, 10) || 1;
+        const proposedQuantity = cart[existingItemIndex].quantity + requestedQuantity;
+        const cappedQuantity = Math.min(proposedQuantity, MAX_CLIENT_ITEM_QTY);
+        if (cappedQuantity !== proposedQuantity) {
+            wasCapped = true;
+        }
+        cart[existingItemIndex].quantity = cappedQuantity;
     } else {
-        cart.push(item);
+        const requestedQuantity = parseInt(item.quantity, 10) || 1;
+        const cappedQuantity = Math.min(requestedQuantity, MAX_CLIENT_ITEM_QTY);
+        if (cappedQuantity !== requestedQuantity) {
+            wasCapped = true;
+        }
+        cart.push({ ...item, quantity: cappedQuantity });
     }
     saveCart();
+    if (wasCapped) {
+        displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+        return;
+    }
     displayGlobalMessage(`Added ${item.quantity} "${item.name}" to cart.`, 'success');
 }
 
 function updateCartItemQuantity(productId, newQuantity) {
     const itemIndex = cart.findIndex(item => item.product_id === productId);
     if (itemIndex !== -1) {
-        if (newQuantity <= 0) {
+        const normalizedQuantity = parseInt(newQuantity, 10);
+        if (Number.isNaN(normalizedQuantity) || normalizedQuantity <= 0) {
             removeCartItem(productId);
         } else {
-            cart[itemIndex].quantity = newQuantity;
+            let cappedQuantity = normalizedQuantity;
+            if (cappedQuantity > MAX_CLIENT_ITEM_QTY) {
+                cappedQuantity = MAX_CLIENT_ITEM_QTY;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+            }
+            cart[itemIndex].quantity = cappedQuantity;
             saveCart();
         }
     }
@@ -2145,7 +2273,7 @@ function displayCart() {
                                 </svg>
                             </button>
                             <input type="number" class="quantity-input cart-quantity" data-testid="cart-quantity" 
-                                   value="${item.quantity}" min="1" max="99">
+                                   value="${item.quantity}" min="1" max="${MAX_CLIENT_ITEM_QTY}">
                             <button type="button" class="quantity-btn increase" data-testid="increase-quantity" aria-label="Increase quantity">
                                 <svg viewBox="0 0 24 24" width="16" height="16">
                                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path>
@@ -2181,10 +2309,15 @@ function setupCartEventListeners() {
     // Quantity change event listeners
     document.querySelectorAll('.cart-quantity').forEach(input => {
         input.addEventListener('change', function() {
-            const newQuantity = parseInt(this.value);
+            let newQuantity = parseInt(this.value);
             if (isNaN(newQuantity) || newQuantity < 1) {
                 this.value = 1;
                 return;
+            }
+            if (newQuantity > MAX_CLIENT_ITEM_QTY) {
+                newQuantity = MAX_CLIENT_ITEM_QTY;
+                this.value = newQuantity;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
             }
             
             const productId = this.closest('tr').dataset.productId;
@@ -2225,7 +2358,13 @@ function setupCartEventListeners() {
     document.querySelectorAll('.quantity-btn.increase').forEach(btn => {
         btn.addEventListener('click', function() {
             const input = this.parentElement.querySelector('.quantity-input');
-            const newVal = parseInt(input.value) + 1;
+            let newVal = parseInt(input.value) + 1;
+            if (newVal > MAX_CLIENT_ITEM_QTY) {
+                newVal = MAX_CLIENT_ITEM_QTY;
+                input.value = newVal;
+                displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+                return;
+            }
             input.value = newVal;
             
             const productId = this.closest('tr').dataset.productId;
@@ -2288,15 +2427,22 @@ async function fetchAndDisplayProductDetail(productId) {
             throw new Error("API call function is missing, cannot fetch product data.");
         }
         
-        console.log(`[main.js] Fetching product data for ID: ${productId} from /api/products/${productId}`);
-        const product = await apiCall(`/api/products/${productId}`, 'GET', null, false);
-        
-        let stockInfo = { quantity: 0, last_updated: new Date().toISOString() }; 
+        let product;
+        let stockInfo = { quantity: 0, last_updated: new Date().toISOString() };
         try {
-            console.log(`[main.js] Fetching stock data for ID: ${productId} from /api/products/${productId}/stock`);
-            stockInfo = await apiCall(`/api/products/${productId}/stock`, 'GET', null, false);
-        } catch (stockError) {
-            console.warn(`[main.js] Could not fetch stock info for product ${productId}:`, stockError.message, "Using default stock (0).");
+            console.log(`[main.js] Fetching product+stock data for ID: ${productId} from /api/products/${productId}/with-stock`);
+            product = await apiCall(`/api/products/${productId}/with-stock`, 'GET', null, false);
+            stockInfo.quantity = product.stock_quantity || 0;
+        } catch (productError) {
+            console.warn(`[main.js] Product+stock endpoint failed for ${productId}:`, productError.message);
+            console.log(`[main.js] Fetching product data for ID: ${productId} from /api/products/${productId}`);
+            product = await apiCall(`/api/products/${productId}`, 'GET', null, false);
+            try {
+                console.log(`[main.js] Fetching stock data for ID: ${productId} from /api/products/${productId}/stock`);
+                stockInfo = await apiCall(`/api/products/${productId}/stock`, 'GET', null, false);
+            } catch (stockError) {
+                console.warn(`[main.js] Could not fetch stock info for product ${productId}:`, stockError.message, "Using default stock (0).");
+            }
         }
 
         console.log("[main.js] Product data received:", product);
@@ -2359,7 +2505,7 @@ async function fetchAndDisplayProductDetail(productId) {
                                         <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13H5v-2h14v2z" fill="currentColor"></path></svg>
                                     </button>
                                     <input type="number" id="quantity-detail" class="quantity-input" data-testid="quantity-input" 
-                                        value="1" min="1" max="${stockInfo.quantity || 0}" ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
+                                        value="1" min="1" max="${Math.min(stockInfo.quantity || 0, MAX_CLIENT_ITEM_QTY)}" ${stockInfo.quantity <= 0 ? 'disabled' : ''}>
                                     <button type="button" class="quantity-btn increase" data-testid="increase-quantity" aria-label="Increase quantity">
                                         <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"></path></svg>
                                     </button>
@@ -2442,8 +2588,16 @@ async function fetchAndDisplayProductDetail(productId) {
                 const currentProductId = btn.dataset.productId;
                 const currentProductName = btn.dataset.productName;
                 const currentProductPrice = parseFloat(btn.dataset.productPrice);
-                const quantity = parseInt(document.getElementById('quantity-detail').value);
-                
+                const quantityInput = document.getElementById('quantity-detail');
+                const quantity = parseInt(quantityInput.value);
+                const maxAllowed = Math.min(stockInfo.quantity || 0, MAX_CLIENT_ITEM_QTY);
+
+                if (quantity > MAX_CLIENT_ITEM_QTY) {
+                    displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+                    quantityInput.value = maxAllowed || 1;
+                    return;
+                }
+
                 if (quantity > 0 && quantity <= (stockInfo.quantity || 0)) {
                     btn.classList.add('clicked');
                     setTimeout(() => btn.classList.remove('clicked'), 300);
@@ -2533,19 +2687,54 @@ async function handleLogin(e) {
         authToken = response.access_token;
         localStorage.setItem('token', authToken);
         
-        const tokenParts = authToken.split('.');
-        if (tokenParts.length === 3) {
-            const tokenPayload = JSON.parse(atob(tokenParts[1]));
-            if (tokenPayload && tokenPayload.user_id) {
-                const userProfile = await apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true);
-                localStorage.setItem('user', JSON.stringify(userProfile));
-                currentUser = userProfile;
-            }
+        const tokenPayload = decodeJwtPayload(authToken);
+        if (tokenPayload && tokenPayload.user_id) {
+            currentUser = {
+                user_id: tokenPayload.user_id,
+                username: tokenPayload.sub || username,
+                is_admin: !!tokenPayload.is_admin,
+            };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateNavbar();
+
+            apiCall(`/api/users/${tokenPayload.user_id}`, 'GET', null, true)
+                .then((userProfile) => {
+                    localStorage.setItem('user', JSON.stringify(userProfile));
+                    currentUser = userProfile;
+                    updateNavbar();
+                })
+                .catch((profileError) => {
+                    console.warn('[main.js] Failed to refresh user profile after login:', profileError.message);
+                });
+        } else {
+            console.warn('[main.js] Failed to decode login token payload.');
         }
         updateNavbar();
         displaySuccess('Login successful! Redirecting...');
         setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (error) { displayError(`Login failed: ${error.message}`); }
+}
+
+function showLoginRedirectMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get('reason') || sessionStorage.getItem(LOGIN_REDIRECT_REASON_KEY);
+    if (!reason) return;
+
+    const expSeconds = sessionStorage.getItem(LOGIN_REDIRECT_EXP_KEY);
+    sessionStorage.removeItem(LOGIN_REDIRECT_REASON_KEY);
+    sessionStorage.removeItem(LOGIN_REDIRECT_EXP_KEY);
+
+    if (reason === 'expired') {
+        if (expSeconds && Number.isFinite(Number(expSeconds))) {
+            const expDate = new Date(Number(expSeconds) * 1000);
+            displayGlobalMessage(`Your session expired at ${expDate.toLocaleString()}. Please log in again.`, 'warning', 8000);
+        } else {
+            displayGlobalMessage('Your session expired. Please log in again.', 'warning', 8000);
+        }
+        return;
+    }
+
+    displayGlobalMessage('Your session is invalid. Please log in again.', 'warning', 8000);
 }
 
 async function handleRegistration(e) {
@@ -2937,7 +3126,8 @@ function populateAddressFormForEdit(addressId, allAddresses) {
 
     const protectedNote = document.getElementById('address-protected-note');
     if (protectedNote) {
-        protectedNote.style.display = address.is_protected ? 'block' : 'none';
+        const isProtectedContext = address.is_protected || currentlyViewedUserIsProtected;
+        protectedNote.style.display = isProtectedContext ? 'block' : 'none';
     }
     
     const editIndicator = document.getElementById('address-edit-mode-indicator');
@@ -3145,7 +3335,9 @@ function populateCardFormForEdit(cardId, allCards) {
         cardCvvInput.disabled = true;
     }
 
-    if (protectedNote) protectedNote.style.display = card.is_protected ? 'block' : 'none';
+    if (protectedNote) {
+        protectedNote.style.display = (card.is_protected || currentlyViewedUserIsProtected) ? 'block' : 'none';
+    }
     if (cardholderInput) cardholderInput.disabled = false;
     if (expiryMonthInput) expiryMonthInput.disabled = false;
     if (expiryYearInput) expiryYearInput.disabled = false;
@@ -3546,6 +3738,50 @@ function displayCheckoutItems() {
     container.innerHTML = itemsHTML;
 }
 
+function getCartTotalAmount() {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+async function handleApplyCoupon() {
+    const couponInput = document.getElementById('coupon-code');
+    const discountInfo = document.getElementById('discount-info');
+    const discountedTotalEl = document.getElementById('discounted-total');
+    const grandTotalEl = document.getElementById('checkout-grand-total');
+    if (!couponInput || !discountInfo || !discountedTotalEl || !grandTotalEl) {
+        displayGlobalMessage('Coupon UI is unavailable right now.', 'error');
+        return;
+    }
+
+    const code = couponInput.value.trim();
+    if (!code) {
+        displayGlobalMessage('Please enter a coupon code first.', 'error');
+        return;
+    }
+
+    try {
+        const coupon = await apiCall(`/api/coupons/${encodeURIComponent(code)}`, 'GET', null, true);
+        const baseTotal = getCartTotalAmount();
+        let discount = 0;
+        if (coupon.discount_type === 'percentage') {
+            discount = baseTotal * (coupon.discount_value / 100);
+        } else if (coupon.discount_type === 'fixed') {
+            discount = coupon.discount_value;
+        }
+        const finalTotal = Math.max(0, baseTotal - discount);
+
+        discountedTotalEl.textContent = `$${finalTotal.toFixed(2)}`;
+        discountInfo.style.display = 'block';
+        grandTotalEl.textContent = `$${finalTotal.toFixed(2)}`;
+        appliedCouponCode = code;
+        displayGlobalMessage(`Coupon ${code} applied!`, 'success');
+    } catch (error) {
+        appliedCouponCode = null;
+        discountInfo.style.display = 'none';
+        grandTotalEl.textContent = `$${getCartTotalAmount().toFixed(2)}`;
+        displayGlobalMessage(`Failed to apply coupon: ${error.message}`, 'error');
+    }
+}
+
 async function populateAddressDropdown() {
     const addressSelect = document.getElementById('address-id');
     if (!addressSelect || !currentUser) return;
@@ -3605,6 +3841,14 @@ async function handleOrderSubmission(e) {
     submitButton.disabled = true;
 
     try {
+        const overLimitItem = cart.find(item => item.quantity > MAX_CLIENT_ITEM_QTY);
+        if (overLimitItem) {
+            displayGlobalMessage(BULK_ORDER_MESSAGE, 'warning');
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+            return;
+        }
+
         // Get user's selected address and card
         let addressId = document.getElementById('address-id')?.value;
         let creditCardId = document.getElementById('credit-card-id')?.value;
@@ -3694,7 +3938,7 @@ async function fetchAdminProducts() {
         if (revealInternal) queryParams += '&status=internal';
 
         // Add '/api' prefix to API endpoint paths
-        const products = await apiCall(`/api/products${queryParams}`, 'GET', null, true);
+        const products = await apiCall(`/api/products/with-stock${queryParams}`, 'GET', null, true);
 
         if (!products || products.length === 0) {
             productsContainer.innerHTML = '<p>No products found or access denied.</p>';
@@ -3702,12 +3946,7 @@ async function fetchAdminProducts() {
         }
         let tableHTML = `<table class="admin-products-table table"><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Category</th><th>Internal Status</th><th>Stock</th><th>Actions</th></tr></thead><tbody>`;
         for (const product of products) {
-            let stock = { quantity: "N/A" };
-             try {
-                // Add '/api' prefix to stock endpoint
-                stock = await apiCall(`/api/products/${product.product_id}/stock`, 'GET', null, false);
-            } catch(e) { console.warn("Could not fetch stock for " + product.product_id)}
-
+            const stockQuantity = typeof product.stock_quantity === 'number' ? product.stock_quantity : 'N/A';
             tableHTML += `
                 <tr>
                     <td>${product.product_id.substring(0,8)}...</td>
@@ -3715,7 +3954,7 @@ async function fetchAdminProducts() {
                     <td>$${product.price.toFixed(2)}</td>
                     <td>${product.category || 'N/A'}</td>
                     <td>${product.internal_status || 'N/A'}</td>
-                    <td class="text-center">${stock.quantity}</td>
+                    <td class="text-center">${stockQuantity}</td>
                     <td>
                         <button class="btn btn-sm btn-danger delete-product-btn" data-product-id="${product.product_id}">Del</button>
                     </td>

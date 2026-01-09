@@ -68,6 +68,18 @@ class Order(OrderInDBBase):
     credit_card_last_four: Optional[str] = None
 
 
+class LegacyOrderStatus(BaseModel):
+    order_id: UUID
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    address: Optional[Address] = None
+    credit_card_id: Optional[UUID] = None
+    credit_card_last_four: Optional[str] = None
+    billing_email: Optional[str] = None
+    legacy_notes: Optional[str] = None
+
+
 # For responses
 class OrderDetails(Order):
     # Potentially include resolved Address and CreditCard info if needed, but be mindful of data exposure

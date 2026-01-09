@@ -24,6 +24,7 @@ To ensure the stability of core demonstration flows and the continuous learning 
 *   **Addresses & Credit Cards of a Protected User (`user.is_protected: true`):**
     *   **Modification:** Addresses and credit cards belonging to a protected user can generally be edited (e.g., street name, cardholder name, expiry dates).
     *   **Deletion:** Can be deleted, **unless** it is the user's last address or last credit card respectively. Attempting to delete the last one results in an HTTP 403 error with a message like "Protected user '{username}' must have at least one address/card. Cannot delete the last one."
+    *   **Explicitly Protected Items:** If an address or credit card has `is_protected: true`, deletion is blocked regardless of how many remain. This is used sparingly to keep specific demo data stable.
     *   **Default Status:** Protected users can change which of their addresses or credit cards is the default at any time. If a new item is set as default, the previous default item will have its `is_default` flag set to `false`. If a default address/card is deleted (and it wasn't their last one), another remaining item for that user is automatically set as the new default.
 *   **Non-Destructive Exploits Still Work:** You can still perform BOLA to *view* data of protected users/objects, and other non-altering exploits like certain parameter pollutions.
 *   **Newly Created Entities are NOT Protected:** Any user, product, address, or credit card you create (either legitimately or via a BFLA exploit) will **not** be protected by default (their `is_protected` flag will be `false`). These are fair game for all types of vulnerability testing, including deletion.
@@ -61,7 +62,7 @@ The following users have `is_protected: true` in `prepopulated_data.json`:
 
 ### User Addresses & Credit Cards:
 
-The protection of addresses and credit cards (specifically, the rule against deleting the last item) is derived from their owning user's `is_protected` status. All addresses and credit cards belonging to the **Protected Users** listed above are subject to the "cannot delete last item" rule. Individual address and credit card objects in `prepopulated_data.json` do not have their own `is_protected` flags.
+The protection of addresses and credit cards (specifically, the rule against deleting the last item) is derived from their owning user's `is_protected` status. All addresses and credit cards belonging to the **Protected Users** listed above are subject to the "cannot delete last item" rule. Most address and credit card objects in `prepopulated_data.json` do not have their own `is_protected` flags; a small subset may be explicitly marked `is_protected: true` for demo stability and are not deletable.
 
 ### Protected Products:
 
@@ -103,7 +104,7 @@ When testing vulnerabilities that involve deleting or making critical modificati
 2.  **Attempt on Addresses/Cards of a Protected User:**
     *   Modification should generally succeed.
     *   Setting a new default should succeed.
-    *   Deletion should succeed unless it's the user's last address/card, in which case a specific 403 ("...must have at least one...") will be returned.
+    *   Deletion should succeed unless it's the user's last address/card or the item itself is explicitly protected, in which case a specific 403 ("...must have at least one..." or "...is protected and cannot be deleted.") will be returned.
 3.  **Attempt on a Non-Protected Entity (User or Product) or their sub-entities:**
     *   Use one of the non-protected users (GraceWilson, HenryMoore, QuinnBaker, RyanCarter, SophieAdams, BrianQuincy, CynthiaReed) or non-protected products listed above.
     These actions should succeed and demonstrate the vulnerability fully (e.g., deletion, modification without restriction).

@@ -1,0 +1,68 @@
+{
+  "name": "BobJohnson - Address Management Cycle",
+  "description": "BobJohnson logs in, views his profile, lists his addresses, adds a temporary address, lists again, and then deletes the temporary address. This flow teaches a common, idempotent account management sequence for addresses.",
+  "headers": { "Accept": "application/json" },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "bobUsername": "BobJohnson",
+    "bobPassword": "BobPass2@",
+    "bobUserId": "00000003-0000-0000-0000-000000000003"
+  },
+  "steps": [
+    {
+      "id": "step_bob_login_addr",
+      "name": "Login BobJohnson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{bobUsername}}&password={{bobPassword}}",
+      "extract": { "token": "body.access_token" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_get_profile_addr",
+      "name": "Bob: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{bobUserId}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_list_initial_addresses",
+      "name": "Bob: List Initial Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_add_temp_address",
+      "name": "Bob: Add Temporary Address",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses?street=999%20Temp%20Pl&city=Ephemeral&country=USA&zip_code=00000&is_default=false",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "extract": { "temp_address_id": "body.address_id" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_list_addresses_after_add",
+      "name": "Bob: List Addresses After Add",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_bob_delete_temp_address",
+      "name": "Bob: Delete Temporary Address (Cleanup)",
+      "type": "request",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/users/{{bobUserId}}/addresses/{{temp_address_id}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "continue"
+    }
+  ]
+}

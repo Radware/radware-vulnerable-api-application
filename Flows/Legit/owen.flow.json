@@ -1,0 +1,88 @@
+{
+  "name": "OwenHall - Address Management Cycle",
+  "description": "OwenHall logs in, fetches his profile, adds a new temporary address, sets that address as the default, and then deletes it. This simulates a common account management scenario and is fully idempotent.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "owenUsername": "OwenHall",
+    "owenPassword": "OwenPass14!",
+    "owenUserId": "00000015-0000-0000-0000-000000000015"
+  },
+  "steps": [
+    {
+      "id": "step_owen_login_addr_mgmt",
+      "name": "Login OwenHall",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{owenUsername}}&password={{owenPassword}}",
+      "extract": { "token": "body.access_token" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_get_profile_addr_mgmt",
+      "name": "Owen: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_list_initial_addresses",
+      "name": "Owen: List Initial Addresses",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}/addresses",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_add_temp_address",
+      "name": "Owen: Add Temporary Address",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}/addresses?street=999%20Temp%20Pl&city=ResetCity&country=USA&zip_code=00000&is_default=false",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "extract": { "temp_address_id": "body.address_id" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_set_temp_as_default",
+      "name": "Owen: Set Temporary Address as Default",
+      "type": "request",
+      "method": "PUT",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}/addresses/{{temp_address_id}}?is_default=true",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_delete_temp_address",
+      "name": "Owen: Delete Temporary Address (Cleanup)",
+      "type": "request",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}/addresses/{{temp_address_id}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_owen_list_final_addresses",
+      "name": "Owen: List Final Addresses (Verify Cleanup)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{owenUserId}}/addresses",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_owen_login_addr_mgmt": { "x": 50, "y": 50 },
+    "step_owen_get_profile_addr_mgmt": { "x": 250, "y": 50 },
+    "step_owen_list_initial_addresses": { "x": 450, "y": 50 },
+    "step_owen_add_temp_address": { "x": 50, "y": 150 },
+    "step_owen_set_temp_as_default": { "x": 250, "y": 150 },
+    "step_owen_delete_temp_address": { "x": 450, "y": 150 },
+    "step_owen_list_final_addresses": { "x": 650, "y": 150 }
+  }
+}

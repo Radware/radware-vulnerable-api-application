@@ -1,0 +1,76 @@
+{
+  "name": "NatalieYoung - Credit Card Management Cycle",
+  "description": "NatalieYoung logs in, views her profile, lists her current credit cards, adds a new temporary card, lists them again to verify, and then deletes the temporary card. This teaches a common, idempotent account management sequence for credit cards.",
+  "headers": { "Accept": "application/json" },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "natalieUsername": "NatalieYoung",
+    "nataliePassword": "NataliePass13!",
+    "natalieUserId": "00000014-0000-0000-0000-000000000014"
+  },
+  "steps": [
+    {
+      "id": "step_natalie_login_card_mgmt",
+      "name": "Login NatalieYoung",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{natalieUsername}}&password={{nataliePassword}}",
+      "extract": { "token": "body.access_token" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_natalie_get_profile_card_mgmt",
+      "name": "Natalie: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{natalieUserId}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_natalie_list_initial_cards",
+      "name": "Natalie: List Initial Credit Cards",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{natalieUserId}}/credit-cards",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_natalie_add_temp_card",
+      "name": "Natalie: Add Temporary Credit Card",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{natalieUserId}}/credit-cards?cardholder_name=Temp%20Card%20For%20Natalie&card_number=5200200020002000&expiry_month=12&expiry_year=2032&cvv=555&is_default=false",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "extract": { "temp_card_id": "body.card_id" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_natalie_list_cards_after_add",
+      "name": "Natalie: List Cards After Add",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{natalieUserId}}/credit-cards",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_natalie_delete_temp_card",
+      "name": "Natalie: Delete Temporary Credit Card (Cleanup)",
+      "type": "request",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/api/users/{{natalieUserId}}/credit-cards/{{temp_card_id}}",
+      "headers": { "Authorization": "Bearer {{token}}" },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_natalie_login_card_mgmt": { "x": 50, "y": 50 },
+    "step_natalie_get_profile_card_mgmt": { "x": 250, "y": 50 },
+    "step_natalie_list_initial_cards": { "x": 450, "y": 50 },
+    "step_natalie_add_temp_card": { "x": 50, "y": 150 },
+    "step_natalie_list_cards_after_add": { "x": 250, "y": 150 },
+    "step_natalie_delete_temp_card": { "x": 450, "y": 150 }
+  }
+}

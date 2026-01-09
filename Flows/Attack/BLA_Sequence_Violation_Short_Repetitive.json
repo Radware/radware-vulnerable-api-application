@@ -1,0 +1,68 @@
+{
+  "id": "flow_bla_sequence_violation_short_repetitive",
+  "name": "BLA: Sequence Violation (Short Repetitive)",
+  "description": "GraceWilson logs in and repeatedly applies a coupon to a non-existent order without creating an order first, demonstrating out-of-sequence behavior.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "graceUsername": "GraceWilson",
+    "gracePassword": "GracePass7&",
+    "graceUserId": "00000008-0000-0000-0000-000000000008",
+    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    "invalidCouponCode": "NOTACOUPON999"
+  },
+  "steps": [
+    {
+      "id": "step_grace_login_sequence_short",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{graceUsername}}&password={{gracePassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "grace_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_1",
+      "name": "Apply Coupon (Attempt 1, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_2",
+      "name": "Apply Coupon (Attempt 2, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_3",
+      "name": "Apply Coupon (Attempt 3, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_grace_login_sequence_short": { "x": 50, "y": 50 },
+    "step_grace_apply_coupon_attempt_1": { "x": 250, "y": 50 },
+    "step_grace_apply_coupon_attempt_2": { "x": 450, "y": 50 },
+    "step_grace_apply_coupon_attempt_3": { "x": 650, "y": 50 }
+  }
+}

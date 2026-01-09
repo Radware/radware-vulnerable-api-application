@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+async function login(page, username = 'AliceSmith', password = 'AlicePass1!') {
+  await page.goto('/login');
+  await expect(page.locator('#username')).toBeVisible({ timeout: 10000 });
+  await page.fill('#username', username);
+  await page.fill('#password', password);
+  await page.locator('#login-form button[type="submit"]').click();
+  await expect(page).toHaveURL(/\/$/, { timeout: 30000 });
+  await expect(page.locator('#logout-link')).toBeVisible({ timeout: 15000 });
+}
+
 async function clearCart(page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
@@ -100,6 +110,7 @@ test.describe('Shopping Cart', () => {
   });
 
   test('should apply valid coupon during checkout', async ({ page }) => {
+    await login(page);
     await addProduct(page);
     await page.goto('/checkout');
     await page.waitForSelector('#address-id option[value]:not([value=""])', {

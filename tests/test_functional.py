@@ -1,6 +1,5 @@
 import pytest
 import uuid
-import time
 from jose import jwt
 from app.security import RSA_PUBLIC_KEY
 from app.routers.product_router import PROTECTED_STOCK_MINIMUM
@@ -649,6 +648,7 @@ def test_products_modify_operations_reflect_immediately(test_client):
 
 def test_product_search_updates_reflect_immediately(test_client):
     from app import db
+
     query = "CacheSearch"
 
     resp = test_client.get("/api/products/search", params={"name": query})

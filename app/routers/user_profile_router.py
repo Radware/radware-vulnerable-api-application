@@ -64,6 +64,42 @@ async def list_user_addresses(
     return user_addresses
 
 
+@router.get(
+    "/addresses/search-legacy",
+    response_model=List[Address],
+    deprecated=True,
+)
+async def search_user_addresses_legacy(
+    user_id: UUID,
+    q: str = Query(..., description="Legacy substring match on address fields."),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """
+    Deprecated address search endpoint.
+    Vulnerability: Authenticated but no ownership check (BOLA).
+    """
+    print(
+        f"Legacy address search for user {user_id} by {current_user.user_id}. BOLA: No ownership check."
+    )
+
+    path_user_exists = db.db_users_by_id.get(user_id)
+    if not path_user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found.",
+        )
+
+    query = q.strip().lower()
+    matches = []
+    for address in db.db_addresses_by_user_id.get(user_id, []):
+        haystack = " ".join(
+            [address.street, address.city, address.country, address.zip_code]
+        ).lower()
+        if query in haystack:
+            matches.append(Address.model_validate(address))
+    return matches
+
+
 @router.post("/addresses", response_model=Address, status_code=status.HTTP_201_CREATED)
 async def create_user_address(
     user_id: UUID,  # User ID from path
@@ -128,12 +164,15 @@ async def create_user_address(
     user_addresses = db.db_addresses_by_user_id.get(user_id, [])
     if len(user_addresses) == 1:
         new_address_db.is_default = True
+        db.update_address(new_address_db.address_id, new_address_db.model_dump())
 
     if is_default:
         for addr_item in user_addresses:
             if addr_item.address_id != new_address_db.address_id:
                 addr_item.is_default = False
+                db.update_address(addr_item.address_id, addr_item.model_dump())
         new_address_db.is_default = True
+        db.update_address(new_address_db.address_id, new_address_db.model_dump())
 
     return Address.model_validate(new_address_db)
 
@@ -197,9 +236,11 @@ async def update_user_address(
         for addr_item in db.db_addresses_by_user_id.get(user_id, []):
             if addr_item.address_id != address_id: # Corrected: check against address_id from path
                 addr_item.is_default = False
+                db.update_address(addr_item.address_id, addr_item.model_dump())
         address_to_update.is_default = True # Ensure the target address itself is set to default
 
     address_to_update.updated_at = datetime.now(timezone.utc)
+    db.update_address(address_id, address_to_update.model_dump())
     return Address.model_validate(address_to_update)
 
 
@@ -260,6 +301,7 @@ async def delete_user_address(
             a.is_default for a in remaining_user_addresses
         ):
             remaining_user_addresses[0].is_default = True
+            db.update_address(remaining_user_addresses[0].address_id, remaining_user_addresses[0].model_dump())
             print(
                 f"Address {remaining_user_addresses[0].address_id} made default for user {user_id} after deleting previous default."
             )
@@ -342,6 +384,7 @@ async def create_user_credit_card(
     if is_default:
         for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
             card_item.is_default = False
+            db.update_credit_card(card_item.card_id, card_item.model_dump())
 
     card_last_four_digits = card_data_from_query.card_number[-4:]
     card_number_hash = get_password_hash(card_data_from_query.card_number)
@@ -422,10 +465,12 @@ async def update_user_credit_card(
         for card_item in db.db_credit_cards_by_user_id.get(user_id, []):
             if card_item.card_id != card_id:
                 card_item.is_default = False
+                db.update_credit_card(card_item.card_id, card_item.model_dump())
         card_to_update.is_default = True # Ensure the target card itself is set to default
 
 
     card_to_update.updated_at = datetime.now(timezone.utc)
+    db.update_credit_card(card_id, card_to_update.model_dump())
     return CreditCard.model_validate(card_to_update)
 
 
@@ -451,6 +496,12 @@ async def delete_user_credit_card(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Credit card not found for this user or card ID is incorrect.",
+        )
+
+    if getattr(card_to_delete, "is_protected", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Credit Card ID {card_id} is protected and cannot be deleted.",
         )
 
     owner_user = db.db_users_by_id.get(user_id)
@@ -483,6 +534,7 @@ async def delete_user_credit_card(
         remaining_user_cards = db.db_credit_cards_by_user_id.get(user_id, [])
         if remaining_user_cards and not any(c.is_default for c in remaining_user_cards):
             remaining_user_cards[0].is_default = True
+            db.update_credit_card(remaining_user_cards[0].card_id, remaining_user_cards[0].model_dump())
             print(
                 f"Card {remaining_user_cards[0].card_id} made default for user {user_id} after deleting previous default."
             )

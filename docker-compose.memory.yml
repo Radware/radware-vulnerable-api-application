@@ -1,0 +1,27 @@
+# Docker Compose for In-Memory Database Mode
+# Single worker only - data is lost on restart
+# Fastest startup, no persistence
+
+services:
+  rva-app:
+    image: ${RVA_IMAGE:-razor29/rva:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rva-memory
+    environment:
+      # Database configuration
+      DB_MODE: memory
+      # Single worker for in-memory mode (memory is not shared across workers)
+      UVICORN_WORKERS: 1
+      # Optional: Enable detailed access logging
+      ENABLE_ACCESS_LOG: "false"
+    ports:
+      - "${RVA_PORT:-8060}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

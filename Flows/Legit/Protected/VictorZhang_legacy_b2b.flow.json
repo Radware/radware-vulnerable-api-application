@@ -1,0 +1,78 @@
+{
+  "name": "VictorZhang - Legacy + B2B Discovery",
+  "description": "Protected user VictorZhang logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "VictorZhang",
+    "userPassword": "VictorPass21!",
+    "userId": "00000022-0000-0000-0000-000000000022",
+    "legacyOrderId": "d062d204-2bd3-546f-941d-9d5bb32623bf",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "ExampleVille",
+    "partnerCode": "victo128ang"
+  },
+  "steps": [
+    {
+      "id": "step_victorzhang_login",
+      "name": "Login VictorZhang",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victorzhang_legacy_address_search",
+      "name": "VictorZhang: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victorzhang_legacy_order_status",
+      "name": "VictorZhang: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_victorzhang_b2b_partner_lookup",
+      "name": "VictorZhang: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_victorzhang_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_victorzhang_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_victorzhang_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_victorzhang_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

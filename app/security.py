@@ -16,7 +16,7 @@ RSA_PRIVATE_KEY = PRIVATE_KEY_PATH.read_text()
 RSA_PUBLIC_KEY = PUBLIC_KEY_PATH.read_text()
 
 ALGORITHM = "RS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 180
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

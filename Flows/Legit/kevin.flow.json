@@ -1,0 +1,41 @@
+{
+  "name": "KevinHarris - Login and Logout",
+  "description": "KevinHarris logs in, gets his profile, and then the session ends. This simulates a common, short-lived, and legitimate session, teaching the system that a login doesn't always lead to a purchase or other complex actions.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "kevinUsername": "KevinHarris",
+    "kevinPassword": "KevinPass10&",
+    "kevinUserId": "00000011-0000-0000-0000-000000000011"
+  },
+  "steps": [
+    {
+      "id": "step_kevin_login",
+      "name": "Login KevinHarris",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{kevinUsername}}&password={{kevinPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_kevin_get_profile",
+      "name": "Kevin: Get Own Profile (Post-Login)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{kevinUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_kevin_login": { "x": 50, "y": 50 },
+    "step_kevin_get_profile": { "x": 250, "y": 50 }
+  }
+}

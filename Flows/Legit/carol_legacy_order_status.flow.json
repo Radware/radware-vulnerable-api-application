@@ -1,0 +1,43 @@
+{
+  "name": "CarolWhite - Legacy Order Status (Short)",
+  "description": "Protected user CarolWhite logs in and calls the deprecated legacy order status endpoint using a prepopulated order.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "carolUsername": "CarolWhite",
+    "carolPassword": "CarolPass3#",
+    "carolUserId": "00000004-0000-0000-0000-000000000004",
+    "legacyOrderId": "a4000000-0000-0000-0000-000000000004",
+    "legacyToken": "legacy-demo"
+  },
+  "steps": [
+    {
+      "id": "step_carol_login_legacy_order",
+      "name": "Login CarolWhite",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{carolUsername}}&password={{carolPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carol_legacy_order_status",
+      "name": "Carol: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{carolUserId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "visualLayout": {
+    "step_carol_login_legacy_order": { "x": 50, "y": 50 },
+    "step_carol_legacy_order_status": { "x": 250, "y": 50 }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "CarolWhite - Legacy + B2B Discovery",
+  "description": "Protected user CarolWhite logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "CarolWhite",
+    "userPassword": "CarolPass3#",
+    "userId": "00000004-0000-0000-0000-000000000004",
+    "legacyOrderId": "99c4e447-9e2d-5db5-9a5c-c82ab7770f06",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Metroburg",
+    "partnerCode": "carol114ite"
+  },
+  "steps": [
+    {
+      "id": "step_carolwhite_login",
+      "name": "Login CarolWhite",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carolwhite_legacy_address_search",
+      "name": "CarolWhite: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carolwhite_legacy_order_status",
+      "name": "CarolWhite: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_carolwhite_b2b_partner_lookup",
+      "name": "CarolWhite: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_carolwhite_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_carolwhite_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_carolwhite_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_carolwhite_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

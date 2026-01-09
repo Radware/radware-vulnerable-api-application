@@ -1,0 +1,78 @@
+{
+  "name": "FrankMiller - Legacy + B2B Discovery",
+  "description": "Protected user FrankMiller logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "FrankMiller",
+    "userPassword": "FrankPass6^",
+    "userId": "00000007-0000-0000-0000-000000000007",
+    "legacyOrderId": "275cd78d-bbe1-57a0-900c-0d132e70ce23",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "Central%20City",
+    "partnerCode": "frank117ler"
+  },
+  "steps": [
+    {
+      "id": "step_frankmiller_login",
+      "name": "Login FrankMiller",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_frankmiller_legacy_address_search",
+      "name": "FrankMiller: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_frankmiller_legacy_order_status",
+      "name": "FrankMiller: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_frankmiller_b2b_partner_lookup",
+      "name": "FrankMiller: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_frankmiller_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_frankmiller_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_frankmiller_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_frankmiller_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

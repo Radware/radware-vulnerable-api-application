@@ -1,0 +1,78 @@
+{
+  "name": "ThomasWright - Legacy + B2B Discovery",
+  "description": "Protected user ThomasWright logs in, uses legacy address search and legacy order status, then performs a B2B partner lookup.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "userUsername": "ThomasWright",
+    "userPassword": "ThomasPass19!",
+    "userId": "00000020-0000-0000-0000-000000000020",
+    "legacyOrderId": "54787cda-3ce6-5087-93a0-3e223a436725",
+    "legacyToken": "legacy-demo",
+    "addressSearchQuery": "ExampleCity",
+    "partnerCode": "thoma126ght"
+  },
+  "steps": [
+    {
+      "id": "step_thomaswright_login",
+      "name": "Login ThomasWright",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{userUsername}}&password={{userPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomaswright_legacy_address_search",
+      "name": "ThomasWright: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomaswright_legacy_order_status",
+      "name": "ThomasWright: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{userId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_thomaswright_b2b_partner_lookup",
+      "name": "ThomasWright: B2B Partner Lookup",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{partnerCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_thomaswright_login": {
+      "x": 50,
+      "y": 50
+    },
+    "step_thomaswright_legacy_address_search": {
+      "x": 250,
+      "y": 50
+    },
+    "step_thomaswright_legacy_order_status": {
+      "x": 450,
+      "y": 50
+    },
+    "step_thomaswright_b2b_partner_lookup": {
+      "x": 650,
+      "y": 50
+    }
+  }
+}

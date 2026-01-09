@@ -14,6 +14,9 @@ rapiv.code-workspace
 .venv/
 venv/
 ENV/
+deploy-dual-ec2/
+deploy-dual-ec2-clean-recover/
+
 
 # VS Code
 .vscode/

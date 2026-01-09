@@ -12,6 +12,7 @@ from ..models.order_models import (
     OrderItem,
     OrderItemCreate,
     OrderItemInDBBase,
+    LegacyOrderStatus,
     TokenData,
 )
 from ..models.product_models import Product, Stock
@@ -36,6 +37,13 @@ def get_product_and_stock(product_id: UUID):
         return None, None
     stock = db.db_stock_by_product_id.get(product_id)
     return product, stock
+
+
+def get_coupon_by_code_unsafe(coupon_code: str):
+    unsafe_lookup = getattr(db, "unsafe_get_coupon_by_code", None)
+    if callable(unsafe_lookup):
+        return unsafe_lookup(coupon_code)
+    return db.db_coupons_by_code.get(coupon_code)
 
 
 @router.get("", response_model=List[Order])
@@ -208,6 +216,8 @@ async def create_user_order(
         # Deduct stock
         stock.quantity -= quantity_val
         stock.last_updated = datetime.now(timezone.utc)
+        # Persist stock update to database
+        db.update_stock(product_id_key, stock.quantity)
 
         price_at_purchase = product.price
         order_item_db = OrderItemInDBBase(
@@ -266,6 +276,8 @@ async def create_user_order(
             ):
                 coupon.usage_count = 0
             coupon.updated_at = datetime.now(timezone.utc)
+            # Persist coupon update to database
+            db.update_coupon(coupon.coupon_id, coupon.model_dump())
     # --- END OF VULNERABILITY INJECTION ---
 
     # Prepare response model
@@ -323,6 +335,55 @@ async def get_user_order_by_id(
     return order_response
 
 
+@router.get(
+    "/{order_id}/status-legacy",
+    response_model=LegacyOrderStatus,
+    deprecated=True,
+)
+async def get_order_status_legacy(
+    user_id: UUID,
+    order_id: UUID,
+    legacy_token: Optional[str] = Query(
+        None,
+        description="Deprecated legacy token parameter. Accepted but not validated.",
+    ),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """
+    Legacy order status polling endpoint.
+    Vulnerability: Authenticated but no ownership check (BOLA) and returns extra data.
+    """
+    logger.info(
+        "Legacy status lookup for order %s (user %s). Token present: %s",
+        order_id,
+        user_id,
+        bool(legacy_token),
+    )
+
+    order_db = db.db_orders_by_id.get(order_id)
+    if not order_db or order_db.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found for this user.",
+        )
+
+    address = db.db_addresses_by_id.get(order_db.address_id)
+    card = db.db_credit_cards_by_id.get(order_db.credit_card_id)
+    user = db.db_users_by_id.get(order_db.user_id)
+
+    return LegacyOrderStatus(
+        order_id=order_db.order_id,
+        status=order_db.status,
+        created_at=order_db.created_at,
+        updated_at=order_db.updated_at,
+        address=Address.model_validate(address) if address else None,
+        credit_card_id=order_db.credit_card_id,
+        credit_card_last_four=card.card_last_four if card else None,
+        billing_email=user.email if user else None,
+        legacy_notes="Legacy status endpoint returns extended fields for backward compatibility.",
+    )
+
+
 @router.post("/{order_id}/apply-coupon", response_model=Order)
 async def apply_coupon_to_order(
     user_id: UUID,
@@ -347,7 +408,7 @@ async def apply_coupon_to_order(
     # --- START OF VULNERABLE LOGIC ---
     if not order_db:
         # VULNERABILITY: Order does not exist. Instead of failing, we cache the coupon.
-        coupon = db.db_coupons_by_code.get(coupon_code)
+        coupon = get_coupon_by_code_unsafe(coupon_code)
         if coupon and coupon.is_active:
             logger.info(
                 "VULNERABILITY: Order %s not found. Caching coupon '%s' for user %s.",
@@ -393,7 +454,7 @@ async def apply_coupon_to_order(
             detail="Coupon already applied to this order",
         )
 
-    coupon = db.db_coupons_by_code.get(coupon_code)
+    coupon = get_coupon_by_code_unsafe(coupon_code)
     if not coupon or not coupon.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Coupon not found or inactive"
@@ -417,9 +478,13 @@ async def apply_coupon_to_order(
     order_db.applied_coupon_code = coupon.code
     order_db.discount_amount = round(discount, 2)
     order_db.updated_at = datetime.now(timezone.utc)
+    # Persist order update to database
+    db.update_order(order_db.order_id, order_db.model_dump())
 
     coupon.usage_count += 1
     coupon.updated_at = datetime.now(timezone.utc)
+    # Persist coupon update to database
+    db.update_coupon(coupon.coupon_id, coupon.model_dump())
 
     items_for_this_order = db.db_order_items_by_order_id.get(order_db.order_id, [])
     order_response = Order.model_validate(order_db)
