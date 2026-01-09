@@ -4,7 +4,7 @@
 
 services:
   rva-app:
-    image: ${RVA_IMAGE:-rva-app:latest}
+    image: ${RVA_IMAGE:-razor29/rva:latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -25,4 +25,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-

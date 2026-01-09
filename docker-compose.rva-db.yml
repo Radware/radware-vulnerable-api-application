@@ -25,7 +25,7 @@ services:
 
   # Application Service (multi-worker)
   rva-app:
-    image: ${RVA_IMAGE:-rva-app:latest}
+    image: ${RVA_IMAGE:-razor29/rva:latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -65,4 +65,3 @@ networks:
   rva-network:
     name: rva-network
     driver: bridge
-
