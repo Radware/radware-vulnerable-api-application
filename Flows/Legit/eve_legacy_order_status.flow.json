@@ -1,0 +1,43 @@
+{
+  "name": "EveDavis - Legacy Order Status (Short)",
+  "description": "Protected user EveDavis logs in and calls the deprecated legacy order status endpoint using a prepopulated order.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "eveUsername": "EveDavis",
+    "evePassword": "EvePass5%",
+    "eveUserId": "00000006-0000-0000-0000-000000000006",
+    "legacyOrderId": "671c7092-a373-5b56-931d-253fde055a2b",
+    "legacyToken": "legacy-demo"
+  },
+  "steps": [
+    {
+      "id": "step_eve_login_legacy_order",
+      "name": "Login EveDavis",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{eveUsername}}&password={{evePassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_eve_legacy_order_status",
+      "name": "Eve: Legacy Order Status",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{eveUserId}}/orders/{{legacyOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "visualLayout": {
+    "step_eve_login_legacy_order": { "x": 50, "y": 50 },
+    "step_eve_legacy_order_status": { "x": 250, "y": 50 }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "DavidBrown - Legacy Address Search (Short)",
+  "description": "Protected user DavidBrown logs in and uses the deprecated address search endpoint in a read-only, non-destructive way.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "davidUsername": "DavidBrown",
+    "davidPassword": "DavidPass4$",
+    "davidUserId": "00000005-0000-0000-0000-000000000005",
+    "addressSearchQuery": "Cedar"
+  },
+  "steps": [
+    {
+      "id": "step_david_login_legacy_address",
+      "name": "Login DavidBrown",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{davidUsername}}&password={{davidPassword}}",
+      "extract": {
+        "token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_david_legacy_address_search",
+      "name": "David: Legacy Address Search",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{davidUserId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "visualLayout": {
+    "step_david_login_legacy_address": { "x": 50, "y": 50 },
+    "step_david_legacy_address_search": { "x": 250, "y": 50 }
+  }
+}

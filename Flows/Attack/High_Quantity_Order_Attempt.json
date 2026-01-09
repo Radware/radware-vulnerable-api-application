@@ -1,0 +1,67 @@
+{
+  "id": "flow_attack_high_quantity_order_attempt",
+  "name": "Attack: High-Quantity Order Attempt (500 Units)",
+  "description": "Attacker logs in, simulates adding a product to cart, then attempts to place an order for 500 units of a single item.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "steps": [
+    {
+      "id": "step_attacker_login_high_quantity_order",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{attackerUsername}}&password={{attackerPassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "attacker_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_simulate_add_to_cart",
+      "name": "View Product (Simulate Add to Cart)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/{{targetProductId}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_place_high_quantity_order",
+      "name": "Place Order with 500 Units",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders?address_id={{attackerAddressId}}&credit_card_id={{attackerCardId}}&product_id_1={{targetProductId}}&quantity_1={{targetQuantity}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "stop"
+    }
+  ],
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "attackerUsername": "GraceWilson",
+    "attackerPassword": "GracePass7&",
+    "attackerUserId": "00000008-0000-0000-0000-000000000008",
+    "attackerAddressId": "ad000008-0001-0000-0000-000000000001",
+    "attackerCardId": "cc000008-0001-0000-0000-000000000001",
+    "targetProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "targetQuantity": "500"
+  },
+  "visualLayout": {
+    "step_attacker_login_high_quantity_order": {
+      "x": 50,
+      "y": 50
+    },
+    "step_simulate_add_to_cart": {
+      "x": 250,
+      "y": 50
+    },
+    "step_place_high_quantity_order": {
+      "x": 450,
+      "y": 50
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "id": "flow_bla_gracewilson_coupon_probe_checkout_anomalies",
+  "name": "Attack: GraceWilson Coupon Probe & Checkout Anomalies",
+  "description": "GraceWilson uses a valid account to probe coupons and checkout flow with out-of-sequence coupon apply, missing/extra parameters, and type-mismatched quantities. This generates sequencing, parameter mandatory, parameters allowed, parameter value, parameter type, and error-rate signals.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-secure.ase-team.com",
+    "graceUsername": "GraceWilson",
+    "gracePassword": "GracePass7&",
+    "graceUserId": "00000008-0000-0000-0000-000000000008",
+    "graceAddressId": "ad000008-0001-0000-0000-000000000001",
+    "graceCardId": "cc000008-0001-0000-0000-000000000001",
+    "baselineQuery": "Mouse",
+    "invalidCouponCode": "NOTACOUPON999",
+    "validCouponCode": "SAVE10",
+    "targetProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    "invalidQuantity": "two",
+    "validQuantity": "1"
+  },
+  "steps": [
+    {
+      "id": "step_grace_login_coupon_probe",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{graceUsername}}&password={{gracePassword}}",
+      "extract": {
+        "grace_token": "body.access_token"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_grace_get_profile_coupon_probe",
+      "name": "GraceWilson: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_grace_list_products_extra_param",
+      "name": "GraceWilson: Browse Products with Extra Param",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products?debug=true",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_product_search_missing_name",
+      "name": "GraceWilson: Product Search Missing Mandatory Param",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_product_search_baseline",
+      "name": "GraceWilson: Product Search Baseline",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/products/search?name={{baselineQuery}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_coupon_lookup_invalid",
+      "name": "GraceWilson: Probe Invalid Coupon Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/coupons/{{invalidCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_preorder",
+      "name": "GraceWilson: Apply Coupon Before Order (Out of Sequence)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{validCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_create_order_invalid_quantity",
+      "name": "GraceWilson: Create Order with Invalid Quantity Type",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders?address_id={{graceAddressId}}&credit_card_id={{graceCardId}}&product_id_1={{targetProductId}}&quantity_1={{invalidQuantity}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_create_order_valid",
+      "name": "GraceWilson: Create Order (Valid)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders?address_id={{graceAddressId}}&credit_card_id={{graceCardId}}&product_id_1={{targetProductId}}&quantity_1={{validQuantity}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "extract": {
+        "order_id": "body.order_id"
+      },
+      "onFailure": "stop"
+    },
+    {
+      "id": "step_grace_get_order_details",
+      "name": "GraceWilson: Get Order Details",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{order_id}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_grace_login_coupon_probe": { "x": 50, "y": 50 },
+    "step_grace_get_profile_coupon_probe": { "x": 250, "y": 50 },
+    "step_grace_list_products_extra_param": { "x": 450, "y": 50 },
+    "step_grace_product_search_missing_name": { "x": 650, "y": 50 },
+    "step_grace_product_search_baseline": { "x": 850, "y": 50 },
+    "step_grace_coupon_lookup_invalid": { "x": 50, "y": 150 },
+    "step_grace_apply_coupon_preorder": { "x": 250, "y": 150 },
+    "step_grace_create_order_invalid_quantity": { "x": 450, "y": 150 },
+    "step_grace_create_order_valid": { "x": 650, "y": 150 },
+    "step_grace_get_order_details": { "x": 850, "y": 150 }
+  }
+}

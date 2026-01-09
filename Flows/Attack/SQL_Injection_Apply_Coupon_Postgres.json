@@ -12,6 +12,7 @@
     "attackerUserId": "00000008-0000-0000-0000-000000000008",
     "nonexistentOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
     "baselineCouponCode": "SAVE10",
+    "discoveryProbeCouponCode": "TOOLONG99",
     "injectionQuerySimple": "%27%20OR%20%271%27%3D%271",
     "injectionQueryComment": "%27%20OR%201%3D1%20--",
     "injectionQueryUnion": "%27%20UNION%20SELECT%20*%20FROM%20coupons%20--",
@@ -40,6 +41,17 @@
         "Authorization": "Bearer {{attacker_token}}"
       },
       "onFailure": "stop"
+    },
+    {
+      "id": "step_apply_coupon_discovery_probe",
+      "name": "Apply Coupon Probe (Discovery Pattern Mismatch)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{attackerUserId}}/orders/{{nonexistentOrderId}}/apply-coupon?coupon_code={{discoveryProbeCouponCode}}",
+      "headers": {
+        "Authorization": "Bearer {{attacker_token}}"
+      },
+      "onFailure": "continue"
     },
     {
       "id": "step_apply_coupon_injection_simple",
@@ -100,6 +112,7 @@
   "visualLayout": {
     "step_attacker_login_grace_apply_coupon_sqli": { "x": 50, "y": 50 },
     "step_apply_coupon_baseline": { "x": 250, "y": 50 },
+    "step_apply_coupon_discovery_probe": { "x": 350, "y": 150 },
     "step_apply_coupon_injection_simple": { "x": 450, "y": 50 },
     "step_apply_coupon_injection_comment": { "x": 650, "y": 50 },
     "step_apply_coupon_injection_union": { "x": 850, "y": 50 },
