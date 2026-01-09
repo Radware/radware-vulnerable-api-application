@@ -1,8 +1,16 @@
 # Vulnerable E-commerce API
 
-*Version: v1.1.0*
+*Version: v1.2.2*
 
 ## 1. Introduction
+
+### Release Highlights (v1.2.2)
+
+*   **Official Docker image:** `razor29/rva:latest` is the default image used by the compose files.
+*   **Protected Entity Mode:** Prevents destructive changes to protected demo users/products while keeping non-protected objects fully exploitable.
+*   **Legacy endpoints maintained:** Deprecated address search and legacy order status endpoints remain available for demo scenarios (with intentional BOLA behavior).
+*   **Legacy B2B partner lookup:** Unauthenticated endpoint that returns internal pricing snapshots for demonstration.
+*   **Multi-DB support:** `memory`, `sqlite`, and `external` modes with optional peer sync.
 
 **Purpose:** This project is a deliberately vulnerable API-based e-commerce application built using Python and FastAPI. Its primary goal is to demonstrate common API security vulnerabilities, with a strong focus on Broken Object Level Authorization (BOLA), Broken Function Level Authorization (BFLA), and Mass Assignment/Parameter Pollution. The API is designed to primarily use path and query parameters for interactions, minimizing the use of request bodies for vulnerable endpoints to simulate specific attack vectors.
 
@@ -176,7 +184,7 @@ The application selects its database backend based on environment variables:
 ```sh
  docker run -d -p 8000:80 \
   -e DB_MODE=memory \
-  --name radware-vuln-api vulnerable-ecommerce-api
+  --name radware-vuln-api razor29/rva:latest
 ```
 Data is stored only in memory and will be lost when the container stops.
 
@@ -186,7 +194,7 @@ docker run -d -p 8000:80 \
   -e DB_MODE=sqlite \
   -e DB_SQLITE_PATH=/data/db.sqlite \
   -v $(pwd)/data:/data \
-  --name radware-vuln-api vulnerable-ecommerce-api
+  --name radware-vuln-api razor29/rva:latest
 ```
 This stores the SQLite database in `./data/db.sqlite` on the host. Remove the `-v` option if you want the database kept only inside the container and discarded when it is removed.
 
@@ -195,7 +203,7 @@ This stores the SQLite database in `./data/db.sqlite` on the host. Remove the `-
 docker run -d -p 8000:80 \
   -e DB_MODE=external \
   -e DB_URL=postgresql+psycopg2://user:pass@dbserver/dbname \
-  --name radware-vuln-api vulnerable-ecommerce-api
+  --name radware-vuln-api razor29/rva:latest
 ```
 Replace the connection string with one appropriate for your database engine.
 
@@ -204,7 +212,7 @@ Replace the connection string with one appropriate for your database engine.
 docker run -d -p 8000:80 \
   -e DB_SYNC_PEER=http://other-instance:8000 \
   -e DB_SYNC_INTERVAL=30 \
-  --name radware-vuln-api vulnerable-ecommerce-api
+  --name radware-vuln-api razor29/rva:latest
 ```
 The service will periodically push and pull data with the peer.
 
@@ -215,12 +223,12 @@ The service will periodically push and pull data with the peer.
 1.  **Build the Docker image:**
     Open a terminal in the project's root directory (where `Dockerfile` is located) and run:
     ```sh
-    docker build -t vulnerable-ecommerce-api .
+    docker build -t razor29/rva:latest .
     ```
 
 2.  **Run the Docker container:**
     ```sh
-    docker run -d -p 8000:80 --name radware-vuln-api vulnerable-ecommerce-api
+    docker run -d -p 8000:80 --name radware-vuln-api razor29/rva:latest
     ```
     The API will be accessible at `http://localhost:8000`.
 
@@ -228,7 +236,7 @@ The service will periodically push and pull data with the peer.
     if you need additional workers:
     ```sh
     docker run -d -p 8000:80 -e UVICORN_WORKERS=2 \
-      --name radware-vuln-api vulnerable-ecommerce-api
+      --name radware-vuln-api razor29/rva:latest
     ```
 
 #### Running Locally (Alternative)

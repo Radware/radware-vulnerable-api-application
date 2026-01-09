@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Radware Vulnerable E-commerce API",
-    "version": "1.2.0",
+    "version": "1.2.2",
     "description": "An intentionally vulnerable e-commerce API designed to demonstrate business logic attacks, focusing on path and query parameters. This version includes Protected Entity Mode which blocks destructive actions on certain demo entities.\n"
   },
   "tags": [

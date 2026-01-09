@@ -27,6 +27,11 @@ RVA supports three deployment modes, each optimized for different scenarios:
 - **Performance:** Best for high concurrency
 - **File:** `docker-compose.rva-db.yml`
 
+## Version v1.2.2 Notes
+
+- **Default image:** The compose files now default to `razor29/rva:latest`. Override with `RVA_IMAGE` if you want a custom tag or registry.
+- **SQL injection demos:** The `/api/products/search` and `/api/users/{userId}/orders/{orderId}/apply-coupon` endpoints include intentional SQL injection behavior. For Postgres-specific payloads (e.g., `ILIKE`, `pg_sleep`), use **PostgreSQL mode** (`docker-compose.rva-db.yml`) or `DB_MODE=external` with a PostgreSQL `DB_URL`. SQLite and in-memory modes are read-only but do not support Postgres-only payloads.
+
 ## Quick Start
 
 ### In-Memory Mode
@@ -80,7 +85,7 @@ export POSTGRES_PASSWORD=mypassword
 export POSTGRES_DB=mydb
 
 # Use custom image
-export RVA_IMAGE=myregistry/rva:v1.2.0
+export RVA_IMAGE=myregistry/rva:v1.2.2
 ```
 
 Then start with:
@@ -119,13 +124,13 @@ Build the RVA image:
 
 ```bash
 # Build with default tag
-docker build -t rva-app:latest .
+docker build -t razor29/rva:latest .
 
 # Build with custom tag
-docker build -t myregistry/rva:v1.2.0 .
+docker build -t myregistry/rva:v1.2.2 .
 
 # Use the custom image
-RVA_IMAGE=myregistry/rva:v1.2.0 docker-compose -f docker-compose.rva-db.yml up -d
+RVA_IMAGE=myregistry/rva:v1.2.2 docker-compose -f docker-compose.rva-db.yml up -d
 ```
 
 ## Database Management
@@ -251,7 +256,7 @@ If you want to manage data manually:
 
 ```bash
 # Disable automatic data seeding
-docker run -e DB_SKIP_AUTO_SEED=true -e DB_MODE=external -e DB_URL=... rva-app:latest
+docker run -e DB_SKIP_AUTO_SEED=true -e DB_MODE=external -e DB_URL=... razor29/rva:latest
 ```
 
 ## Architecture Notes
@@ -275,4 +280,3 @@ For issues, see:
 - Application logs: `docker logs rva-app`
 - Database logs: `docker logs rva-db`
 - Health check: `curl http://localhost:8060/`
-
