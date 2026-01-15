@@ -6,7 +6,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "graceUsername": "GraceWilson",
     "gracePassword": "GracePass7&",
     "legitPartnerCode": "shske345pll",

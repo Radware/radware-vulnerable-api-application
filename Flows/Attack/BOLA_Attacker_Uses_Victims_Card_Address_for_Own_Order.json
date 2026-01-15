@@ -3,7 +3,7 @@
     "name": "BOLA: Attacker Uses Victim's Card/Address for Own Order",
     "description": "Attacker (GraceWilson) places orders for herself, but uses victim's (HenryMoore) credit card ID or address ID in query parameters.",
     "staticVars": {
-      "baseUrl": "https://bla-bypass.ase-team.com",
+      "baseUrl": "http://localhost:8060",
       "attackerUserId": "00000008-0000-0000-0000-000000000008",
       "attackerUsername": "GraceWilson",
       "attackerPassword": "GracePass7&",

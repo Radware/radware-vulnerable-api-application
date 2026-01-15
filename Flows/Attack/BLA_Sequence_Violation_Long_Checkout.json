@@ -3,19 +3,8 @@
   "name": "BLA: Sequence Violation (Long Checkout Detour)",
   "description": "GraceWilson applies a coupon and checks legacy status before any order exists, then creates an order without the usual browse/list steps and checks order details before listing orders.",
   "headers": {
-    "Accept": "application/json"
-  },
-  "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
-    "graceUsername": "GraceWilson",
-    "gracePassword": "GracePass7&",
-    "graceUserId": "00000008-0000-0000-0000-000000000008",
-    "graceAddressId": "ad000008-0001-0000-0000-000000000001",
-    "graceCardId": "cc000008-0001-0000-0000-000000000001",
-    "targetProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
-    "invalidCouponCode": "NOTACOUPON999",
-    "legacyToken": "legacy-detour"
+    "Accept": "application/json",
+    "x-remote-ip": "{{RANDOM_IP}}"
   },
   "steps": [
     {
@@ -60,10 +49,10 @@
       "headers": {
         "Authorization": "Bearer {{grace_token}}"
       },
+      "onFailure": "stop",
       "extract": {
         "order_id": "body.order_id"
-      },
-      "onFailure": "stop"
+      }
     },
     {
       "id": "step_grace_order_detail_before_list",
@@ -99,13 +88,46 @@
       "onFailure": "continue"
     }
   ],
+  "staticVars": {
+    "baseUrl": "http://localhost:8060",
+    "graceUsername": "GraceWilson",
+    "gracePassword": "GracePass7&",
+    "graceUserId": "00000008-0000-0000-0000-000000000008",
+    "graceAddressId": "ad000008-0001-0000-0000-000000000001",
+    "graceCardId": "cc000008-0001-0000-0000-000000000001",
+    "targetProductId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    "invalidCouponCode": "NOTA99",
+    "legacyToken": "legacy-detour"
+  },
   "visualLayout": {
-    "step_grace_login_sequence_long": { "x": 50, "y": 50 },
-    "step_grace_apply_coupon_before_order": { "x": 250, "y": 50 },
-    "step_grace_status_legacy_before_order": { "x": 450, "y": 50 },
-    "step_grace_create_order_direct": { "x": 650, "y": 50 },
-    "step_grace_order_detail_before_list": { "x": 250, "y": 150 },
-    "step_grace_status_legacy_before_list": { "x": 450, "y": 150 },
-    "step_grace_list_orders_after": { "x": 650, "y": 150 }
+    "step_grace_login_sequence_long": {
+      "x": 50,
+      "y": 50
+    },
+    "step_grace_apply_coupon_before_order": {
+      "x": 250,
+      "y": 50
+    },
+    "step_grace_status_legacy_before_order": {
+      "x": 450,
+      "y": 50
+    },
+    "step_grace_create_order_direct": {
+      "x": 650,
+      "y": 50
+    },
+    "step_grace_order_detail_before_list": {
+      "x": 250,
+      "y": 150
+    },
+    "step_grace_status_legacy_before_list": {
+      "x": 450,
+      "y": 150
+    },
+    "step_grace_list_orders_after": {
+      "x": 650,
+      "y": 150
+    }
   }
 }

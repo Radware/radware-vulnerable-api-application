@@ -53,7 +53,7 @@
     }
   ],
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "eveUsername": "EveDavis",
     "evePassword": "EvePass5%"
   },

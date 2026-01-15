@@ -3,7 +3,7 @@
   "description": "BobJohnson logs in, views his profile, lists his addresses, adds a temporary address, lists again, and then deletes the temporary address. This flow teaches a common, idempotent account management sequence for addresses.",
   "headers": { "Accept": "application/json" },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "bobUsername": "BobJohnson",
     "bobPassword": "BobPass2@",
     "bobUserId": "00000003-0000-0000-0000-000000000003"

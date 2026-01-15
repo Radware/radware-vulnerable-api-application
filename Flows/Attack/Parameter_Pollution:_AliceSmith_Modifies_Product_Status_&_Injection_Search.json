@@ -3,7 +3,7 @@
     "name": "Parameter Pollution: AliceSmith Modifies Product Status & Injection Search",
     "description": "AliceSmith modifies a product's internal status via parameter pollution and then performs a product search with an injection-like string.",
     "staticVars": {
-      "baseUrl": "https://bla-bypass.ase-team.com",
+      "baseUrl": "http://localhost:8060",
       "aliceUsername": "AliceSmith",
       "alicePassword": "AlicePass1!",
       "targetProductIdForStatus": "a7f8a9b0-c1d2-3456-7890-123456a12345"

@@ -6,7 +6,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "knownPartnerCode1": "shske345pll",
     "knownPartnerCode2": "pccuf987szf",
     "knownPartnerCode3": "cjdjd654dkd",

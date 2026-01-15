@@ -3,7 +3,7 @@
     "name": "BOLA: Attacker Views Victim's Sensitive Data",
     "description": "Attacker (GraceWilson) logs in and views another user's (HenryMoore) profile, addresses, credit cards, and orders.",
     "staticVars": {
-      "baseUrl": "https://bla-bypass.ase-team.com",
+      "baseUrl": "http://localhost:8060",
       "attackerUsername": "GraceWilson",
       "attackerPassword": "GracePass7&",
       "victimUserId": "00000009-0000-0000-0000-000000000009"

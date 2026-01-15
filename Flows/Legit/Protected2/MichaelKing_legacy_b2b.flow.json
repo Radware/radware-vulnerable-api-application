@@ -6,7 +6,7 @@
     "x-remote-ip": "{{RANDOM_IP}}"
   },
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "userUsername": "MichaelKing",
     "userPassword": "MichaelPass12!",
     "userId": "00000013-0000-0000-0000-000000000013",

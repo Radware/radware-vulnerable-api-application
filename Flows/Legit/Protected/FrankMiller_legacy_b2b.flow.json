@@ -5,7 +5,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "userUsername": "FrankMiller",
     "userPassword": "FrankPass6^",
     "userId": "00000007-0000-0000-0000-000000000007",

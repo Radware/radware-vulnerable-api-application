@@ -5,7 +5,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "eveUsername": "EveDavis",
     "evePassword": "EvePass5%",
     "eveUserId": "00000006-0000-0000-0000-000000000006",

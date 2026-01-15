@@ -5,7 +5,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "michaelUsername": "MichaelKing",
     "michaelPassword": "MichaelPass12!",
     "michaelUserId": "00000013-0000-0000-0000-000000000013",

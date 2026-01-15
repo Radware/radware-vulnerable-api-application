@@ -3,7 +3,7 @@
   "description": "NatalieYoung logs in, views her profile, lists her current credit cards, adds a new temporary card, lists them again to verify, and then deletes the temporary card. This teaches a common, idempotent account management sequence for credit cards.",
   "headers": { "Accept": "application/json" },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "natalieUsername": "NatalieYoung",
     "nataliePassword": "NataliePass13!",
     "natalieUserId": "00000014-0000-0000-0000-000000000014"

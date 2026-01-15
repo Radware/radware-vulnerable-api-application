@@ -5,7 +5,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "umaUsername": "UmaTurner",
     "umaPassword": "UmaPass20!",
     "umaUserId": "00000021-0000-0000-0000-000000000021"

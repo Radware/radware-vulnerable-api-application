@@ -6,7 +6,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-bypass.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "baselineQuery": "Mouse",
     "injectionQuerySimple": "%27%20OR%20%271%27%3D%271",
     "injectionQueryComment": "%27%20OR%201%3D1%20--",

@@ -1,0 +1,238 @@
+{
+  "id": "flow_bla_sequence_violation_short_repetitive_multi_coupon",
+  "name": "BLA: Sequence Violation (Short Repetitive, Multi-Coupon)",
+  "description": "GraceWilson logs in, checks her profile, and repeatedly applies different coupon codes to a non-existent order without creating an order first, demonstrating out-of-sequence behavior with varied coupon inputs.",
+  "headers": {
+    "Accept": "application/json",
+    "x-remote-ip": "{{RANDOM_IP}}"
+  },
+  "steps": [
+    {
+      "id": "step_grace_login_sequence_short_multi_coupon",
+      "name": "Login GraceWilson",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/auth/login?username={{graceUsername}}&password={{gracePassword}}",
+      "onFailure": "stop",
+      "extract": {
+        "grace_token": "body.access_token"
+      }
+    },
+    {
+      "id": "step_grace_get_profile_sequence_short_multi_coupon",
+      "name": "GraceWilson: Get Own Profile",
+      "type": "request",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_1_multi",
+      "name": "Apply Coupon (Attempt 1, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode1}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_1768212205041_dbdkf3lju",
+      "name": "Apply Coupon (Attempt 1, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode1}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_2_multi",
+      "name": "Apply Coupon (Attempt 2, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode2}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_1768212202342_hr0pwxr0l",
+      "name": "Apply Coupon (Attempt 2, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode2}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_3_multi",
+      "name": "Apply Coupon (Attempt 3, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode3}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_1768212198440_77tm0i6hb",
+      "name": "Apply Coupon (Attempt 3, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode3}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_4_multi",
+      "name": "Apply Coupon (Attempt 4, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode4}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_1768212200376_dq8tel1a2",
+      "name": "Apply Coupon (Attempt 4, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode4}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_5_multi",
+      "name": "Apply Coupon (Attempt 5, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode5}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_6_multi",
+      "name": "Apply Coupon (Attempt 6, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode6}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_7_multi",
+      "name": "Apply Coupon (Attempt 7, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode7}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_grace_apply_coupon_attempt_8_multi",
+      "name": "Apply Coupon (Attempt 8, No Order)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/api/users/{{graceUserId}}/orders/{{fakeOrderId}}/apply-coupon?coupon_code={{invalidCouponCode8}}",
+      "headers": {
+        "Authorization": "Bearer {{grace_token}}"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "staticVars": {
+    "baseUrl": "http://localhost:8060",
+    "graceUsername": "GraceWilson",
+    "gracePassword": "GracePass7&",
+    "graceUserId": "00000008-0000-0000-0000-000000000008",
+    "fakeOrderId": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    "invalidCouponCode1": "WELCOME7",
+    "invalidCouponCode2": "MEGAOFF51",
+    "invalidCouponCode3": "SAVE11",
+    "invalidCouponCode4": "SAVEBIG4",
+    "invalidCouponCode5": "TESTCE1",
+    "invalidCouponCode6": "TESTOD9",
+    "invalidCouponCode7": "PROMO15",
+    "invalidCouponCode8": "DEAL20"
+  },
+  "visualLayout": {
+    "step_grace_login_sequence_short_multi_coupon": {
+      "x": -314,
+      "y": 218
+    },
+    "step_grace_get_profile_sequence_short_multi_coupon": {
+      "x": 78,
+      "y": 216
+    },
+    "step_grace_apply_coupon_attempt_1_multi": {
+      "x": 388,
+      "y": 214
+    },
+    "step_grace_apply_coupon_attempt_2_multi": {
+      "x": 1038,
+      "y": 212
+    },
+    "step_grace_apply_coupon_attempt_3_multi": {
+      "x": 1726,
+      "y": 206.5
+    },
+    "step_grace_apply_coupon_attempt_4_multi": {
+      "x": 2445.5,
+      "y": 194.5
+    },
+    "step_grace_apply_coupon_attempt_5_multi": {
+      "x": 399,
+      "y": 453.5
+    },
+    "step_grace_apply_coupon_attempt_6_multi": {
+      "x": 730.5,
+      "y": 449
+    },
+    "step_grace_apply_coupon_attempt_7_multi": {
+      "x": 1058.5,
+      "y": 449
+    },
+    "step_grace_apply_coupon_attempt_8_multi": {
+      "x": 1367,
+      "y": 450
+    },
+    "step_1768212205041_dbdkf3lju": {
+      "x": 702,
+      "y": 214
+    },
+    "step_1768212202342_hr0pwxr0l": {
+      "x": 1381.5,
+      "y": 210.5
+    },
+    "step_1768212198440_77tm0i6hb": {
+      "x": 2082,
+      "y": 202
+    },
+    "step_1768212200376_dq8tel1a2": {
+      "x": 73,
+      "y": 452
+    }
+  }
+}

@@ -5,7 +5,7 @@
     "Accept": "application/json"
   },
   "staticVars": {
-    "baseUrl": "https://bla-secure.ase-team.com",
+    "baseUrl": "http://localhost:8060",
     "ivyUsername": "IvyTaylor",
     "ivyPassword": "IvyPass9(",
     "ivyUserId": "00000010-0000-0000-0000-000000000010"
