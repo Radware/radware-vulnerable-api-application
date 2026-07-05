@@ -1571,6 +1571,106 @@
       "usage_count": 0,
       "expiration_date": null,
       "is_protected": true
+    },
+    {
+      "coupon_id": "c1000001-0000-0000-0000-000000000001",
+      "code": "RVA4",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000002-0000-0000-0000-000000000002",
+      "code": "wlc4",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000003-0000-0000-0000-000000000003",
+      "code": "Xtra5",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000004-0000-0000-0000-000000000004",
+      "code": "promo",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000005-0000-0000-0000-000000000005",
+      "code": "Promo6",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000006-0000-0000-0000-000000000006",
+      "code": "deal22",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000007-0000-0000-0000-000000000007",
+      "code": "Coupon7",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000008-0000-0000-0000-000000000008",
+      "code": "freeby7",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c1000009-0000-0000-0000-000000000009",
+      "code": "CleanBuy",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
+    },
+    {
+      "coupon_id": "c100000a-0000-0000-0000-00000000000a",
+      "code": "demo2026",
+      "discount_type": "percentage",
+      "discount_value": 5,
+      "is_active": true,
+      "usage_limit": null,
+      "expiration_date": null,
+      "is_protected": true
     }
   ]
 }
