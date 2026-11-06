@@ -12,6 +12,7 @@ from .routers import (
     user_profile_router,
     order_router,
     coupon_router,
+    internal_router,
 )
 import logging
 import json
@@ -200,6 +201,11 @@ app.include_router(
     tags=["Coupons", "Admin"],
 )
 app.include_router(b2b_router.router, prefix="/api", tags=["B2B"])
+
+# Legacy internal customer-sync/export service. Mounted WITHOUT the /api prefix
+# (final path /internal/customer-sync) and intentionally kept out of openapi.yaml
+# so it surfaces as a shadow/zombie API in API Discovery.
+app.include_router(internal_router.router)
 
 from . import sync
 
