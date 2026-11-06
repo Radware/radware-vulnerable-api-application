@@ -1,0 +1,49 @@
+{
+  "name": "Internal Customer-Sync Heartbeat (Legacy Service)",
+  "description": "A leftover internal scheduler still calls the decommissioned customer-sync/export backend a couple of times per cycle with scope=summary, as it did when the nightly reconciliation job was live. Unauthenticated, off-schema, low volume - this is the benign 'the service is still running' baseline that lets API Discovery surface /internal/customer-sync as a live (zombie) endpoint.",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "http://localhost:8060",
+    "syncRef1": "AliceSmith",
+    "syncRef2": "BobJohnson"
+  },
+  "steps": [
+    {
+      "id": "step_sync_heartbeat_1",
+      "name": "Customer-Sync Export: summary pull #1",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": {
+        "account_ref": "{{syncRef1}}",
+        "scope": "summary"
+      },
+      "extract": {
+        "synced_tier_1": "body.account_tier"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_sync_heartbeat_2",
+      "name": "Customer-Sync Export: summary pull #2",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": {
+        "account_ref": "{{syncRef2}}",
+        "scope": "summary"
+      },
+      "extract": {
+        "synced_tier_2": "body.account_tier"
+      },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_sync_heartbeat_1": { "x": 50, "y": 50 },
+    "step_sync_heartbeat_2": { "x": 300, "y": 50 }
+  }
+}

