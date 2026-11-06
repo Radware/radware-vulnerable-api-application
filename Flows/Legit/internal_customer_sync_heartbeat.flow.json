@@ -1,6 +1,6 @@
 {
   "name": "Internal Customer-Sync Heartbeat (Legacy Service)",
-  "description": "A leftover internal scheduler still calls the decommissioned customer-sync/export backend a couple of times per cycle with scope=summary, as it did when the nightly reconciliation job was live. Unauthenticated, off-schema, low volume - this is the benign 'the service is still running' baseline that lets API Discovery surface /internal/customer-sync as a live (zombie) endpoint.",
+  "description": "A leftover internal scheduler still calls the decommissioned customer-sync/export backend a couple of times per cycle with scope=summary, as it did when the nightly reconciliation job was live. Unauthenticated, off-schema, low volume - this is the benign 'the service is still running' baseline that lets API Discovery surface /api/v1/customer-sync as a live (zombie) endpoint.",
   "headers": {
     "Accept": "application/json",
     "Content-Type": "application/json"
@@ -16,7 +16,7 @@
       "name": "Customer-Sync Export: summary pull #1",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": {
         "account_ref": "{{syncRef1}}",
         "scope": "summary"
@@ -31,7 +31,7 @@
       "name": "Customer-Sync Export: summary pull #2",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": {
         "account_ref": "{{syncRef2}}",
         "scope": "summary"

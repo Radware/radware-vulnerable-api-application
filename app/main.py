@@ -202,9 +202,10 @@ app.include_router(
 )
 app.include_router(b2b_router.router, prefix="/api", tags=["B2B"])
 
-# Legacy internal customer-sync/export service. Mounted WITHOUT the /api prefix
-# (final path /internal/customer-sync) and intentionally kept out of openapi.yaml
-# so it surfaces as a shadow/zombie API in API Discovery.
+# Legacy customer-sync/export service. The router carries its own /api/v1 prefix
+# (final path /api/v1/customer-sync) and is intentionally kept out of openapi.yaml
+# so it surfaces as a shadow/zombie API in API Discovery. It is served by the
+# existing nginx /api proxy, so no dedicated nginx location is required.
 app.include_router(internal_router.router)
 
 from . import sync
