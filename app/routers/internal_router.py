@@ -32,8 +32,12 @@ from ..models.internal_models import (
     SyncPaymentMethod,
 )
 
-# Mounted WITHOUT the /api prefix in main.py -> final path is /internal/...
-router = APIRouter(prefix="/internal", tags=["Internal"])
+# Mounted bare in main.py; the router carries the full /api/v1 prefix -> final
+# path is /api/v1/customer-sync. It blends into the normal /api tree (so it is
+# served by the existing nginx /api proxy and surfaces in API Discovery among the
+# real endpoints) while the stray "v1" reads as a leftover from a retired API
+# version -- a far less conspicuous zombie than a literal /internal path.
+router = APIRouter(prefix="/api/v1", tags=["Sync"])
 
 
 # Synthetic internal-only enrichment for a few well-known demo customers. Any

